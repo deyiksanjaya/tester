@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevation Tracker</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 80%; max-width: 400px; }
+        .value { font-size: 3rem; font-weight: bold; color: #007bff; margin: 1rem 0; }
+        button { padding: 10px 20px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none; background: #007bff; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Relative Elevation</h2>
+    <div id="status">Press start to calibrate</div>
+    <div class="value"><span id="elevation">0.00</span> m</div>
+    <button id="startBtn">Start Tracking</button>
+    <p style="font-size: 0.8rem; color: #666;">Note: This measures relative movement from the starting point.</p>
+</div>
+
+<script>
+    let initialAltitude = null;
+    let currentElevation = 0;
+    const elevationEl = document.getElementById('elevation');
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+
+    startBtn.addEventListener('click', async () => {
+        // Meminta izin untuk perangkat iOS
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            const permission = await DeviceMotionEvent.requestPermission();
+            if (permission !== 'granted') {
+                alert("Permission denied");
+                return;
+            }
+        }
+        
+        startTracking();
+        startBtn.style.display = 'none';
+        statusEl.innerText = "Tracking active...";
+    });
+
+    function startTracking() {
+        let velocityZ = 0;
+        let lastTimestamp = performance.now();
+
+        window.addEventListener('devicemotion', (event) => {
+            const acc = event.acceleration; // Akselerasi tanpa gravitasi
+            if (!acc || acc.z === null) return;
+
+            const now = performance.now();
+            const dt = (now - lastTimestamp) / 1000; // Hitung delta waktu dalam detik
+            lastTimestamp = now;
+
+            // Integrasi sederhana: Akselerasi -> Kecepatan -> Posisi
+            // Filter noise kecil agar tidak "melayang" (drift)
+            if (Math.abs(acc.z) > 0.1) {
+                velocityZ += acc.z * dt;
+                currentElevation += velocityZ * dt;
+            }
+
+            // Redaman (Damping) untuk mengurangi akumulasi error
+            velocityZ *= 0.95;
+
+            elevationEl.innerText = currentElevation.toFixed(2);
+        });
+    }
+</script>
+
+</body>
+</html>
