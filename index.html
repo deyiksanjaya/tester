@@ -1,27 +1,18 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="id">
 <head>
   <meta charset="utf-8" />
   
   <!-- ==================== PWA META TAGS ==================== -->
   <title>Google</title>
-  
-  <!-- Konfigurasi Viewport untuk PWA (Mencegah Zoom Manual) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  
-  <!-- Favicon dan Ikon Aplikasi (Menggunakan Logo 'G' Google Terbaru) -->
   <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" />
   <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" />
-  
-  <!-- Konfigurasi Android / Chrome PWA -->
   <meta name="theme-color" content="#ffffff" />
   <meta name="mobile-web-app-capable" content="yes" />
-  
-  <!-- Konfigurasi iOS / Safari PWA -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Google" />
-  <!-- ======================================================= -->
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -37,18 +28,16 @@
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
     }
-    .overflow-hidden {
-      overflow: hidden;
-    }
   </style>
 </head>
 
-<body class="flex flex-col min-h-screen text-[#202124] overflow-x-hidden bg-white">
+<!-- Menggunakan h-[100dvh] dan overflow-hidden agar pas 1 layar penuh tanpa scroll -->
+<body class="h-[100dvh] flex flex-col text-[#202124] overflow-hidden bg-white w-full">
   
   <!-- ==================== HALAMAN UTAMA ==================== -->
   
-  <!-- Pengepala (Header) -->
-  <header class="flex justify-between items-center px-4 pt-4 pb-0 text-sm w-full">
+  <!-- Header -->
+  <header class="flex justify-between items-center px-4 pt-4 pb-0 text-sm w-full flex-shrink-0">
     <div class="flex items-center">
       <button class="p-1 mr-1 text-[#5f6368] hover:bg-gray-100 rounded-full transition-colors flex items-center">
         <span class="material-symbols-outlined text-[22px]">science</span>
@@ -72,15 +61,15 @@
     </div>
   </header>
 
-  <!-- Kandungan Utama (Main Content) -->
-  <main class="flex-grow flex flex-col items-center mt-[10vh] px-4 w-full">
+  <!-- Konten Utama (Berada tepat di tengah layar yang tersisa) -->
+  <main class="flex-grow flex flex-col justify-center items-center px-4 w-full pb-[10vh]">
     <img 
       class="w-[180px] sm:w-[272px] object-contain mb-8" 
       src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" 
       alt="Google" 
     />
 
-    <!-- Pencetus Kotak Carian (Search Trigger) -->
+    <!-- Pencetus Kotak Pencarian -->
     <div id="main-search-trigger" class="flex items-center w-full max-w-[600px] border border-[#dfe1e5] shadow-sm rounded-full px-4 py-2.5 bg-white cursor-text">
       <span class="mr-3 text-[#9aa0a6] flex items-center">
         <span class="material-symbols-outlined text-[22px]">search</span>
@@ -100,13 +89,13 @@
     </div>
 
     <div class="mt-6 text-[13px] text-[#4d5156]">
-      Google offered in: <a href="#" class="text-[#1a0dab] hover:underline ml-1">Bahasa Melayu</a>
+      Google offered in: <a href="#" class="text-[#1a0dab] hover:underline ml-1">Bahasa Indonesia</a>
     </div>
   </main>
 
-  <!-- Pengaki (Footer) -->
-  <footer class="bg-[#f2f2f2] text-[#70757a] text-[14px] mt-auto w-full">
-    <div class="px-5 py-4 border-b border-[#dadce0]">Malaysia</div>
+  <!-- Footer (Pasti menempel di bawah) -->
+  <footer class="bg-[#f2f2f2] text-[#70757a] text-[14px] flex-shrink-0 w-full">
+    <div class="px-5 py-4 border-b border-[#dadce0]">Indonesia</div>
     <div class="flex flex-col items-center py-4 space-y-4">
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 px-4 w-full max-w-[600px]">
         <a href="#" class="hover:underline">Dark theme: off</a>
@@ -122,14 +111,17 @@
     </div>
   </footer>
 
-  <!-- ==================== OVERLAY CARIAN ==================== -->
+  <!-- ==================== OVERLAY PENCARIAN ==================== -->
   <div id="search-overlay" class="fixed inset-0 bg-white z-50 hidden flex-col">
     <div class="flex items-center px-2 py-2 border-b border-[#dfe1e5] shadow-sm">
-      <button id="back-btn" class="p-2 text-[#1a73e8] flex items-center justify-center rounded-full hover:bg-gray-100">
+      <button id="back-btn" type="button" class="p-2 text-[#1a73e8] flex items-center justify-center rounded-full hover:bg-gray-100">
         <span class="material-symbols-outlined text-[24px]">arrow_back</span>
       </button>
       
-      <input id="active-search-input" type="text" class="flex-grow px-2 text-[16px] text-[#202124] focus:outline-none bg-transparent" autocomplete="off" />
+      <!-- Input dibungkus form agar tombol enter keyboard HP berfungsi sebagai Submit -->
+      <form id="search-form" action="https://www.google.com/search" method="GET" class="flex-grow mx-2 flex items-center">
+        <input id="active-search-input" name="q" type="text" class="w-full text-[16px] text-[#202124] focus:outline-none bg-transparent" autocomplete="off" />
+      </form>
       
       <div id="empty-icons" class="flex items-center text-[#5f6368]">
         <button class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100">
@@ -141,15 +133,15 @@
       </div>
       
       <div id="typing-icons" class="hidden flex items-center text-[#5f6368]">
-        <button id="clear-btn" class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100 mr-1">
+        <button id="clear-btn" type="button" class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100 mr-1">
           <span class="material-symbols-outlined text-[24px]">close</span>
         </button>
       </div>
     </div>
 
-    <!-- Senarai Cadangan & Sejarah (Suggestions & History List) -->
+    <!-- Daftar Saran & Riwayat -->
     <div id="suggestions-list" class="flex-grow overflow-y-auto bg-white pt-2">
-      <!-- Item akan dimuatkan menggunakan JavaScript -->
+      <!-- Item dimuat dengan JavaScript -->
     </div>
   </div>
 
@@ -158,6 +150,7 @@
     const mainSearchTrigger = document.getElementById('main-search-trigger');
     const mainDisplayInput = document.getElementById('main-display-input');
     const searchOverlay = document.getElementById('search-overlay');
+    const searchForm = document.getElementById('search-form');
     const activeInput = document.getElementById('active-search-input');
     const backBtn = document.getElementById('back-btn');
     const clearBtn = document.getElementById('clear-btn');
@@ -165,7 +158,7 @@
     const typingIcons = document.getElementById('typing-icons');
     const suggestionsList = document.getElementById('suggestions-list');
 
-    // Pengurusan Sejarah Carian (Local Storage)
+    // Pengelolaan Riwayat (Local Storage)
     const STORAGE_KEY = 'google_clone_history';
     let searchHistory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
       'google search api', 'apa itu html', 'cara buat website'
@@ -173,26 +166,34 @@
 
     function saveToHistory(query) {
       if (!query.trim()) return;
-      searchHistory = searchHistory.filter(item => item !== query); // Buang duplikat
-      searchHistory.unshift(query); // Tambah ke atas
-      if (searchHistory.length > 15) searchHistory.pop(); // Hadkan 15 item
+      searchHistory = searchHistory.filter(item => item !== query); 
+      searchHistory.unshift(query); 
+      if (searchHistory.length > 15) searchHistory.pop(); 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory));
     }
 
     function removeFromHistory(query) {
       searchHistory = searchHistory.filter(item => item !== query);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory));
-      renderHistory(); // Kemaskini paparan
+      renderHistory(); 
     }
 
-    // Aksi apabila pengguna mengklik hasil
+    // Aksi untuk melakukan pencarian & Redirect
     function executeSearch(query) {
       saveToHistory(query);
-      mainDisplayInput.value = query; // Kemaskini kotak utama
-      closeOverlay();
+      // Redirect ke halaman Google Search yang sebenarnya
+      window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     }
 
-    // Menarik data daripada Google Autocomplete API
+    // Submit form (Saat tekan "Enter" atau tombol "Go" di Keyboard)
+    searchForm.addEventListener('submit', (e) => {
+      e.preventDefault(); // Cegah reload bawaan form
+      if (activeInput.value.trim() !== '') {
+        executeSearch(activeInput.value);
+      }
+    });
+
+    // Menarik data dari Google Autocomplete API
     function fetchGoogleSuggestions(query) {
       if (!query.trim()) {
         renderHistory();
@@ -202,7 +203,6 @@
       const script = document.createElement('script');
       const callbackName = 'googleSuggestCb_' + Date.now();
       
-      // Fungsi Panggil Balik (Callback) untuk JSONP
       window[callbackName] = function(data) {
         const suggestions = data[1] || [];
         const items = suggestions.map(text => ({ text: text, type: 'search' }));
@@ -212,18 +212,16 @@
         script.remove();
       };
       
-      // Panggil API (client=firefox mengembalikan format JSON yang ringkas)
       script.src = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}&callback=${callbackName}`;
       document.body.appendChild(script);
     }
 
-    // Paparkan Sejarah apabila kotak carian kosong
     function renderHistory() {
       const items = searchHistory.map(text => ({ text, type: 'history' }));
       renderListHTML(items, '');
     }
 
-    // Membina HTML untuk senarai (Sejarah & Saranan API)
+    // Membuat HTML list (Saran & Riwayat)
     function renderListHTML(items, currentQuery) {
       suggestionsList.innerHTML = '';
 
@@ -231,10 +229,8 @@
         const div = document.createElement('div');
         div.className = 'flex items-center px-4 py-[14px] active:bg-gray-100 cursor-pointer';
 
-        // Ikon Kiri
         const leftIcon = item.type === 'history' ? 'schedule' : 'search';
         
-        // Format Teks (Tebal / Bold untuk huruf seterusnya)
         let formattedText = item.text;
         if (currentQuery && item.text.toLowerCase().startsWith(currentQuery.toLowerCase()) && item.type === 'search') {
           const matchedPart = item.text.substring(0, currentQuery.length);
@@ -244,7 +240,6 @@
           formattedText = `<span class="font-bold">${item.text}</span>`;
         }
 
-        // Ikon Kanan
         const rightIcon = item.type === 'history' ? 'close' : 'north_west';
 
         div.innerHTML = `
@@ -255,18 +250,18 @@
           </span>
         `;
         
-        // Acara klik teks untuk mencari
-        div.querySelector('.flex-grow').addEventListener('click', (e) => {
+        // Event klik teks -> Redirect
+        div.querySelector('.flex-grow').addEventListener('click', () => {
           executeSearch(item.text);
         });
 
-        // Acara klik ikon kanan
+        // Event klik ikon panah serong atau silang
         div.querySelector('.right-action-btn').addEventListener('click', (e) => {
           e.stopPropagation();
           if (item.type === 'history') {
-            removeFromHistory(item.text); // Padam sejarah
+            removeFromHistory(item.text); 
           } else {
-            activeInput.value = item.text + ' '; // Isi carian tanpa mencari
+            activeInput.value = item.text + ' '; 
             activeInput.focus();
             fetchGoogleSuggestions(activeInput.value);
             toggleIcons(activeInput.value);
@@ -277,7 +272,6 @@
       });
     }
 
-    // Kawalan Paparan & Ikon
     function toggleIcons(query) {
       if (query.length > 0) {
         emptyIcons.classList.add('hidden');
@@ -289,10 +283,8 @@
     }
 
     function openOverlay() {
-      document.body.classList.add('overflow-hidden');
       searchOverlay.classList.remove('hidden');
       searchOverlay.classList.add('flex');
-      
       activeInput.value = mainDisplayInput.value;
       activeInput.focus();
       toggleIcons(activeInput.value);
@@ -305,12 +297,10 @@
     }
 
     function closeOverlay() {
-      document.body.classList.remove('overflow-hidden');
       searchOverlay.classList.add('hidden');
       searchOverlay.classList.remove('flex');
     }
 
-    // Pendengar Acara (Event Listeners)
     mainSearchTrigger.addEventListener('click', openOverlay);
     backBtn.addEventListener('click', closeOverlay);
 
@@ -321,7 +311,6 @@
       renderHistory();
     });
 
-    // Debounce untuk API
     let timeoutId;
     activeInput.addEventListener('input', (e) => {
       const query = e.target.value;
@@ -330,14 +319,7 @@
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         fetchGoogleSuggestions(query);
-      }, 200); // Tunggu 200ms sebelum panggil API
-    });
-
-    // Sokongan kekunci 'Enter'
-    activeInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && activeInput.value.trim() !== '') {
-        executeSearch(activeInput.value);
-      }
+      }, 200); 
     });
 
   </script>
