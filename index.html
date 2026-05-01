@@ -1,123 +1,112 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="ms">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  
+  <!-- ==================== PWA META TAGS ==================== -->
   <title>Google</title>
-  <link rel="shortcut icon" href="https://www.google.com/favicon.ico" type="image/x-icon" />
+  
+  <!-- Konfigurasi Viewport untuk PWA (Mencegah Zoom Manual) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  
+  <!-- Favicon dan Ikon Aplikasi (Menggunakan Logo 'G' Google Terbaru) -->
+  <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" />
+  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" />
+  
+  <!-- Konfigurasi Android / Chrome PWA -->
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  
+  <!-- Konfigurasi iOS / Safari PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Google" />
+  <!-- ======================================================= -->
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Google Material Symbols (Ikon Resmi Google) -->
+  <!-- Google Material Symbols -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
-    /* Memastikan ikon tampil proporsional */
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .overflow-hidden {
+      overflow: hidden;
     }
   </style>
 </head>
 
-<body class="flex flex-col min-h-screen text-[#202124] overflow-x-hidden">
+<body class="flex flex-col min-h-screen text-[#202124] overflow-x-hidden bg-white">
   
-  <!-- Header -->
+  <!-- ==================== HALAMAN UTAMA ==================== -->
+  
+  <!-- Pengepala (Header) -->
   <header class="flex justify-between items-center px-4 pt-4 pb-0 text-sm w-full">
-    
-    <!-- Header Kiri (Labs, All, Images) -->
     <div class="flex items-center">
-      <!-- Ikon Labs -->
       <button class="p-1 mr-1 text-[#5f6368] hover:bg-gray-100 rounded-full transition-colors flex items-center">
         <span class="material-symbols-outlined text-[22px]">science</span>
       </button>
-      
-      <!-- Tabs -->
       <div class="flex space-x-4 mt-[6px]">
         <a href="#" class="text-[#1a73e8] font-semibold text-[13px] border-b-[3px] border-[#1a73e8] pb-2">ALL</a>
         <a href="#" class="text-[#5f6368] font-semibold text-[13px] pb-2">IMAGES</a>
       </div>
     </div>
 
-    <!-- Header Kanan (Notifikasi, Grid, Sign in) -->
     <div class="flex items-center space-x-2">
-      <!-- Ikon Lonceng Notifikasi (Tanpa Badge) -->
       <button class="text-[#5f6368] hover:bg-gray-100 p-1.5 rounded-full transition-colors flex items-center">
         <span class="material-symbols-outlined text-[22px]">notifications</span>
       </button>
-      
-      <!-- Ikon Google Apps / Grid -->
       <button class="text-[#5f6368] hover:bg-gray-100 p-1.5 rounded-full transition-colors flex items-center">
         <span class="material-symbols-outlined text-[22px]">apps</span>
       </button>
-
-      <!-- Tombol Sign In (Tampilan Belum Login) -->
       <a href="#" class="bg-[#1a73e8] hover:bg-[#1b66c9] text-white text-[13px] font-medium px-5 py-2 rounded transition-colors ml-1">
         Sign in
       </a>
     </div>
   </header>
 
-  <!-- Konten Utama -->
+  <!-- Kandungan Utama (Main Content) -->
   <main class="flex-grow flex flex-col items-center mt-[10vh] px-4 w-full">
-    
-    <!-- Logo Google -->
     <img 
       class="w-[180px] sm:w-[272px] object-contain mb-8" 
       src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" 
       alt="Google" 
     />
 
-    <!-- Kolom Pencarian Modern -->
-    <div class="flex items-center w-full max-w-[600px] border border-[#dfe1e5] shadow-sm rounded-full px-4 py-2.5 bg-white">
-      
-      <!-- Ikon Search Kiri -->
+    <!-- Pencetus Kotak Carian (Search Trigger) -->
+    <div id="main-search-trigger" class="flex items-center w-full max-w-[600px] border border-[#dfe1e5] shadow-sm rounded-full px-4 py-2.5 bg-white cursor-text">
       <span class="mr-3 text-[#9aa0a6] flex items-center">
         <span class="material-symbols-outlined text-[22px]">search</span>
       </span>
-
-      <!-- Input Teks -->
-      <input type="text" class="flex-grow focus:outline-none text-base bg-transparent min-w-0" aria-label="Search" />
-
-      <!-- Ikon Kanan -->
+      <input type="text" id="main-display-input" class="flex-grow focus:outline-none text-base bg-transparent min-w-0 pointer-events-none" placeholder="" />
       <div class="flex items-center space-x-1 sm:space-x-2 ml-2 text-[#5f6368]">
-        
-        <!-- Ikon AI / Search Labs (Sparkle) -->
-        <span class="cursor-pointer hover:bg-gray-100 p-1.5 rounded-full transition-colors flex items-center justify-center">
+        <span class="p-1.5 flex items-center justify-center">
           <span class="material-symbols-outlined text-[22px]">auto_awesome</span>
         </span>
-
-        <!-- Ikon Mic -->
-        <span class="cursor-pointer hover:bg-gray-100 p-1.5 rounded-full transition-colors flex items-center justify-center">
+        <span class="p-1.5 flex items-center justify-center">
           <span class="material-symbols-outlined text-[22px]">mic</span>
         </span>
-
-        <!-- Ikon Google Lens -->
-        <span class="cursor-pointer hover:bg-gray-100 p-1.5 rounded-full transition-colors flex items-center justify-center">
+        <span class="p-1.5 flex items-center justify-center">
           <span class="material-symbols-outlined text-[22px]">center_focus_strong</span>
         </span>
       </div>
-      
     </div>
 
-    <!-- Bahasa Opsional -->
     <div class="mt-6 text-[13px] text-[#4d5156]">
-      Google offered in: <a href="#" class="text-[#1a0dab] hover:underline ml-1">日本語</a>
+      Google offered in: <a href="#" class="text-[#1a0dab] hover:underline ml-1">Bahasa Melayu</a>
     </div>
-
   </main>
 
-  <!-- Footer -->
+  <!-- Pengaki (Footer) -->
   <footer class="bg-[#f2f2f2] text-[#70757a] text-[14px] mt-auto w-full">
-    <!-- Footer Atas -->
-    <div class="px-5 py-4 border-b border-[#dadce0]">
-      Japan
-    </div>
-
-    <!-- Footer Bawah -->
+    <div class="px-5 py-4 border-b border-[#dadce0]">Malaysia</div>
     <div class="flex flex-col items-center py-4 space-y-4">
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 px-4 w-full max-w-[600px]">
         <a href="#" class="hover:underline">Dark theme: off</a>
@@ -125,7 +114,6 @@
         <a href="#" class="hover:underline">Privacy</a>
         <a href="#" class="hover:underline">Terms</a>
       </div>
-
       <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 px-4 w-full max-w-[600px]">
         <a href="#" class="hover:underline">Advertising</a>
         <a href="#" class="hover:underline">Business</a>
@@ -133,5 +121,225 @@
       </div>
     </div>
   </footer>
+
+  <!-- ==================== OVERLAY CARIAN ==================== -->
+  <div id="search-overlay" class="fixed inset-0 bg-white z-50 hidden flex-col">
+    <div class="flex items-center px-2 py-2 border-b border-[#dfe1e5] shadow-sm">
+      <button id="back-btn" class="p-2 text-[#1a73e8] flex items-center justify-center rounded-full hover:bg-gray-100">
+        <span class="material-symbols-outlined text-[24px]">arrow_back</span>
+      </button>
+      
+      <input id="active-search-input" type="text" class="flex-grow px-2 text-[16px] text-[#202124] focus:outline-none bg-transparent" autocomplete="off" />
+      
+      <div id="empty-icons" class="flex items-center text-[#5f6368]">
+        <button class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100">
+          <span class="material-symbols-outlined text-[24px]">mic</span>
+        </button>
+        <button class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100 mr-1">
+          <span class="material-symbols-outlined text-[24px]">center_focus_strong</span>
+        </button>
+      </div>
+      
+      <div id="typing-icons" class="hidden flex items-center text-[#5f6368]">
+        <button id="clear-btn" class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100 mr-1">
+          <span class="material-symbols-outlined text-[24px]">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Senarai Cadangan & Sejarah (Suggestions & History List) -->
+    <div id="suggestions-list" class="flex-grow overflow-y-auto bg-white pt-2">
+      <!-- Item akan dimuatkan menggunakan JavaScript -->
+    </div>
+  </div>
+
+  <!-- ==================== LOGIK JAVASCRIPT ==================== -->
+  <script>
+    const mainSearchTrigger = document.getElementById('main-search-trigger');
+    const mainDisplayInput = document.getElementById('main-display-input');
+    const searchOverlay = document.getElementById('search-overlay');
+    const activeInput = document.getElementById('active-search-input');
+    const backBtn = document.getElementById('back-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const emptyIcons = document.getElementById('empty-icons');
+    const typingIcons = document.getElementById('typing-icons');
+    const suggestionsList = document.getElementById('suggestions-list');
+
+    // Pengurusan Sejarah Carian (Local Storage)
+    const STORAGE_KEY = 'google_clone_history';
+    let searchHistory = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+      'google search api', 'apa itu html', 'cara buat website'
+    ];
+
+    function saveToHistory(query) {
+      if (!query.trim()) return;
+      searchHistory = searchHistory.filter(item => item !== query); // Buang duplikat
+      searchHistory.unshift(query); // Tambah ke atas
+      if (searchHistory.length > 15) searchHistory.pop(); // Hadkan 15 item
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory));
+    }
+
+    function removeFromHistory(query) {
+      searchHistory = searchHistory.filter(item => item !== query);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory));
+      renderHistory(); // Kemaskini paparan
+    }
+
+    // Aksi apabila pengguna mengklik hasil
+    function executeSearch(query) {
+      saveToHistory(query);
+      mainDisplayInput.value = query; // Kemaskini kotak utama
+      closeOverlay();
+    }
+
+    // Menarik data daripada Google Autocomplete API
+    function fetchGoogleSuggestions(query) {
+      if (!query.trim()) {
+        renderHistory();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      const callbackName = 'googleSuggestCb_' + Date.now();
+      
+      // Fungsi Panggil Balik (Callback) untuk JSONP
+      window[callbackName] = function(data) {
+        const suggestions = data[1] || [];
+        const items = suggestions.map(text => ({ text: text, type: 'search' }));
+        renderListHTML(items, query);
+        
+        delete window[callbackName];
+        script.remove();
+      };
+      
+      // Panggil API (client=firefox mengembalikan format JSON yang ringkas)
+      script.src = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}&callback=${callbackName}`;
+      document.body.appendChild(script);
+    }
+
+    // Paparkan Sejarah apabila kotak carian kosong
+    function renderHistory() {
+      const items = searchHistory.map(text => ({ text, type: 'history' }));
+      renderListHTML(items, '');
+    }
+
+    // Membina HTML untuk senarai (Sejarah & Saranan API)
+    function renderListHTML(items, currentQuery) {
+      suggestionsList.innerHTML = '';
+
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center px-4 py-[14px] active:bg-gray-100 cursor-pointer';
+
+        // Ikon Kiri
+        const leftIcon = item.type === 'history' ? 'schedule' : 'search';
+        
+        // Format Teks (Tebal / Bold untuk huruf seterusnya)
+        let formattedText = item.text;
+        if (currentQuery && item.text.toLowerCase().startsWith(currentQuery.toLowerCase()) && item.type === 'search') {
+          const matchedPart = item.text.substring(0, currentQuery.length);
+          const suggestedPart = item.text.substring(currentQuery.length);
+          formattedText = `<span>${matchedPart}</span><span class="font-bold">${suggestedPart}</span>`;
+        } else if (item.type === 'search') {
+          formattedText = `<span class="font-bold">${item.text}</span>`;
+        }
+
+        // Ikon Kanan
+        const rightIcon = item.type === 'history' ? 'close' : 'north_west';
+
+        div.innerHTML = `
+          <span class="material-symbols-outlined text-[#9aa0a6] text-[22px] mr-4">${leftIcon}</span>
+          <span class="flex-grow text-[16px] text-[#202124] pr-4 line-clamp-2">${formattedText}</span>
+          <span class="material-symbols-outlined text-[#9aa0a6] text-[22px] ml-2 cursor-pointer hover:text-gray-700 right-action-btn">
+            ${rightIcon}
+          </span>
+        `;
+        
+        // Acara klik teks untuk mencari
+        div.querySelector('.flex-grow').addEventListener('click', (e) => {
+          executeSearch(item.text);
+        });
+
+        // Acara klik ikon kanan
+        div.querySelector('.right-action-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (item.type === 'history') {
+            removeFromHistory(item.text); // Padam sejarah
+          } else {
+            activeInput.value = item.text + ' '; // Isi carian tanpa mencari
+            activeInput.focus();
+            fetchGoogleSuggestions(activeInput.value);
+            toggleIcons(activeInput.value);
+          }
+        });
+
+        suggestionsList.appendChild(div);
+      });
+    }
+
+    // Kawalan Paparan & Ikon
+    function toggleIcons(query) {
+      if (query.length > 0) {
+        emptyIcons.classList.add('hidden');
+        typingIcons.classList.remove('hidden');
+      } else {
+        emptyIcons.classList.remove('hidden');
+        typingIcons.classList.add('hidden');
+      }
+    }
+
+    function openOverlay() {
+      document.body.classList.add('overflow-hidden');
+      searchOverlay.classList.remove('hidden');
+      searchOverlay.classList.add('flex');
+      
+      activeInput.value = mainDisplayInput.value;
+      activeInput.focus();
+      toggleIcons(activeInput.value);
+      
+      if (activeInput.value) {
+        fetchGoogleSuggestions(activeInput.value);
+      } else {
+        renderHistory();
+      }
+    }
+
+    function closeOverlay() {
+      document.body.classList.remove('overflow-hidden');
+      searchOverlay.classList.add('hidden');
+      searchOverlay.classList.remove('flex');
+    }
+
+    // Pendengar Acara (Event Listeners)
+    mainSearchTrigger.addEventListener('click', openOverlay);
+    backBtn.addEventListener('click', closeOverlay);
+
+    clearBtn.addEventListener('click', () => {
+      activeInput.value = '';
+      activeInput.focus();
+      toggleIcons('');
+      renderHistory();
+    });
+
+    // Debounce untuk API
+    let timeoutId;
+    activeInput.addEventListener('input', (e) => {
+      const query = e.target.value;
+      toggleIcons(query);
+      
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        fetchGoogleSuggestions(query);
+      }, 200); // Tunggu 200ms sebelum panggil API
+    });
+
+    // Sokongan kekunci 'Enter'
+    activeInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && activeInput.value.trim() !== '') {
+        executeSearch(activeInput.value);
+      }
+    });
+
+  </script>
 </body>
 </html>
