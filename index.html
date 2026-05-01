@@ -3,67 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elevation Tracker</title>
+    <title>Elevation Tracker Pro</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
-        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 80%; max-width: 400px; }
-        .value { font-size: 3rem; font-weight: bold; color: #007bff; margin: 1rem 0; }
-        button { padding: 10px 20px; font-size: 1rem; cursor: pointer; border-radius: 5px; border: none; background: #007bff; color: white; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #121212; color: white; }
+        .card { background: #1e1e1e; padding: 2.5rem; border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; width: 85%; max-width: 400px; border: 1px solid #333; }
+        .value { font-size: 4rem; font-weight: 800; color: #00d4ff; margin: 0.5rem 0; font-variant-numeric: tabular-nums; }
+        .unit { font-size: 1.2rem; color: #888; margin-bottom: 1.5rem; }
+        
+        .control-group { margin: 20px 0; text-align: left; }
+        label { display: block; margin-bottom: 8px; color: #aaa; font-size: 0.9rem; }
+        
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #00d4ff; }
+        
+        button { width: 100%; padding: 15px; font-size: 1.1rem; font-weight: bold; cursor: pointer; border-radius: 12px; border: none; background: #00d4ff; color: #000; transition: 0.3s; }
+        button:hover { background: #00b8e6; transform: translateY(-2px); }
+        
+        .footer-note { font-size: 0.75rem; color: #555; margin-top: 1.5rem; line-height: 1.4; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>Relative Elevation</h2>
-    <div id="status">Press start to calibrate</div>
-    <div class="value"><span id="elevation">0.00</span> m</div>
-    <button id="startBtn">Start Tracking</button>
-    <p style="font-size: 0.8rem; color: #666;">Note: This measures relative movement from the starting point.</p>
+    <h2 style="margin-top:0">Elevation Meter</h2>
+    <div id="status" style="color: #00d4ff; font-size: 0.9rem; margin-bottom: 10px;">Ready</div>
+    
+    <div class="value" id="elevation">0.00</div>
+    <div class="unit">meters (relative)</div>
+
+    <div class="control-group">
+        <label>Sensitivity (Noise Filter): <span id="sensValue">0.15</span></label>
+        <input type="range" id="sensSlider" min="0.01" max="0.50" step="0.01" value="0.15">
+    </div>
+
+    <button id="startBtn">Calibrate & Start</button>
+    <button id="resetBtn" style="background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; margin-top: 10px; display: none;">Reset</button>
+
+    <div class="footer-note">
+        Geser slider ke kanan jika angka sering berubah sendiri.<br>
+        Geser ke kiri untuk respon yang lebih sensitif.
+    </div>
 </div>
 
 <script>
-    let initialAltitude = null;
     let currentElevation = 0;
-    const elevationEl = document.getElementById('elevation');
-    const statusEl = document.getElementById('status');
-    const startBtn = document.getElementById('startBtn');
+    let velocityZ = 0;
+    let sensitivity = 0.15;
+    let isTracking = false;
+    let lastTimestamp = 0;
 
-    startBtn.addEventListener('click', async () => {
-        // Meminta izin untuk perangkat iOS
-        if (typeof DeviceMotionEvent.requestPermission === 'function') {
-            const permission = await DeviceMotionEvent.requestPermission();
-            if (permission !== 'granted') {
-                alert("Permission denied");
-                return;
-            }
-        }
-        
-        startTracking();
-        startBtn.style.display = 'none';
-        statusEl.innerText = "Tracking active...";
+    const elevationEl = document.getElementById('elevation');
+    const sensSlider = document.getElementById('sensSlider');
+    const sensValueEl = document.getElementById('sensValue');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusEl = document.getElementById('status');
+
+    // Update Sensitivity secara Real-time
+    sensSlider.addEventListener('input', (e) => {
+        sensitivity = parseFloat(e.target.value);
+        sensValueEl.innerText = sensitivity.toFixed(2);
     });
 
-    function startTracking() {
-        let velocityZ = 0;
-        let lastTimestamp = performance.now();
+    startBtn.addEventListener('click', async () => {
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission !== 'granted') return alert("Permission required");
+            } catch (e) { console.error(e); }
+        }
+        
+        initTracker();
+    });
+
+    resetBtn.addEventListener('click', () => {
+        currentElevation = 0;
+        velocityZ = 0;
+        elevationEl.innerText = "0.00";
+    });
+
+    function initTracker() {
+        isTracking = true;
+        startBtn.style.display = 'none';
+        resetBtn.style.display = 'block';
+        statusEl.innerText = "Tracking Active";
+        lastTimestamp = performance.now();
 
         window.addEventListener('devicemotion', (event) => {
-            const acc = event.acceleration; // Akselerasi tanpa gravitasi
+            if (!isTracking) return;
+
+            const acc = event.acceleration; 
             if (!acc || acc.z === null) return;
 
             const now = performance.now();
-            const dt = (now - lastTimestamp) / 1000; // Hitung delta waktu dalam detik
+            const dt = (now - lastTimestamp) / 1000;
             lastTimestamp = now;
 
-            // Integrasi sederhana: Akselerasi -> Kecepatan -> Posisi
-            // Filter noise kecil agar tidak "melayang" (drift)
-            if (Math.abs(acc.z) > 0.1) {
-                velocityZ += acc.z * dt;
-                currentElevation += velocityZ * dt;
+            // Logika Sensitivity (Threshold)
+            // Jika akselerasi di bawah nilai sensitivity, anggap HP sedang diam (0)
+            let rawZ = acc.z;
+            if (Math.abs(rawZ) < sensitivity) {
+                rawZ = 0;
+                velocityZ *= 0.8; // Melambatkan kecepatan dengan cepat jika diam (friction)
+            } else {
+                velocityZ += rawZ * dt;
             }
 
-            // Redaman (Damping) untuk mengurangi akumulasi error
-            velocityZ *= 0.95;
+            // Integrasi ke posisi
+            currentElevation += velocityZ * dt;
+
+            // Damping ringan agar tidak drift selamanya
+            velocityZ *= 0.98;
 
             elevationEl.innerText = currentElevation.toFixed(2);
         });
