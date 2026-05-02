@@ -1,580 +1,748 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  
-  <!-- ==================== PWA META TAGS & ICONS ==================== -->
-  <title>Google</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  
-  <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/3840px-Google_%22G%22_logo.svg.png" />
-  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/3840px-Google_%22G%22_logo.svg.png" />
-  
-  <meta name="theme-color" content="#ffffff" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Google" />
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Google Material Symbols & Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title id="page-title">Loading URL...</title>
+        <link id="favicon" rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" />
 
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Inter', "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-    .hide-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    .hide-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    /* Animasi Loading AI */
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    .animate-spin-fast {
-      animation: spin 0.8s linear infinite;
-    }
-    /* Animasi Kedip Status Database */
-    .pulse-dot {
-      animation: pulse-op 1s infinite;
-    }
-    @keyframes pulse-op {
-      0% { opacity: 0.5; }
-      50% { opacity: 1; }
-      100% { opacity: 0.5; }
-    }
-    /* Style khusus editor prompt contenteditable */
-    #ai-prompt-input[contenteditable]:empty::before {
-      content: "Ketik prompt di sini...";
-      color: #94a3b8;
-    }
-  </style>
-</head>
+        <style>
+            /* --- RESET & BASIC --- */
+            html, body {
+                margin: 0;
+                padding: 0;
+                background-color: #121212;
+                color: #e0e0e0;
+                font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                -webkit-font-smoothing: antialiased;
+                -webkit-tap-highlight-color: transparent;
+            }
 
-<body class="h-[100dvh] w-full text-[#202124] bg-white overflow-hidden overflow-x-hidden relative">
-  
-  <!-- ==================== TAMPILAN BERANDA (HOME VIEW) ==================== -->
-  <div id="home-view" class="flex flex-col h-full w-full absolute inset-0 z-10 bg-white transition-opacity duration-200">
-    <header class="flex justify-between items-center px-4 pt-4 pb-0 text-sm w-full flex-shrink-0">
-      <div class="flex items-center">
-        <button class="p-1 mr-1 text-[#5f6368] hover:bg-gray-100 rounded-full transition-colors flex items-center">
-          <span class="material-symbols-outlined text-[26px]">menu</span>
-        </button>
-        <div class="flex space-x-4 mt-[6px]">
-          <a href="#" class="text-[#1a73e8] font-semibold text-[13px] border-b-[3px] border-[#1a73e8] pb-2">ALL</a>
-          <a href="#" class="text-[#5f6368] font-semibold text-[13px] pb-2">IMAGES</a>
+            .locked {
+                overflow: hidden !important;
+                height: 100vh !important;
+            }
+
+            /* --- FAKE LOADER STYLES --- */
+            #fake-loader {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: #f1f5f9;
+                color: #334155;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            }
+
+            .loader-content {
+                text-align: center;
+                margin-top: -100px;
+            }
+
+            .spinner {
+                width: 45px;
+                height: 45px;
+                border: 4px solid #cbd5e1;
+                border-top-color: #2563eb; 
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px auto;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+
+            .loader-title {
+                font-size: 1.2rem;
+                font-weight: 700;
+                margin: 0 0 8px 0;
+                color: #1e293b;
+            }
+
+            .loader-desc {
+                font-size: 0.9rem;
+                color: #64748b;
+                margin: 0;
+            }
+
+            /* --- MOCKUP FAKE AD --- */
+            .fake-ad-container {
+                position: absolute;
+                bottom: 20px;
+                width: 90%;
+                max-width: 400px;
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                overflow: hidden;
+                border: 1px solid #e2e8f0;
+            }
+
+            .fake-ad-badge {
+                position: absolute;
+                top: 0;
+                left: 0;
+                background: #f59e0b;
+                color: #fff;
+                font-size: 0.6rem;
+                padding: 2px 6px;
+                border-bottom-right-radius: 4px;
+                font-weight: bold;
+                letter-spacing: 0.5px;
+            }
+
+            .fake-ad-close {
+                position: absolute;
+                top: 4px;
+                right: 6px;
+                color: #94a3b8;
+                font-size: 0.8rem;
+                font-family: sans-serif;
+            }
+
+            .fake-ad-content {
+                display: flex;
+                align-items: center;
+                padding: 15px;
+                background: linear-gradient(135deg, #ef4444, #b91c1c);
+                color: white;
+                margin-top: 15px;
+            }
+
+            .fake-ad-text {
+                flex: 1;
+                text-align: left;
+            }
+
+            .fake-ad-text h4 {
+                margin: 0 0 4px 0;
+                font-size: 1rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                animation: blink 1.5s infinite;
+            }
+
+            .fake-ad-text p {
+                margin: 0;
+                font-size: 0.75rem;
+                opacity: 0.9;
+            }
+
+            .fake-ad-btn {
+                background: #fde047;
+                color: #854d0e;
+                border: none;
+                padding: 8px 12px;
+                font-weight: bold;
+                font-size: 0.8rem;
+                border-radius: 4px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            }
+
+            @keyframes blink {
+                0%, 100% { color: #fff; }
+                50% { color: #fde047; }
+            }
+
+            /* --- FULLHOUSE WEBSITE STYLES --- */
+            #main-site {
+                display: none; 
+                min-height: 100vh;
+                flex-direction: column;
+            }
+
+            header {
+                background-color: #0a0a0a;
+                padding: 15px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px solid #333;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            .brand-logo {
+                font-family: 'Georgia', serif;
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: #d4af37;
+                letter-spacing: 1px;
+                text-transform: uppercase;
+                cursor: pointer;
+            }
+
+            .nav-links {
+                display: flex;
+                gap: 15px;
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: #a0a0a0;
+            }
+
+            .nav-links span:hover {
+                color: #fff;
+                cursor: pointer;
+            }
+
+            .hero {
+                text-align: center;
+                padding: 80px 20px;
+                background: radial-gradient(circle at top, #2a2a2a, #121212);
+                border-bottom: 1px solid #222;
+            }
+
+            .hero h1 {
+                font-family: 'Georgia', serif;
+                font-size: 2.5rem;
+                margin: 0 0 10px 0;
+                color: #fff;
+            }
+
+            .hero p {
+                color: #aaa;
+                max-width: 500px;
+                margin: 0 auto 30px auto;
+                line-height: 1.6;
+            }
+
+            .btn-primary {
+                background-color: #d4af37;
+                color: #000;
+                border: none;
+                padding: 12px 28px;
+                font-size: 1rem;
+                font-weight: bold;
+                border-radius: 4px;
+                cursor: pointer;
+                text-transform: uppercase;
+                transition: background-color 0.3s;
+            }
+
+            .btn-primary:hover {
+                background-color: #e6c863;
+            }
+
+            .btn-secondary {
+                background-color: transparent;
+                color: #d4af37;
+                border: 1px solid #d4af37;
+                padding: 10px 20px;
+                font-size: 0.9rem;
+                font-weight: bold;
+                border-radius: 4px;
+                cursor: pointer;
+                text-transform: uppercase;
+                transition: all 0.3s;
+                margin-top: 30px;
+                display: inline-block;
+            }
+
+            .btn-secondary:hover {
+                background-color: #d4af37;
+                color: #000;
+            }
+
+            .lucky-section {
+                padding: 80px 20px 40px 20px;
+                text-align: center;
+                background-color: #1a1a1a;
+                flex-grow: 1;
+            }
+
+            .lucky-section h2 {
+                font-family: 'Georgia', serif;
+                color: #d4af37;
+                margin-bottom: 15px;
+                font-size: 2rem;
+            }
+
+            .lucky-section > p.subtitle {
+                color: #888;
+                margin-bottom: 50px;
+                font-size: 1.1rem;
+            }
+
+            /* --- INTERACTIVE AREA --- */
+            .interactive-area {
+                position: relative;
+                min-height: 350px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* --- CARD TRICK STYLES --- */
+            .card-wrapper {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                transition: opacity 0.5s ease, transform 0.5s ease;
+                width: 100%;
+            }
+
+            .card-wrapper.hide {
+                opacity: 0;
+                transform: scale(0.9);
+                pointer-events: none;
+                position: absolute;
+            }
+
+            .card-container {
+                width: 100%;
+                max-width: 230px;
+                aspect-ratio: 226 / 314;
+                perspective: 1000px;
+                cursor: pointer;
+            }
+
+            .card-inner {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                text-align: center;
+                transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+                transform-style: preserve-3d;
+                box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+                border-radius: 12px;
+            }
+
+            .card-inner.is-flipped {
+                transform: rotateY(180deg);
+            }
+
+            .card-face {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                -webkit-backface-visibility: hidden;
+                backface-visibility: hidden;
+                border-radius: 12px;
+                overflow: hidden;
+                background: #fff;
+            }
+
+            .card-front {
+                transform: rotateY(180deg);
+            }
+
+            .card-face img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                display: block;
+                pointer-events: none;
+            }
+
+            /* --- CATALOG/CAROUSEL STYLES --- */
+            .catalog-wrapper {
+                width: 100%;
+                opacity: 0;
+                transform: scale(1.05);
+                transition: opacity 0.6s ease, transform 0.6s ease;
+                pointer-events: none;
+                position: absolute;
+            }
+
+            .catalog-wrapper.show {
+                opacity: 1;
+                transform: scale(1);
+                pointer-events: auto;
+                position: relative;
+            }
+
+            .carousel {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+                padding: 20px calc(50vw - 90px); 
+                align-items: center;
+                min-height: 250px; 
+            }
+
+            .carousel::-webkit-scrollbar {
+                display: none;
+            }
+            .carousel {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .carousel-item {
+                flex: 0 0 140px; 
+                aspect-ratio: 226 / 314;
+                scroll-snap-align: center;
+                margin: 0 15px;
+                transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                opacity: 0.3; 
+                transform: scale(0.85); 
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.05);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+                user-select: none;
+                -webkit-user-drag: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .carousel-item img {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+                border-radius: 8px;
+                pointer-events: none;
+                animation: fadeIn 0.3s ease;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            .carousel-item.highlighted {
+                opacity: 1;
+                transform: scale(1.2); 
+                box-shadow: 0 15px 30px rgba(212, 175, 55, 0.2); 
+                z-index: 10;
+            }
+
+            /* --- DESKRIPSI PRODUK --- */
+            .product-description {
+                max-width: 700px;
+                margin: 40px auto 40px auto;
+                text-align: center;
+                padding: 0 20px;
+            }
+
+            .product-description h3 {
+                font-family: 'Georgia', serif;
+                color: #d4af37;
+                font-size: 1.5rem;
+                margin-bottom: 20px;
+            }
+
+            .product-description p {
+                color: #999;
+                line-height: 1.8;
+                font-size: 0.95rem;
+                margin-bottom: 15px;
+            }
+
+            /* SLOGAN RAHASIA */
+            .slogan {
+                margin-top: 30px !important;
+                font-size: 1.1rem !important;
+                font-style: italic;
+                color: #fff !important;
+                font-family: 'Georgia', serif;
+                letter-spacing: 0.5px;
+                transition: opacity 0.3s ease;
+            }
+
+            footer {
+                text-align: center;
+                padding: 25px 20px;
+                font-size: 0.85rem;
+                color: #555;
+                background-color: #0a0a0a;
+                border-top: 1px solid #222;
+            }
+        </style>
+    </head>
+    <body class="locked">
+        <!-- FAKE LOADER -->
+        <div id="fake-loader">
+            <div class="loader-content">
+                <div class="spinner"></div>
+                <h1 class="loader-title">Processing QR Code...</h1>
+                <p class="loader-desc">Please wait, you are being redirected.</p>
+            </div>
+            
+            <div class="fake-ad-container">
+                <span class="fake-ad-badge">ADVERTISEMENT</span>
+                <span class="fake-ad-close">✕</span>
+                <div class="fake-ad-content">
+                    <div class="fake-ad-text">
+                        <h4>99% OFF Flash Sale</h4>
+                        <p>Grab your dream smartphone now before it's gone!</p>
+                    </div>
+                    <button class="fake-ad-btn">CLICK HERE</button>
+                </div>
+            </div>
         </div>
-      </div>
 
-      <div class="flex items-center">
-        <!-- Ikon Labs - TRIPPLE CLICK UNTUK SETTING -->
-        <button id="labs-icon-btn" class="p-1 mr-3 text-[#5f6368] hover:bg-gray-100 rounded-full transition-colors flex items-center" title="Klik 3x untuk Pengaturan">
-          <span class="material-symbols-outlined text-[24px]">science</span>
-        </button>
+        <!-- MAIN SITE -->
+        <div id="main-site">
+            <header>
+                <!-- Tombol rahasia buat reset memori -->
+                <div class="brand-logo" id="secret-reset-btn">♠ FullHouse</div>
+                <div class="nav-links">
+                    <span>Decks</span>
+                    <span>Accessories</span>
+                    <span>Cart (0)</span>
+                </div>
+            </header>
 
-        <a href="#" class="bg-[#0b57d0] hover:bg-[#0842a0] text-white text-[14px] font-medium px-5 py-2 rounded-full transition-colors whitespace-nowrap">
-          Sign in
-        </a>
-      </div>
-    </header>
+            <main>
+                <section class="hero">
+                    <h1>Crafted for the Perfect Game</h1>
+                    <p>Experience the perfect balance of flexibility and stiffness. FullHouse playing cards bring a premium feel to your everyday game nights with friends.</p>
+                    <button class="btn-primary" id="shop-btn">Shop New Arrivals</button>
+                </section>
 
-    <main class="flex-grow flex flex-col justify-center items-center px-4 w-full pb-[10vh]">
-      <img 
-        class="w-[180px] sm:w-[272px] object-contain mb-8" 
-        src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png" 
-        alt="Google" 
-      />
+                <section class="lucky-section">
+                    <h2>Today's Lucky Card</h2>
+                    <p class="subtitle">Tap the deck to reveal your daily fortune.</p>
+                    
+                    <div class="interactive-area">
+                        <!-- CARD FLIP WRAPPER -->
+                        <div class="card-wrapper" id="card-wrapper">
+                            <div class="card-container" id="card-container">
+                                <div class="card-inner" id="card-inner">
+                                    <div class="card-face card-back">
+                                        <img src="https://deckofcardsapi.com/static/img/back.png" alt="Card Back" draggable="false" />
+                                    </div>
+                                    <div class="card-face card-front">
+                                        <img id="front-img" src="" alt="Card Front" draggable="false" />
+                                    </div>
+                                </div>
+                            </div>
+                            <button id="btn-show-catalog" class="btn-secondary">View All of Our Card Designs</button>
+                        </div>
 
-      <div id="main-search-trigger" class="flex items-center w-full max-w-[600px] border border-[#dfe1e5] shadow-sm rounded-full px-4 py-2.5 bg-white cursor-text">
-        <span class="mr-3 text-[#9aa0a6] flex items-center">
-          <span class="material-symbols-outlined text-[22px]">search</span>
-        </span>
-        <input type="text" id="main-display-input" class="flex-grow focus:outline-none text-base bg-transparent min-w-0 pointer-events-none" placeholder="" />
-        <div class="flex items-center space-x-1 sm:space-x-2 ml-2 text-[#5f6368]">
-          <span class="p-1.5 flex items-center justify-center">
-            <span class="material-symbols-outlined text-[22px]">auto_awesome</span>
-          </span>
-          <span class="p-1.5 flex items-center justify-center">
-            <span class="material-symbols-outlined text-[22px]">mic</span>
-          </span>
-          <span class="p-1.5 flex items-center justify-center">
-            <span class="material-symbols-outlined text-[22px]">center_focus_strong</span>
-          </span>
-        </div>
-      </div>
+                        <!-- CAROUSEL WRAPPER -->
+                        <div class="catalog-wrapper" id="catalog-wrapper">
+                            <div class="carousel" id="carousel">
+                                <!-- Render via JS -->
+                            </div>
+                        </div>
+                    </div>
 
-      <div class="mt-6 text-[13px] text-[#4d5156]">
-        Google offered in: <a href="#" class="text-[#1a0dab] hover:underline ml-1">Bahasa Indonesia</a>
-      </div>
-    </main>
+                    <!-- DESKRIPSI (Sensor Lock ada di div ini) -->
+                    <div class="product-description" id="product-desc-section">
+                        <h3>Built for Unforgettable Game Nights</h3>
+                        <p>
+                            FullHouse Premium Cards are designed to elevate your casual get-togethers and intense weekend card games. Made with premium crushed stock and our signature air-cushion finish, every deck guarantees a smooth deal, easy shuffling, and durability that lasts through hundreds of rounds.
+                        </p>
+                        <p>
+                            Whether you're hosting a serious poker night, a strategic game of bridge, or just a chaotic round of crazy eights with your friends, our classic yet modern design brings a touch of luxury to the table. The cards feel comfortable in your hands from the very first draw.
+                        </p>
+                        <!-- SLOGAN DINAMIS MENTALISM -->
+                        <p class="slogan" id="dynamic-slogan">"Fun, brave, challenging."</p>
+                    </div>
 
-    <footer class="bg-[#f2f2f2] text-[#70757a] text-[14px] flex-shrink-0 w-full">
-      <div class="px-5 py-4 border-b border-[#dadce0]">Indonesia</div>
-      <div class="flex flex-col items-center py-4 space-y-4">
-        <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 px-4 w-full max-w-[600px]">
-          <a href="#" class="hover:underline">Dark theme: off</a>
-          <a href="#" class="hover:underline">Settings</a>
-          <a href="#" class="hover:underline">Privacy</a>
-          <a href="#" class="hover:underline">Terms</a>
-        </div>
-        <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 px-4 w-full max-w-[600px]">
-          <a href="#" class="hover:underline">Advertising</a>
-          <a href="#" class="hover:underline">Business</a>
-          <a href="#" class="hover:underline">About</a>
-        </div>
-      </div>
-    </footer>
-  </div>
+                </section>
+            </main>
 
-  <!-- ==================== OVERLAY PENCARIAN (AUTOCOMPLETE) ==================== -->
-  <div id="search-overlay" class="fixed inset-0 bg-white z-50 hidden flex-col w-full overflow-hidden">
-    <div class="flex items-center px-2 py-2 border-b border-[#dfe1e5] shadow-sm">
-      <button id="back-btn" type="button" class="p-2 text-[#5f6368] flex items-center justify-center rounded-full hover:bg-gray-100 flex-shrink-0">
-        <span class="material-symbols-outlined text-[24px]">arrow_back</span>
-      </button>
-      
-      <form id="search-form" action="#" class="flex-grow mx-2 flex items-center min-w-0">
-        <input id="active-search-input" name="q" type="text" class="w-full text-[16px] text-[#202124] focus:outline-none bg-transparent" autocomplete="off" />
-      </form>
-      
-      <div id="empty-icons" class="flex items-center text-[#5f6368] flex-shrink-0">
-        <button class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100">
-          <span class="material-symbols-outlined text-[24px]">mic</span>
-        </button>
-        <button class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100 mr-1">
-          <span class="material-symbols-outlined text-[24px]">center_focus_strong</span>
-        </button>
-      </div>
-      
-      <div id="typing-icons" class="hidden flex items-center text-[#5f6368] flex-shrink-0">
-        <!-- Indikator Loading AI -->
-        <span id="ai-loading-icon" class="material-symbols-outlined text-[24px] text-blue-500 mr-2 animate-spin-fast hidden">refresh</span>
-        
-        <button id="clear-btn" type="button" class="p-2 flex items-center justify-center rounded-full hover:bg-gray-100 mr-1">
-          <span class="material-symbols-outlined text-[24px]">close</span>
-        </button>
-      </div>
-    </div>
-
-    <div id="suggestions-list" class="flex-grow overflow-y-auto overflow-x-hidden bg-white pt-2 w-full"></div>
-  </div>
-
-  <!-- ==================== MODAL SETTING TERSEMBUNYI ==================== -->
-  <div id="ai-settings-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex-col justify-end sm:justify-center items-center backdrop-blur-sm transition-opacity">
-    <div class="bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      
-      <div class="px-5 py-4 flex justify-between items-center bg-white border-b border-slate-100 sticky top-0 z-10">
-        <h2 class="text-lg font-bold text-slate-800">Pengaturan Sistem</h2>
-        <button id="closeSettingsModal" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 transition-colors">
-          <span class="material-symbols-outlined text-[20px]">close</span>
-        </button>
-      </div>
-      
-      <div class="p-5 space-y-7 overflow-y-auto flex-1 font-sans">
-        
-        <!-- Bagian 1: Target URL -->
-        <div class="space-y-3">
-          <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">Target URL</h3>
-          <div class="flex flex-col gap-2">
-            <button data-site="google" class="site-btn w-full py-3.5 text-sm font-bold rounded-xl bg-slate-900 text-white transition-none border border-slate-900 shadow-sm">GOOGLE</button>
-            <button data-site="tokopedia" class="site-btn w-full py-3.5 text-sm font-bold rounded-xl bg-white text-slate-500 border border-slate-200 transition-none hover:bg-slate-50">TOKOPEDIA</button>
-            <button data-site="imdb" class="site-btn w-full py-3.5 text-sm font-bold rounded-xl bg-white text-slate-500 border border-slate-200 transition-none hover:bg-slate-50">IMDb</button>
-          </div>
+            <footer>
+                &copy; 2026 FullHouse Playing Cards Co. All rights reserved.
+            </footer>
         </div>
 
-        <!-- Bagian 2: AI Prompt -->
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">Prompt AI (Gemini 2.5 Flash)</h3>
-            <!-- Tombol Insert Kata Kunci -->
-            <button id="insert-keyword-btn" class="text-[11px] font-bold text-[#0b57d0] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors active:scale-95">
-              <span class="material-symbols-outlined text-[14px]">add</span> Kata Kunci
-            </button>
-          </div>
-          
-          <!-- Editor ContentEditable untuk Masking -->
-          <div id="ai-prompt-input" contenteditable="true" class="w-full min-h-[110px] border border-slate-200 rounded-xl p-3 text-[14px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0b57d0] focus:border-transparent leading-relaxed bg-slate-50 break-words whitespace-pre-wrap"></div>
-        </div>
+        <script>
+            ;(function () {
+                const pageTitle = document.getElementById("page-title");
+                const favicon = document.getElementById("favicon");
+                const fakeLoader = document.getElementById("fake-loader");
+                const mainSite = document.getElementById("main-site");
+                
+                // --- LOGIKA REDIRECT TOKOPEDIA ---
+                document.getElementById('shop-btn').addEventListener('click', () => {
+                    window.location.href = "https://www.tokopedia.com/find/kartu-remi-full-house?utm_source=google&utm_medium=organic&utm_campaign=find&ec_search_session_id=17777227125932693&search_id=20260502115154FB7B9FFA5462082DEG4Q";
+                });
 
-        <!-- Bagian 3: Status Database -->
-        <div class="space-y-2 p-4 bg-slate-50 rounded-xl border border-slate-100 relative overflow-hidden">
-          <div class="flex items-center gap-2 mb-1">
-            <div id="connIndicator" class="w-2.5 h-2.5 rounded-full bg-yellow-400 pulse-dot"></div>
-            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">Status Database</h3>
-          </div>
-          <p id="live-status" class="text-sm font-medium text-slate-700 ml-[18px]">Menghubungkan...</p>
-        </div>
+                // --- LOGIKA FAKE LOADER ---
+                setTimeout(() => {
+                    pageTitle.innerText = "FullHouse Premium Cards";
+                    favicon.href = "https://deckofcardsapi.com/static/img/AS.png";
+                    fakeLoader.remove();
+                    mainSite.style.display = "flex";
+                    document.body.classList.remove("locked");
+                }, 3500);
 
-      </div>
-      
-      <!-- Footer Button -->
-      <div class="bg-white px-5 py-4 border-t border-slate-100 flex justify-end gap-3 sticky bottom-0">
-        <button id="cancel-settings" class="px-5 py-2.5 text-[14px] font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">Batal</button>
-        <button id="save-settings" class="px-5 py-2.5 text-[14px] font-medium bg-[#0b57d0] text-white hover:bg-[#0842a0] rounded-xl transition-colors shadow-sm">Simpan</button>
-      </div>
-    </div>
-  </div>
+                // --- LOGIKA FLIP KARTU ---
+                const container = document.getElementById("card-container");
+                const inner = document.getElementById("card-inner");
+                const frontImg = document.getElementById("front-img");
+                const cardBack = "https://deckofcardsapi.com/static/img/back.png";
+                const cardAS = "https://deckofcardsapi.com/static/img/AS.png";
+                const cardJH = "https://deckofcardsapi.com/static/img/JH.png";
 
-  <!-- ==================== LOGIK JAVASCRIPT & FIREBASE ==================== -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+                [cardBack, cardAS, cardJH].forEach(src => {
+                    const pre = new Image(); pre.src = src;
+                });
 
-    // Konfigurasi Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyBsdaCltUZPkg0kl7-BIY-xfbkTnypyfxM",
-      authDomain: "qrpredictionwix.firebaseapp.com",
-      databaseURL: "https://qrpredictionwix-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "qrpredictionwix",
-      storageBucket: "qrpredictionwix.firebasestorage.app",
-      messagingSenderId: "1045444279571",
-      appId: "1:1045444279571:web:02a98dec1d28c743d9aee6"
-    };
+                let isFaceUp = false;
+                let phase = parseInt(localStorage.getItem("trickPhase") || "0", 10);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+                const updateFrontImage = () => {
+                    frontImg.src = phase === 0 ? cardAS : cardJH;
+                };
+                updateFrontImage();
 
-    // Kredensial AI & Default
-    const GEMINI_API_KEY = "AIzaSyDitL95w9e9cLx1K3WirSWZqIABtLcNSp0";
-    const DEFAULT_PROMPT = "lagu apa yang paling terkenal dari $searchKeyword? Jawab dengan direct tanpa penjelasan tambahan sedikitpun";
+                container.addEventListener("click", () => {
+                    if (isFaceUp) {
+                        inner.classList.remove("is-flipped");
+                        isFaceUp = false;
+                        setTimeout(() => { updateFrontImage(); }, 600);
+                    } else {
+                        inner.classList.add("is-flipped");
+                        isFaceUp = true;
+                        if (phase === 0) {
+                            phase = 1; localStorage.setItem("trickPhase", "1");
+                        } else if (phase === 1) {
+                            phase = 2; localStorage.setItem("trickPhase", "2");
+                        }
+                    }
+                });
 
-    // DOM Elements Utama
-    const activeInput = document.getElementById('active-search-input');
-    const mainDisplayInput = document.getElementById('main-display-input');
-    const searchOverlay = document.getElementById('search-overlay');
-    const searchForm = document.getElementById('search-form');
-    const clearBtn = document.getElementById('clear-btn');
-    const aiLoadingIcon = document.getElementById('ai-loading-icon');
-    const suggestionsList = document.getElementById('suggestions-list');
-    const emptyIcons = document.getElementById('empty-icons');
-    const typingIcons = document.getElementById('typing-icons');
-    
-    // DOM Elements Modal Settings
-    const labsIconBtn = document.getElementById('labs-icon-btn');
-    const settingsModal = document.getElementById('ai-settings-modal');
-    const promptEditor = document.getElementById('ai-prompt-input');
-    const insertKeywordBtn = document.getElementById('insert-keyword-btn');
-    const siteBtns = document.querySelectorAll('.site-btn');
-    const connIndicator = document.getElementById('connIndicator');
-    const liveStatus = document.getElementById('live-status');
+                // --- GENERATE 52 KARTU ACAK ---
+                const suits = ['S', 'C', 'H', 'D'];
+                const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K']; 
+                let deck = [];
 
-    // Inisialisasi State
-    let currentAIPrompt = localStorage.getItem('google_clone_ai_prompt') || DEFAULT_PROMPT;
-    let selectedSite = localStorage.getItem('google_clone_target_site') || 'google';
-    let searchHistory = JSON.parse(localStorage.getItem('google_clone_history')) || [];
-    let isFirebaseConnected = false;
+                suits.forEach(suit => { values.forEach(val => { deck.push(val + suit); }); });
 
-    // --- LOGIKA STATUS & AUTH FIREBASE ---
-    function setIndicator(status) {
-      connIndicator.className = 'w-2.5 h-2.5 rounded-full transition-colors duration-300';
-      if (status === 'online') connIndicator.classList.add('bg-green-500');
-      else if (status === 'offline') connIndicator.classList.add('bg-red-500');
-      else if (status === 'loading') connIndicator.classList.add('bg-yellow-400', 'pulse-dot');
-    }
+                // Shuffle
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
 
-    setIndicator('loading');
-    signInAnonymously(auth).catch(() => {
-      liveStatus.textContent = "Offline (Autentikasi Gagal)";
-      setIndicator('offline');
-    });
+                const carousel = document.getElementById("carousel");
+                carousel.innerHTML = deck.map(cardCode => 
+                    `<div class="carousel-item" data-card="${cardCode}"></div>`
+                ).join('');
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        onValue(ref(db, '.info/connected'), (snap) => {
-          if (snap.val() === true) {
-            isFirebaseConnected = true;
-            setIndicator('online');
-            liveStatus.textContent = "Terhubung secara real-time";
-          } else {
-            isFirebaseConnected = false;
-            setIndicator('offline');
-            liveStatus.textContent = "Terputus";
-          }
-        });
-      }
-    });
+                // --- LOGIKA MENTALISM & CAROUSEL ---
+                const btnShowCatalog = document.getElementById("btn-show-catalog");
+                const cardWrapper = document.getElementById("card-wrapper");
+                const catalogWrapper = document.getElementById("catalog-wrapper");
+                const carouselItems = document.querySelectorAll(".carousel-item");
+                const dynamicSlogan = document.getElementById("dynamic-slogan");
+                const productDescSection = document.getElementById("product-desc-section");
 
-    // --- LOGIKA SETTING MODAL & EDITOR MASKING ---
-    function updateSiteUI(site) {
-      selectedSite = site;
-      siteBtns.forEach(btn => {
-        if (btn.getAttribute('data-site') === site) {
-          btn.className = "site-btn w-full py-3.5 text-sm font-bold rounded-xl bg-slate-900 text-white transition-none border border-slate-900 shadow-sm";
-        } else {
-          btn.className = "site-btn w-full py-3.5 text-sm font-bold rounded-xl bg-white text-slate-500 border border-slate-200 transition-none hover:bg-slate-50";
-        }
-      });
-    }
+                let isSloganLocked = false;
 
-    // Ubah string biasa (dengan $searchKeyword) menjadi HTML pill
-    function setPromptEditorContent(text) {
-      let safeText = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const pillHTML = `<span contenteditable="false" class="keyword-pill inline-flex items-center bg-blue-100 text-[#0b57d0] px-1.5 py-[2px] rounded font-semibold text-[13px] mx-1 align-baseline select-none pointer-events-none">kata kunci</span>`;
-      promptEditor.innerHTML = safeText.replace(/\$searchKeyword/g, pillHTML);
-    }
+                const valueMap = {
+                    'A': 'Addaptive', '2': 'Different', '3': 'The best', '4': 'Enlighting',
+                    '5': 'Long-lasting', '6': 'Nautical', '7': 'Productive', '8': 'Wise',
+                    '9': 'Nice', '0': 'Tough', 'J': 'Joyful', 'Q': 'Quick', 'K': 'Keen'
+                };
+                const suitMap = {
+                    'S': 'silly', 'C': 'kind', 'H': 'helpful', 'D': 'decent'
+                };
 
-    // Ambil string asli dari editor (ubah pill kembali jadi $searchKeyword)
-    function getPromptString() {
-      let clone = promptEditor.cloneNode(true);
-      let pills = clone.querySelectorAll('.keyword-pill');
-      pills.forEach(p => {
-        p.parentNode.replaceChild(document.createTextNode('$searchKeyword'), p);
-      });
-      // Ambil teks dengan newline yang dijaga
-      return clone.innerText.replace(/\u00a0/g, ' ').trim(); 
-    }
+                const lazyLoadObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        const item = entry.target;
+                        const cardCode = item.getAttribute("data-card");
+                        if (entry.isIntersecting) {
+                            if (item.innerHTML === "") {
+                                item.innerHTML = `<img src="https://deckofcardsapi.com/static/img/${cardCode}.png" alt="${cardCode}">`;
+                            }
+                        } else {
+                            item.innerHTML = "";
+                        }
+                    });
+                }, { root: carousel, rootMargin: "0px 400px 0px 400px" });
 
-    // Sisipkan Pill Kata Kunci ke editor
-    insertKeywordBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      const pillHTML = `&nbsp;<span contenteditable="false" class="keyword-pill inline-flex items-center bg-blue-100 text-[#0b57d0] px-1.5 py-[2px] rounded font-semibold text-[13px] mx-1 align-baseline select-none pointer-events-none">kata kunci</span>&nbsp;`;
-      
-      promptEditor.focus();
-      if (window.getSelection && window.getSelection().getRangeAt) {
-        let range = window.getSelection().getRangeAt(0);
-        if (promptEditor.contains(range.commonAncestorContainer)) {
-          let el = document.createElement('div');
-          el.innerHTML = pillHTML;
-          let frag = document.createDocumentFragment(), node, lastNode;
-          while ( (node = el.firstChild) ) { lastNode = frag.appendChild(node); }
-          range.insertNode(frag);
-          if (lastNode) {
-            range = range.cloneRange();
-            range.setStartAfter(lastNode);
-            range.collapse(true);
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-          }
-          return;
-        }
-      }
-      promptEditor.insertAdjacentHTML('beforeend', pillHTML);
-    });
+                btnShowCatalog.addEventListener("click", () => {
+                    cardWrapper.classList.add("hide");
+                    catalogWrapper.classList.add("show");
+                    
+                    carouselItems.forEach(item => lazyLoadObserver.observe(item));
+                    setTimeout(() => { updateHighlight(); }, 100);
+                });
 
-    siteBtns.forEach(btn => btn.onclick = () => updateSiteUI(btn.getAttribute('data-site')));
+                function updateHighlight() {
+                    const carouselRect = carousel.getBoundingClientRect();
+                    const carouselCenter = carouselRect.left + (carouselRect.width / 2);
+                    
+                    let closestItem = null;
+                    let minDistance = Infinity;
 
-    // Event Klik 3x
-    let clickCount = 0;
-    let clickTimer;
-    labsIconBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      clickCount++;
-      if (clickCount === 1) {
-        clickTimer = setTimeout(() => { clickCount = 0; }, 600);
-      } else if (clickCount === 3) {
-        clearTimeout(clickTimer);
-        clickCount = 0;
-        
-        // Buka Pengaturan
-        setPromptEditorContent(currentAIPrompt);
-        updateSiteUI(selectedSite);
-        settingsModal.classList.remove('hidden');
-        settingsModal.classList.add('flex');
-      }
-    });
+                    carouselItems.forEach(item => {
+                        const itemRect = item.getBoundingClientRect();
+                        const itemCenter = itemRect.left + (itemRect.width / 2);
+                        const distance = Math.abs(carouselCenter - itemCenter);
+                        
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestItem = item;
+                        }
+                    });
 
-    function closeSettingsModal() {
-      settingsModal.classList.add('hidden');
-      settingsModal.classList.remove('flex');
-    }
+                    if (closestItem) {
+                        carouselItems.forEach(item => {
+                            if (item === closestItem) {
+                                item.classList.add("highlighted");
+                                
+                                if (!isSloganLocked) {
+                                    const code = item.getAttribute("data-card");
+                                    const valCode = code.charAt(0);
+                                    const suitCode = code.charAt(1);
 
-    document.getElementById('save-settings').addEventListener('click', () => {
-      currentAIPrompt = getPromptString() || DEFAULT_PROMPT;
-      localStorage.setItem('google_clone_ai_prompt', currentAIPrompt);
-      localStorage.setItem('google_clone_target_site', selectedSite);
-      closeSettingsModal();
-    });
+                                    const word1 = valueMap[valCode] || 'Fun';
+                                    const word2 = suitMap[suitCode] || 'brave';
 
-    document.getElementById('cancel-settings').addEventListener('click', closeSettingsModal);
-    document.getElementById('closeSettingsModal').addEventListener('click', closeSettingsModal);
+                                    dynamicSlogan.innerText = `"${word1}, ${word2}, challenging."`;
+                                }
+                            } else {
+                                item.classList.remove("highlighted");
+                            }
+                        });
+                    }
+                }
 
-    // --- LOGIKA PENCARIAN, FIREBASE & GEMINI API ---
-    function saveToHistory(query) {
-      if (!query.trim()) return;
-      searchHistory = searchHistory.filter(item => item !== query); 
-      searchHistory.unshift(query); 
-      if (searchHistory.length > 15) searchHistory.pop(); 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory));
-    }
+                let scrollTimeout;
+                carousel.addEventListener("scroll", () => {
+                    updateHighlight();
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(updateHighlight, 50);
+                });
 
-    async function fetchGeminiAPI(query) {
-      try {
-        const finalPrompt = currentAIPrompt.replace(/\$searchKeyword/g, query);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: finalPrompt }] }] })
-        });
-        
-        const data = await response.json();
-        if (data.candidates && data.candidates[0].content.parts[0].text) {
-          return data.candidates[0].content.parts[0].text.trim();
-        }
-        return "Tidak ada respons dari AI.";
-      } catch (error) {
-        return "Gagal terhubung ke AI.";
-      }
-    }
+                // --- DETEKSI SCROLL UNTUK LOCK PERMANEN ---
+                window.addEventListener("scroll", () => {
+                    const descRect = productDescSection.getBoundingClientRect();
+                    if (descRect.top < window.innerHeight * 0.6) {
+                        isSloganLocked = true;
+                    }
+                });
 
-    async function executeSearch(query) {
-      saveToHistory(query);
-      
-      // UI Loading Mode
-      activeInput.blur();
-      activeInput.value = `Menghubungkan AI untuk "${query}"...`;
-      activeInput.disabled = true;
-      clearBtn.classList.add('hidden');
-      aiLoadingIcon.classList.remove('hidden');
-      suggestionsList.style.opacity = '0.4';
-      suggestionsList.style.pointerEvents = 'none';
+                // --- TOMBOL RAHASIA RESET ---
+                const secretResetBtn = document.getElementById('secret-reset-btn');
+                secretResetBtn.addEventListener('click', () => {
+                    isSloganLocked = false;
+                    phase = 0;
+                    localStorage.setItem("trickPhase", "0");
+                    
+                    isFaceUp = false;
+                    inner.classList.remove("is-flipped");
+                    setTimeout(() => { updateFrontImage(); }, 600);
 
-      // Simpan Input & Target URL saat ini ke Firebase
-      if(isFirebaseConnected) {
-        set(ref(db, 'predictions/input'), query).catch(()=>{});
-        set(ref(db, 'predictions/site'), selectedSite).catch(()=>{});
-      }
+                    catalogWrapper.classList.remove("show");
+                    cardWrapper.classList.remove("hide");
 
-      // Jalankan AI & Simpan ke Firebase
-      const aiResponse = await fetchGeminiAPI(query);
-      if(isFirebaseConnected) {
-        await set(ref(db, 'predictions/ai_response'), aiResponse).catch(()=>{});
-      }
+                    dynamicSlogan.innerText = `"Fun, brave, challenging."`;
 
-      // Redirect Asli
-      window.location.href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
 
-    searchForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (activeInput.value.trim() !== '' && !activeInput.disabled) {
-        executeSearch(activeInput.value);
-      }
-    });
-
-    // --- AUTOCOMPLETE LOGIC ---
-    function fetchGoogleSuggestions(query) {
-      if (!query.trim()) { renderHistory(); return; }
-      const script = document.createElement('script');
-      const callbackName = 'googleSuggestCb_' + Date.now();
-      window[callbackName] = function(data) {
-        const suggestions = data[1] || [];
-        const items = suggestions.map(text => ({ text: text, type: 'search' }));
-        renderListHTML(items, query);
-        delete window[callbackName];
-        script.remove();
-      };
-      script.src = `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(query)}&callback=${callbackName}`;
-      document.body.appendChild(script);
-    }
-
-    function renderHistory() {
-      renderListHTML(searchHistory.map(text => ({ text, type: 'history' })), '');
-    }
-
-    function renderListHTML(items, currentQuery) {
-      suggestionsList.innerHTML = '';
-      items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'flex items-center px-4 py-[14px] active:bg-gray-100 cursor-pointer min-w-0 w-full';
-
-        const leftIcon = item.type === 'history' ? 'schedule' : 'search';
-        let formattedText = item.text;
-        
-        if (currentQuery && item.text.toLowerCase().startsWith(currentQuery.toLowerCase()) && item.type === 'search') {
-          const matchedPart = item.text.substring(0, currentQuery.length);
-          const suggestedPart = item.text.substring(currentQuery.length);
-          formattedText = `<span>${matchedPart}</span><span class="font-bold">${suggestedPart}</span>`;
-        } else if (item.type === 'search') {
-          formattedText = `<span class="font-bold">${item.text}</span>`;
-        }
-
-        const rightIcon = item.type === 'history' ? 'close' : 'north_west';
-
-        div.innerHTML = `
-          <span class="material-symbols-outlined text-[#9aa0a6] text-[22px] mr-4 flex-shrink-0">${leftIcon}</span>
-          <span class="flex-grow text-[16px] text-[#202124] pr-4 line-clamp-2 min-w-0 truncate">${formattedText}</span>
-          <span class="material-symbols-outlined text-[#9aa0a6] text-[22px] ml-2 cursor-pointer hover:text-gray-700 right-action-btn flex-shrink-0">
-            ${rightIcon}
-          </span>
-        `;
-        
-        div.querySelector('.flex-grow').addEventListener('click', () => executeSearch(item.text));
-
-        div.querySelector('.right-action-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (item.type === 'history') {
-            searchHistory = searchHistory.filter(i => i !== item.text);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(searchHistory));
-            renderHistory();
-          } else {
-            activeInput.value = item.text + ' '; 
-            activeInput.focus();
-            fetchGoogleSuggestions(activeInput.value);
-            toggleIcons(activeInput.value);
-            if(isFirebaseConnected) set(ref(db, 'predictions/input'), activeInput.value);
-          }
-        });
-
-        suggestionsList.appendChild(div);
-      });
-    }
-
-    function toggleIcons(query) {
-      if (query.length > 0) {
-        emptyIcons.classList.add('hidden');
-        typingIcons.classList.remove('hidden');
-      } else {
-        emptyIcons.classList.remove('hidden');
-        typingIcons.classList.add('hidden');
-      }
-    }
-
-    document.getElementById('main-search-trigger').addEventListener('click', () => {
-      searchOverlay.classList.remove('hidden');
-      searchOverlay.classList.add('flex');
-      activeInput.value = mainDisplayInput.value;
-      activeInput.focus();
-      toggleIcons(activeInput.value);
-      activeInput.value ? fetchGoogleSuggestions(activeInput.value) : renderHistory();
-    });
-
-    document.getElementById('back-btn').addEventListener('click', () => {
-      searchOverlay.classList.add('hidden');
-      searchOverlay.classList.remove('flex');
-    });
-
-    clearBtn.addEventListener('click', () => {
-      activeInput.value = '';
-      activeInput.focus();
-      toggleIcons('');
-      renderHistory();
-      if(isFirebaseConnected) set(ref(db, 'predictions/input'), '');
-    });
-
-    let timeoutId;
-    activeInput.addEventListener('input', (e) => {
-      const query = e.target.value;
-      if(isFirebaseConnected) set(ref(db, 'predictions/input'), query);
-      toggleIcons(query);
-      
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => fetchGoogleSuggestions(query), 200); 
-    });
-
-  </script>
-</body>
+            })();
+        </script>
+    </body>
 </html>
