@@ -3,19 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Web OCR</title>
-    <!-- Menggunakan Tailwind CSS untuk styling -->
+    <title>Scanner Teks Real-time</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Menggunakan Lucide Icons untuk ikon web -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tesseract.js untuk OCR di Browser -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    
     <style>
-        /* Animasi loading kustom */
+        /* Sembunyikan scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Animasi Garis Scanner */
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: #3b82f6;
+            box-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6;
+            top: 0;
+            left: 0;
+            animation: scan 2s linear infinite;
+            display: none;
+        }
+        
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .scanning .scan-line {
+            display: block;
+        }
+
+        /* Loading Spinner */
         .loader {
             border: 3px solid #f3f3f3;
-            border-top: 3px solid #3b82f6;
+            border-top: 3px solid #fff;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
             display: inline-block;
         }
@@ -23,251 +54,251 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Sembunyikan scrollbar untuk area hasil */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 flex items-center justify-center font-sans text-slate-800">
+<body class="bg-slate-900 min-h-screen p-4 flex flex-col items-center justify-center font-sans text-slate-800">
 
-    <div class="max-w-lg w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100">
+    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
         <!-- Header -->
-        <div class="bg-blue-600 p-6 text-white text-center">
-            <i data-lucide="scan-line" class="w-12 h-12 mx-auto mb-2 opacity-90"></i>
-            <h1 class="text-2xl font-bold">Ekstraksi Teks (OCR)</h1>
-            <p class="text-blue-100 text-sm mt-1">Ubah gambar menjadi teks dalam hitungan detik</p>
+        <div class="bg-blue-600 p-5 text-white flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="scan" class="w-6 h-6"></i>
+                    Live Scanner
+                </h1>
+                <p class="text-blue-200 text-xs mt-1">Arahkan kamera ke teks</p>
+            </div>
+            <!-- Pilih Bahasa -->
+            <select id="language" class="bg-blue-700 text-white text-xs p-2 rounded-lg border border-blue-500 outline-none focus:ring-2 focus:ring-blue-300" onchange="changeLanguage()">
+                <option value="eng">English</option>
+                <option value="ind">Indonesia</option>
+            </select>
         </div>
 
-        <div class="p-6 space-y-5">
+        <div class="p-4 space-y-4">
             
-            <!-- Pengaturan API & Bahasa -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">API Key</label>
-                    <input type="text" id="apiKey" value="helloworld" class="w-full text-sm p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Masukkan API Key">
-                    <p class="text-[10px] text-slate-400 mt-1">*helloworld untuk uji coba</p>
+            <!-- Area Kamera -->
+            <div class="relative w-full h-64 bg-black rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
+                <!-- Video Stream -->
+                <video id="videoElement" class="w-full h-full object-cover hidden" autoplay playsinline></video>
+                
+                <!-- Efek Garis Scan -->
+                <div id="scanOverlay" class="absolute inset-0 pointer-events-none">
+                    <div class="scan-line"></div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Bahasa Dokumen</label>
-                    <select id="language" class="w-full text-sm p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                        <option value="eng">Inggris (eng)</option>
-                        <option value="ind">Indonesia (ind)</option>
-                    </select>
+
+                <!-- Pesan Kamera -->
+                <div id="cameraMessage" class="absolute text-center text-slate-400 p-4">
+                    <i data-lucide="camera-off" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
+                    <p class="text-sm font-medium">Kamera belum aktif</p>
                 </div>
+                
+                <!-- Hidden Canvas untuk nge-capture frame video -->
+                <canvas id="canvasElement" class="hidden"></canvas>
             </div>
 
-            <!-- Area Upload -->
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 mb-2">Pilih Gambar</label>
-                <div id="uploadArea" class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition cursor-pointer flex flex-col items-center justify-center relative overflow-hidden" onclick="document.getElementById('imageInput').click()">
-                    
-                    <!-- Input File Asli (Disembunyikan) -->
-                    <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="handleImageSelect(event)">
-                    
-                    <!-- State Belum Ada Gambar -->
-                    <div id="uploadState" class="flex flex-col items-center">
-                        <i data-lucide="image-plus" class="w-10 h-10 text-slate-400 mb-2"></i>
-                        <span class="text-sm font-medium text-slate-600">Klik untuk memilih gambar</span>
-                        <span class="text-xs text-slate-400 mt-1">Maksimal 5MB (JPG/PNG)</span>
-                    </div>
-
-                    <!-- State Preview Gambar -->
-                    <img id="imagePreview" class="hidden absolute inset-0 w-full h-full object-contain bg-slate-100" />
-                    
-                    <!-- Tombol Hapus Gambar -->
-                    <button id="removeImageBtn" class="hidden absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-md transition" onclick="removeImage(event)" title="Hapus Gambar">
-                        <i data-lucide="x" class="w-4 h-4"></i>
-                    </button>
-                </div>
+            <!-- Kontrol Utama -->
+            <div class="flex gap-3">
+                <button id="toggleCameraBtn" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2" onclick="toggleCamera()">
+                    <i data-lucide="video" class="w-5 h-5"></i>
+                    <span id="btnText">Nyalakan Kamera</span>
+                </button>
             </div>
 
-            <!-- Tombol Proses -->
-            <button id="processBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed" disabled onclick="processOCR()">
-                <i data-lucide="zap" class="w-5 h-5"></i>
-                <span id="btnText">Mulai Ekstraksi</span>
-                <span id="loadingIcon" class="loader hidden"></span>
-            </button>
-
-            <!-- Pesan Status -->
-            <div id="statusMessage" class="hidden p-3 rounded-lg text-sm text-center"></div>
+            <!-- Status Pembacaan OCR -->
+            <div id="ocrStatus" class="hidden items-center justify-center gap-2 text-sm text-blue-600 bg-blue-50 p-2 rounded-lg font-medium">
+                <span class="loader border-blue-200 border-top-blue-600 w-4 h-4"></span>
+                <span id="statusText">Menyiapkan mesin AI...</span>
+            </div>
 
             <!-- Area Hasil -->
-            <div id="resultContainer" class="hidden flex flex-col space-y-2 border-t pt-4 mt-2">
+            <div class="flex flex-col space-y-2">
                 <div class="flex justify-between items-center">
-                    <label class="block text-sm font-semibold text-slate-700">Hasil Teks:</label>
-                    <button onclick="copyToClipboard()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded-lg flex items-center gap-1 transition">
+                    <label class="block text-sm font-semibold text-slate-700 flex items-center gap-1">
+                        <i data-lucide="align-left" class="w-4 h-4"></i> Teks Terdeteksi:
+                    </label>
+                    <button onclick="copyToClipboard()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-lg flex items-center gap-1 transition">
                         <i data-lucide="copy" class="w-3 h-3"></i> Salin
                     </button>
                 </div>
-                <textarea id="resultText" class="w-full h-32 p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none no-scrollbar focus:ring-2 focus:ring-blue-500" readonly></textarea>
+                <textarea id="resultText" class="w-full h-32 p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none no-scrollbar focus:ring-2 focus:ring-blue-500 transition-colors" placeholder="Hasil scan akan muncul di sini secara real-time..." readonly></textarea>
             </div>
 
         </div>
     </div>
 
     <script>
-        // Inisialisasi Ikon
+        // Inisialisasi ikon UI
         lucide.createIcons();
 
-        // Variabel Global
-        let selectedFile = null;
-        
+        // Variabel global
+        let videoStream = null;
+        let isScanning = false;
+        let isCameraOn = false;
+        let scanInterval;
+        let workerReady = false;
+
         // Elemen DOM
-        const imageInput = document.getElementById('imageInput');
-        const uploadState = document.getElementById('uploadState');
-        const imagePreview = document.getElementById('imagePreview');
-        const removeImageBtn = document.getElementById('removeImageBtn');
-        const processBtn = document.getElementById('processBtn');
+        const video = document.getElementById('videoElement');
+        const canvas = document.getElementById('canvasElement');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const toggleBtn = document.getElementById('toggleCameraBtn');
         const btnText = document.getElementById('btnText');
-        const loadingIcon = document.getElementById('loadingIcon');
-        const statusMessage = document.getElementById('statusMessage');
-        const resultContainer = document.getElementById('resultContainer');
+        const scanOverlay = document.getElementById('scanOverlay');
+        const cameraMessage = document.getElementById('cameraMessage');
         const resultText = document.getElementById('resultText');
+        const ocrStatus = document.getElementById('ocrStatus');
+        const statusText = document.getElementById('statusText');
+        const languageSelect = document.getElementById('language');
 
-        // Fungsi saat gambar dipilih
-        function handleImageSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        // Fungsi nyalakan/matikan kamera
+        async function toggleCamera() {
+            if (isCameraOn) {
+                stopCamera();
+            } else {
+                await startCamera();
+            }
+        }
 
-            // Validasi ukuran file (Max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                showStatus("Ukuran file terlalu besar! Maksimal 5MB.", "error");
-                removeImage(event);
+        async function startCamera() {
+            try {
+                // Minta akses kamera (prioritaskan kamera belakang kalau di HP)
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' }
+                });
+                
+                video.srcObject = videoStream;
+                video.classList.remove('hidden');
+                cameraMessage.classList.add('hidden');
+                
+                isCameraOn = true;
+                btnText.textContent = "Matikan Kamera";
+                toggleBtn.classList.replace('bg-slate-800', 'bg-red-600');
+                toggleBtn.classList.replace('hover:bg-slate-900', 'hover:bg-red-700');
+                toggleBtn.innerHTML = `<i data-lucide="video-off" class="w-5 h-5"></i><span>Matikan Kamera</span>`;
+                lucide.createIcons();
+
+                // Mulai proses scanning
+                startScanning();
+
+            } catch (error) {
+                console.error("Gagal akses kamera:", error);
+                alert("Nggak bisa akses kamera nih. Pastiin lo udah kasih izin ya!");
+            }
+        }
+
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+            video.classList.add('hidden');
+            cameraMessage.classList.remove('hidden');
+            
+            isCameraOn = false;
+            stopScanning();
+
+            btnText.textContent = "Nyalakan Kamera";
+            toggleBtn.classList.replace('bg-red-600', 'bg-slate-800');
+            toggleBtn.classList.replace('hover:bg-red-700', 'hover:bg-slate-900');
+            toggleBtn.innerHTML = `<i data-lucide="video" class="w-5 h-5"></i><span>Nyalakan Kamera</span>`;
+            lucide.createIcons();
+            ocrStatus.classList.add('hidden');
+        }
+
+        // Mulai loop membaca frame
+        function startScanning() {
+            isScanning = true;
+            scanOverlay.classList.add('scanning');
+            ocrStatus.classList.remove('hidden');
+            ocrStatus.classList.replace('text-green-600', 'text-blue-600');
+            ocrStatus.classList.replace('bg-green-50', 'bg-blue-50');
+            statusText.textContent = "Sedang mencari teks...";
+            
+            // Loop scanning (panggil OCR berulang kali)
+            scanLoop();
+        }
+
+        function stopScanning() {
+            isScanning = false;
+            scanOverlay.classList.remove('scanning');
+        }
+
+        // Fungsi utama buat ngambil gambar dari video dan baca teksnya
+        async function scanLoop() {
+            if (!isScanning || !isCameraOn) return;
+
+            // Pastikan video udah main
+            if (video.videoWidth === 0) {
+                setTimeout(scanLoop, 500);
                 return;
             }
 
-            selectedFile = file;
+            // Set ukuran canvas sama dengan video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
             
-            // Tampilkan Preview Gambar
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.src = e.target.result;
-                imagePreview.classList.remove('hidden');
-                uploadState.classList.add('hidden');
-                removeImageBtn.classList.remove('hidden');
-                processBtn.disabled = false;
-                hideStatus();
-                resultContainer.classList.add('hidden'); // Sembunyikan hasil lama
-            }
-            reader.readAsDataURL(file);
-        }
+            // Gambar frame video ke canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        // Fungsi menghapus gambar
-        function removeImage(event) {
-            if (event) event.stopPropagation(); // Mencegah memicu klik pada parent (uploadArea)
-            
-            selectedFile = null;
-            imageInput.value = '';
-            imagePreview.src = '';
-            
-            imagePreview.classList.add('hidden');
-            uploadState.classList.remove('hidden');
-            removeImageBtn.classList.add('hidden');
-            processBtn.disabled = true;
-            resultContainer.classList.add('hidden');
-            hideStatus();
-        }
-
-        // Fungsi Proses API OCR
-        async function processOCR() {
-            if (!selectedFile) return;
-
-            const apiKey = document.getElementById('apiKey').value || 'helloworld';
-            const language = document.getElementById('language').value;
-
-            // Menyiapkan UI untuk state loading
-            setLoadingState(true);
-            hideStatus();
-            resultContainer.classList.add('hidden');
-
-            // Menyiapkan Data Form
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('apikey', apiKey);
-            formData.append('language', language);
-            formData.append('isTable', 'true'); // Membantu membaca format yang terstruktur
+            const selectedLang = languageSelect.value;
 
             try {
-                // Request ke API OCR.space
-                const response = await fetch('https://api.ocr.space/parse/image', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.IsErroredOnProcessing || data.OCRExitCode !== 1) {
-                    // API mengembalikan error
-                    const errorMsg = data.ErrorMessage ? data.ErrorMessage.join(', ') : 'Gagal memproses gambar.';
-                    showStatus(`Error: ${errorMsg}`, "error");
+                // Tesseract v5 API - Baca dari canvas
+                const result = await Tesseract.recognize(canvas, selectedLang);
+                
+                const text = result.data.text.trim();
+                
+                // Kalau ada teks terdeteksi dan agak panjang (biar nggak nangkep noise)
+                if (text.length > 3) {
+                    // Update UI
+                    resultText.value = text;
+                    resultText.classList.add('bg-green-50', 'border-green-300');
+                    setTimeout(() => resultText.classList.remove('bg-green-50', 'border-green-300'), 500);
+                    
+                    statusText.textContent = "Teks ditemukan!";
+                    ocrStatus.classList.replace('text-blue-600', 'text-green-600');
+                    ocrStatus.classList.replace('bg-blue-50', 'bg-green-50');
                 } else {
-                    // Sukses
-                    const parsedText = data.ParsedResults[0].ParsedText;
-                    if (parsedText.trim() === '') {
-                        showStatus("Proses berhasil, tetapi tidak ada teks yang terdeteksi pada gambar.", "warning");
-                    } else {
-                        showStatus("Ekstraksi teks berhasil!", "success");
-                        resultText.value = parsedText;
-                        resultContainer.classList.remove('hidden');
-                    }
+                    statusText.textContent = "Mencari teks...";
+                    ocrStatus.classList.replace('text-green-600', 'text-blue-600');
+                    ocrStatus.classList.replace('bg-green-50', 'bg-blue-50');
                 }
             } catch (error) {
-                console.error("Fetch Error:", error);
-                showStatus("Gagal terhubung ke server. Periksa koneksi internet Anda.", "error");
-            } finally {
-                setLoadingState(false);
+                console.error("OCR Error:", error);
+            }
+
+            // Kasih jeda sedikit biar HP/Laptop nggak nge-hang, lalu lanjut scan frame berikutnya
+            if (isScanning) {
+                setTimeout(scanLoop, 1000); // Scan tiap 1 detik
             }
         }
 
-        // Fungsi menyalin teks ke clipboard
+        function changeLanguage() {
+            if (isScanning) {
+                statusText.textContent = "Mengganti bahasa OCR...";
+            }
+        }
+
+        // Fungsi salin teks
         function copyToClipboard() {
+            if (!resultText.value) return;
+            
             resultText.select();
             document.execCommand('copy');
-            
-            // Feedback visual sementara
-            const originalText = resultText.value;
-            showStatus("Teks berhasil disalin!", "success");
-            setTimeout(() => hideStatus(), 3000);
-            
-            // Hapus seleksi
             window.getSelection().removeAllRanges();
-        }
-
-        // --- Fungsi Helper UI ---
-
-        function setLoadingState(isLoading) {
-            processBtn.disabled = isLoading;
-            if (isLoading) {
-                btnText.textContent = "Memproses...";
-                loadingIcon.classList.remove('hidden');
-                document.getElementById('uploadArea').classList.add('opacity-50', 'pointer-events-none');
-            } else {
-                btnText.textContent = "Mulai Ekstraksi";
-                loadingIcon.classList.add('hidden');
-                document.getElementById('uploadArea').classList.remove('opacity-50', 'pointer-events-none');
-            }
-        }
-
-        function showStatus(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-yellow-100', 'text-yellow-700');
             
-            if (type === 'error') {
-                statusMessage.classList.add('bg-red-100', 'text-red-700');
-            } else if (type === 'success') {
-                statusMessage.classList.add('bg-green-100', 'text-green-700');
-            } else if (type === 'warning') {
-                statusMessage.classList.add('bg-yellow-100', 'text-yellow-700');
-            }
-        }
-
-        function hideStatus() {
-            statusMessage.classList.add('hidden');
+            const originalText = statusText.textContent;
+            statusText.textContent = "Teks tersalin!";
+            ocrStatus.classList.remove('hidden');
+            
+            setTimeout(() => {
+                if (isScanning) {
+                    statusText.textContent = "Mencari teks...";
+                } else {
+                    ocrStatus.classList.add('hidden');
+                }
+            }, 2000);
         }
 
     </script>
