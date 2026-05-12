@@ -57,12 +57,12 @@
     <div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-28">
         
         <!-- Header (iOS Large Title Style) -->
-        <div class="px-6 pb-2 safe-padding-top bg-[#F2F2F7] sticky top-0 z-20 flex justify-between items-end border-b border-gray-200/50">
+        <div class="px-6 pb-2 safe-padding-top bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50">
             <h1 class="text-[34px] font-bold tracking-tight mt-4">Gallery</h1>
         </div>
 
         <!-- Wadah List Gambar -->
-        <div id="image-list" class="flex flex-col gap-5 w-full max-w-md mx-auto px-4 mt-5">
+        <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-5">
             <!-- Item gambar di-inject via JS -->
         </div>
 
@@ -78,21 +78,28 @@
         <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <!-- Tombol "add AI image" (Bottom Toolbar ala iOS) -->
+    <!-- Toolbar Bawah (Perform & Add AI) -->
     <div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 safe-padding-bottom">
-        <div class="w-full max-w-md mx-auto px-4 py-3">
-            <button onclick="openAIModal()" class="w-full bg-[#007AFF] text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-[#005bb5] transition-colors flex items-center justify-center gap-2">
+        <div class="w-full max-w-md mx-auto px-4 py-3 flex gap-3">
+            <!-- Tombol Perform -->
+            <button onclick="startPerform()" class="flex-1 bg-black text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                </svg>
+                Perform
+            </button>
+            <!-- Tombol AI -->
+            <button onclick="openAIModal()" class="flex-1 bg-[#007AFF] text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-[#005bb5] transition-colors flex items-center justify-center gap-2 shadow-sm">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Add AI Image
+                Add AI
             </button>
         </div>
     </div>
 
     <!-- SCREEN 2: Fullscreen Image View -->
     <div id="image-screen" class="fixed inset-0 hidden bg-black z-40">
-        
         <!-- Dua layer gambar untuk efek transisi Crossfade yang mulus -->
         <img id="display-image-1" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-100" alt="Image View 1">
         <img id="display-image-2" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-0" alt="Image View 2">
@@ -100,7 +107,7 @@
         <!-- Area sentuh / gesture -->
         <div id="touch-area" class="absolute inset-0 z-10 touch-none"></div>
 
-        <!-- Kontrol Overlay Atas -->
+        <!-- Kontrol Overlay Atas (Akan disembunyikan saat mode Perform) -->
         <div id="image-overlay-top" class="absolute top-0 left-0 w-full px-4 pb-3 flex justify-between items-end bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 safe-padding-top h-[100px] z-20 pointer-events-none">
             <button onclick="closeFullscreen()" class="text-[#007AFF] flex items-center gap-1 text-[17px] active:opacity-50 pointer-events-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -114,48 +121,6 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: Settings per Gambar -->
-    <div id="settings-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
-        <div class="bg-[#F2F2F7] rounded-[20px] w-full max-w-[320px] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300" id="settings-modal-box">
-            
-            <div class="p-5 pb-4">
-                <h3 class="text-[17px] font-bold text-black mb-1 text-center" id="settings-title">Image Settings</h3>
-                <p class="text-[13px] text-gray-500 mb-5 text-center px-4">Atur cara layar berpindah ke gambar selanjutnya.</p>
-                
-                <!-- Transition Setting -->
-                <div class="mb-5">
-                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide">Transition</label>
-                    <div class="flex bg-gray-200/80 rounded-[9px] p-1 shadow-inner">
-                        <button id="set-trans-fade" onclick="updateModalSetting('transition', 'fade')" class="flex-1 py-1.5 text-[14px] rounded-[7px] bg-white shadow font-semibold text-black transition-all">Fade</button>
-                        <button id="set-trans-instant" onclick="updateModalSetting('transition', 'instant')" class="flex-1 py-1.5 text-[14px] rounded-[7px] text-gray-500 font-semibold transition-all">Instant</button>
-                    </div>
-                </div>
-
-                <!-- Trigger Setting -->
-                <div class="mb-5">
-                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide">Trigger</label>
-                    <div class="flex bg-gray-200/80 rounded-[9px] p-1 shadow-inner">
-                        <button id="set-trig-tap" onclick="updateModalSetting('trigger', 'tap')" class="flex-1 py-1.5 text-[14px] rounded-[7px] bg-white shadow font-semibold text-black transition-all">Tap</button>
-                        <button id="set-trig-swipe" onclick="updateModalSetting('trigger', 'swipe')" class="flex-1 py-1.5 text-[14px] rounded-[7px] text-gray-500 font-semibold transition-all">Swipe Up</button>
-                    </div>
-                </div>
-
-                <!-- Duration Setting -->
-                <div>
-                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide">Duration (seconds)</label>
-                    <div class="relative">
-                        <input type="number" id="set-duration" step="0.1" min="0" class="w-full bg-white rounded-[10px] px-4 py-3 text-[17px] font-semibold outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tutup Modal -->
-            <div class="flex border-t border-gray-300/80 bg-white">
-                <button onclick="saveAndCloseSettings()" class="flex-1 py-3.5 text-[17px] font-bold text-[#007AFF] active:bg-gray-100 transition-colors">Selesai</button>
             </div>
         </div>
     </div>
@@ -195,6 +160,9 @@
         let globalImages = []; 
         let currentIndex = 0;
         let activeImageLayer = 1; 
+        
+        // Mode State
+        let isPerformMode = false;
 
         // Default settings buat gambar baru
         const DEFAULT_SETTINGS = { transition: 'fade', trigger: 'tap', duration: 0.5 };
@@ -216,7 +184,6 @@
             return new Promise((resolve) => {
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                // Kita tambahin settings ke record DB pas nyimpen
                 const request = store.add({ 
                     file: file, 
                     timestamp: new Date().getTime(), 
@@ -232,7 +199,7 @@
             return new Promise((resolve) => {
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(record); // Update / overwrite
+                const request = store.put(record); 
                 request.onsuccess = () => resolve();
             });
         }
@@ -262,75 +229,33 @@
         const fileInput = document.getElementById('file-input');
         const imageListContainer = document.getElementById('image-list');
         const toastContainer = document.getElementById('toast-container');
+        const overlayTop = document.getElementById('image-overlay-top');
 
         function showToast(message) {
             const toast = document.createElement('div');
             toast.className = `bg-black/80 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-lg text-[15px] flex items-center justify-center animate-slide-up pointer-events-auto`;
             toast.innerHTML = `<span>${message}</span>`;
             toastContainer.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        // --- MANAJEMEN SETTING PER GAMBAR ---
-        let editingImageId = null;
-        let tempModalSettings = { transition: 'fade', trigger: 'tap', duration: 0.5 };
-
-        function updateModalSetting(key, val) {
-            tempModalSettings[key] = val;
-            renderSettingsUI();
-        }
-
-        function renderSettingsUI() {
-            // Update UI Button Transition
-            const isFade = tempModalSettings.transition === 'fade';
-            document.getElementById('set-trans-fade').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${isFade ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
-            document.getElementById('set-trans-instant').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${!isFade ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
-
-            // Update UI Button Trigger
-            const isTap = tempModalSettings.trigger === 'tap';
-            document.getElementById('set-trig-tap').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${isTap ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
-            document.getElementById('set-trig-swipe').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${!isTap ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
-
-            document.getElementById('set-duration').value = tempModalSettings.duration;
-        }
-
-        function openSettings(id, title) {
-            editingImageId = id;
-            document.getElementById('settings-title').innerText = title + " Settings";
-            
+        // --- MANAJEMEN SETTING CEPAT (INLINE) ---
+        async function updateQuickSetting(id, key, value, element) {
             const imgRecord = globalImages.find(i => i.id === id);
-            // Kalau gambar jadul blm ada settingnya, pake default
-            tempModalSettings = { ...(imgRecord.settings || DEFAULT_SETTINGS) }; 
+            if (!imgRecord) return;
+            if (!imgRecord.settings) imgRecord.settings = { ...DEFAULT_SETTINGS };
 
-            renderSettingsUI();
-            
-            const modal = document.getElementById('settings-modal');
-            const box = document.getElementById('settings-modal-box');
-            modal.classList.remove('hidden'); modal.classList.add('flex');
-            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
-        }
-
-        async function saveAndCloseSettings() {
-            // Simpan durasi dari input
-            const inputDur = document.getElementById('set-duration').value;
-            tempModalSettings.duration = inputDur === '' ? 0 : parseFloat(inputDur);
-
-            // Simpan ke DB
-            const imgRecord = globalImages.find(i => i.id === editingImageId);
-            if (imgRecord) {
-                imgRecord.settings = { ...tempModalSettings };
-                await updateImageInDB(imgRecord);
+            if (key === 'duration') {
+                imgRecord.settings[key] = value === '' ? 0 : parseFloat(value);
+            } else {
+                imgRecord.settings[key] = value;
+                const parent = element.parentElement;
+                const buttons = parent.querySelectorAll('button');
+                buttons.forEach(btn => btn.className = 'flex-1 text-[13px] py-1.5 rounded-[6px] text-gray-500 bg-transparent transition-all');
+                element.className = 'flex-1 text-[13px] py-1.5 rounded-[6px] bg-white shadow-sm font-semibold text-black transition-all';
             }
-
-            // Tutup Modal
-            const modal = document.getElementById('settings-modal');
-            const box = document.getElementById('settings-modal-box');
-            modal.classList.add('opacity-0'); box.classList.add('scale-95');
-            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
-            
-            showToast("Settings tersimpan");
+            await updateImageInDB(imgRecord);
         }
-
 
         // --- RENDER DASHBOARD ---
         async function loadDashboard() {
@@ -341,21 +266,38 @@
             globalImages.forEach((imgData, index) => {
                 const objectUrl = URL.createObjectURL(imgData.file);
                 const title = imgData.isAI ? `Image ${index + 1} (AI)` : `Image ${index + 1}`;
+                const imgSet = imgData.settings || DEFAULT_SETTINGS;
+                const isFade = imgSet.transition === 'fade';
+                const isTap = imgSet.trigger === 'tap';
+                const dur = imgSet.duration;
                 
                 const itemHTML = `
                     <div class="bg-white rounded-[14px] overflow-hidden shadow-sm animate-fade-in border border-black/5">
-                        <div class="px-4 py-3 border-b border-black/5 flex justify-between items-center">
+                        <div class="px-4 py-3 border-b border-black/5">
                             <h2 class="text-[17px] font-medium text-black">${title}</h2>
-                            <!-- Tombol Settings per Gambar (Icon Gear) -->
-                            <button onclick="openSettings(${imgData.id}, '${title}')" class="text-gray-400 hover:text-[#007AFF] active:scale-95 transition-all bg-gray-100 p-1.5 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                            </button>
                         </div>
                         <div class="w-full h-60 bg-gray-100 cursor-pointer" onclick="openFullscreen(${index})">
                             <img src="${objectUrl}" class="w-full h-full object-cover" alt="${title}">
+                        </div>
+                        <div class="p-4 bg-[#FAFAFA] flex flex-col gap-3 border-t border-black/5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[14px] text-gray-600 font-medium">Transition</span>
+                                <div class="flex bg-gray-200/80 rounded-[8px] p-0.5 w-[160px]">
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'fade', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${isFade ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Fade</button>
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'instant', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${!isFade ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Instant</button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[14px] text-gray-600 font-medium">Trigger</span>
+                                <div class="flex bg-gray-200/80 rounded-[8px] p-0.5 w-[160px]">
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'tap', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${isTap ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Tap</button>
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'swipe', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${!isTap ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Swipe</button>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-[14px] text-gray-600 font-medium">Duration (sec)</span>
+                                <input type="number" step="0.1" min="0" value="${dur}" onchange="updateQuickSetting(${imgData.id}, 'duration', this.value, this)" class="w-[160px] bg-white border border-gray-200 rounded-[8px] px-3 py-1.5 text-[14px] font-semibold outline-none focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] text-center shadow-sm transition-all">
+                            </div>
                         </div>
                     </div>
                 `;
@@ -363,7 +305,27 @@
             });
         }
 
-        // --- VIEWER & TRANSISI ---
+        // --- VIEWER, PERFORM MODE & TRANSISI ---
+        async function startPerform() {
+            if (globalImages.length === 0) {
+                showToast("Tambahkan gambar ke galeri dulu!");
+                return;
+            }
+
+            // Trik buat maksa OS masuk Fullscreen kalau di-support browser
+            try {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) await elem.requestFullscreen();
+                else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen();
+            } catch (e) {}
+
+            isPerformMode = true;
+            overlayTop.classList.add('hidden'); // Sembunyikan UI
+            
+            showToast("Perform Mode: Swipe kebawah dengan 2 Jari untuk keluar");
+            openFullscreen(0); // Selalu mulai dari awal pas perform
+        }
+
         function openFullscreen(index) {
             if(globalImages.length === 0) return;
             currentIndex = index;
@@ -389,25 +351,28 @@
             imageScreen.classList.add('hidden');
             dashboardScreen.classList.remove('hidden');
             document.querySelector('meta[name="theme-color"]').setAttribute("content", "#F2F2F7");
+            
+            // Reset Perform Mode states
+            isPerformMode = false;
+            overlayTop.classList.remove('hidden');
+            
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(()=>{});
+            }
         }
 
         function changeImage(direction = 'next') {
             if (globalImages.length <= 1) return;
             
-            // Baca settingan gambar SAAT INI (bukan gambar berikutnya)
             const currentImgSettings = globalImages[currentIndex].settings || DEFAULT_SETTINGS;
 
-            if (direction === 'next') {
-                currentIndex = (currentIndex + 1) % globalImages.length;
-            } else {
-                currentIndex = (currentIndex - 1 + globalImages.length) % globalImages.length;
-            }
+            if (direction === 'next') currentIndex = (currentIndex + 1) % globalImages.length;
+            else currentIndex = (currentIndex - 1 + globalImages.length) % globalImages.length;
 
             const url = URL.createObjectURL(globalImages[currentIndex].file);
             const img1 = document.getElementById('display-image-1');
             const img2 = document.getElementById('display-image-2');
 
-            // Eksekusi durasi dan transisi berdasarkan settingan gambar yang DITINGGALKAN
             let dur = currentImgSettings.transition === 'instant' ? 0 : parseFloat(currentImgSettings.duration);
             if (isNaN(dur) || dur < 0) dur = 0;
 
@@ -427,44 +392,80 @@
             }
         }
 
-        // Logic Touch Screen
+        // Logic Touch Screen (2 Jari Swipe Down & Normal Gestures)
         const touchArea = document.getElementById('touch-area');
         let startX = 0, startY = 0;
+        let isTwoFingerGesture = false;
+        let twoFingerStartY = null;
+        let activeTouches = 0;
 
         touchArea.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            startY = e.touches[0].clientY;
-        }, { passive: true });
+            activeTouches = e.touches.length;
+            
+            // Tangkap momen 2 jari nyentuh layar
+            if (activeTouches === 2) {
+                isTwoFingerGesture = true;
+                twoFingerStartY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                e.preventDefault(); // Nahan zoom/scroll bawaan OS
+            } 
+            // Kalau 1 jari, normal tap/swipe
+            else if (activeTouches === 1 && !isTwoFingerGesture) {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }
+        }, { passive: false });
+
+        touchArea.addEventListener('touchmove', (e) => {
+            // Tahan pergerakan liar OS kalau lagi gerakin 2 jari
+            if (isTwoFingerGesture || e.touches.length === 2) {
+                e.preventDefault();
+            }
+        }, { passive: false });
 
         touchArea.addEventListener('touchend', (e) => {
-            let endX = e.changedTouches[0].clientX;
-            let endY = e.changedTouches[0].clientY;
-            let diffX = startX - endX;
-            let diffY = startY - endY;
-            let distance = Math.sqrt(diffX*diffX + diffY*diffY);
+            activeTouches = e.touches.length;
 
-            // Cek trigger dari gambar yang sedang aktif diliat
-            const activeTrigger = (globalImages[currentIndex].settings || DEFAULT_SETTINGS).trigger;
-
-            // Deteksi Tap
-            if (distance < 10) {
-                if (activeTrigger === 'tap') {
-                    changeImage('next');
+            // Handle Keluar Perform Mode (Swipe Down 2 Jari)
+            if (isTwoFingerGesture) {
+                // Tunggu sampai semua jari diangkat
+                if (activeTouches === 0 && twoFingerStartY !== null) {
+                    let endY = e.changedTouches[0].clientY; // Posisi jari terakhir yg diangkat
+                    
+                    // Kalau jarak usap ke bawah lebih dari 50px
+                    if ((endY - twoFingerStartY) > 50) {
+                        closeFullscreen();
+                    }
+                    twoFingerStartY = null;
+                    isTwoFingerGesture = false;
                 }
-            } 
-            // Deteksi Swipe
-            else {
-                if (activeTrigger === 'swipe') {
-                    // Swipe minimal 40px
-                    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 40) {
-                        if (diffY > 0) changeImage('next'); // Swipe Up
-                        else changeImage('prev'); // Swipe Down
+                return; // Stop disini biar nggak ke-trigger jadi tap biasa
+            }
+
+            // Normal Gesture (Tap / Swipe Up/Down 1 Jari)
+            if (e.changedTouches.length === 1 && !isTwoFingerGesture) {
+                let endX = e.changedTouches[0].clientX;
+                let endY = e.changedTouches[0].clientY;
+                let diffX = startX - endX;
+                let diffY = startY - endY;
+                let distance = Math.sqrt(diffX*diffX + diffY*diffY);
+
+                const activeTrigger = (globalImages[currentIndex].settings || DEFAULT_SETTINGS).trigger;
+
+                if (distance < 10) { // Tap/Sentuh Biasa
+                    if (activeTrigger === 'tap') changeImage('next');
+                } else { // Swipe/Usap
+                    if (activeTrigger === 'swipe') {
+                        // Pastikan swipe-nya vertikal, bukan horizontal
+                        if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 40) {
+                            if (diffY > 0) changeImage('next'); // Swipe Naik
+                            else changeImage('prev'); // Swipe Turun
+                        }
                     }
                 }
             }
         });
 
-        // Hapus Gambar
+        // Hapus Gambar (Hanya aktif saat bukan di mode Perform)
         document.getElementById('btn-hapus').addEventListener('click', async () => {
             if (globalImages.length > 0 && confirm("Hapus gambar ini?")) {
                 await deleteImageFromDB(globalImages[currentIndex].id);
