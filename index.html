@@ -6,7 +6,7 @@
     <!-- Trik Fullscreen & PWA Meta Tags ala iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#F2F2F7"> 
     
@@ -56,7 +56,7 @@
     <!-- SCREEN 1: Dashboard / Gallery List -->
     <div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-28">
         
-        <!-- Header (iOS Large Title Style) dengan Tombol Global Settings -->
+        <!-- Header (iOS Large Title Style) -->
         <div class="px-6 pb-2 safe-padding-top bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50 flex justify-between items-end">
             <h1 class="text-[34px] font-bold tracking-tight mt-4">Gallery</h1>
             <button onclick="openGlobalSettings()" class="w-10 h-10 mb-1 rounded-full bg-white shadow-sm flex items-center justify-center active:bg-gray-100 transition-colors border border-gray-200 text-[#007AFF]">
@@ -87,14 +87,12 @@
     <!-- Toolbar Bawah (Perform & Add AI) -->
     <div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 safe-padding-bottom">
         <div class="w-full max-w-md mx-auto px-4 py-3 flex gap-3">
-            <!-- Tombol Perform -->
             <button onclick="startPerform()" class="flex-1 bg-black text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                 </svg>
                 Perform
             </button>
-            <!-- Tombol AI -->
             <button onclick="openAIModal()" class="flex-1 bg-[#007AFF] text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-[#005bb5] transition-colors flex items-center justify-center gap-2 shadow-sm">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -130,14 +128,14 @@
                 <p class="text-[13px] text-gray-500 mb-5 text-center">Atur kunci API dan Model AI Studio.</p>
                 
                 <div class="mb-4">
-                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">API Key (Opsional)</label>
-                    <input type="password" id="global-api-key" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="Biarkan kosong jika pakai default sistem">
+                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">API Key</label>
+                    <input type="password" id="global-api-key" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="Masukkan Google API Key...">
                 </div>
 
                 <div class="mb-2">
                     <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">Model AI</label>
-                    <input type="text" id="global-model-name" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="e.g. gemini-2.5-flash-image-preview">
-                    <p class="text-[11px] text-gray-400 mt-2 px-1 leading-snug">Ubah field ini untuk menggunakan model masa depan yang mensupport fitur generateContent.</p>
+                    <input type="text" id="global-model-name" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="gemini-3.1-flash-image-preview">
+                    <p class="text-[11px] text-gray-400 mt-2 px-1 leading-snug">Default diatur ke gemini-3.1-flash-image-preview.</p>
                 </div>
             </div>
             
@@ -148,7 +146,7 @@
         </div>
     </div>
 
-    <!-- MODAL: Generate AI Image dengan Reference -->
+    <!-- MODAL: Generate AI Image -->
     <div id="ai-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-[20px] w-full max-w-[340px] flex flex-col text-left overflow-hidden transform scale-95 transition-transform duration-300" id="ai-modal-box">
             <div class="p-5 pb-4">
@@ -156,15 +154,12 @@
                 <p class="text-[13px] text-gray-500 mb-4 text-center">Deskripsikan gambar yang ingin dibuat.</p>
                 <textarea id="ai-prompt" class="w-full bg-[#F2F2F7] rounded-xl p-3 outline-none text-[15px] resize-none text-black placeholder-gray-400 border border-transparent focus:border-[#007AFF] transition-colors" rows="3" placeholder="Cth: Buat suasana menjadi malam hari cyberpunk..."></textarea>
                 
-                <!-- Opsi Image Reference -->
                 <div class="mt-4" id="ai-ref-section">
                     <p class="text-[12px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">Gambar Referensi (Opsional)</p>
-                    
                     <div id="ref-image-container" class="hidden relative w-16 h-16 mb-3">
                         <img id="ref-image-preview" class="w-full h-full object-cover rounded-[8px] border border-gray-200">
                         <button onclick="clearRefImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow active:scale-90">✕</button>
                     </div>
-
                     <div class="flex gap-2">
                         <button onclick="document.getElementById('ref-file-input').click()" class="bg-gray-100 text-[#007AFF] px-3 py-1.5 rounded-full text-[13px] font-medium active:bg-gray-200 flex items-center gap-1.5 transition-colors">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
@@ -175,10 +170,8 @@
                             Dari Galeri
                         </button>
                     </div>
-
                     <div id="gallery-ref-picker" class="hidden mt-3 w-full overflow-x-auto flex gap-2 pb-1 scroll-smooth"></div>
                 </div>
-                
                 <input type="file" id="ref-file-input" accept="image/*" class="hidden">
 
                 <div id="ai-loading" class="hidden flex-col items-center justify-center py-4">
@@ -186,7 +179,6 @@
                     <p class="text-[13px] mt-3 text-gray-500">AI sedang memproses...</p>
                 </div>
             </div>
-            
             <div class="flex border-t border-gray-200" id="ai-actions">
                 <button onclick="closeAIModal()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Batal</button>
                 <button onclick="generateAIImage()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Buat</button>
@@ -206,7 +198,7 @@
         // --- GLOBAL SETTINGS LOGIC ---
         let appGlobalSettings = {
             apiKey: '',
-            modelName: 'gemini-2.5-flash-image-preview' // Default fallback model
+            modelName: 'gemini-3.1-flash-image-preview' // Default Hardcode
         };
 
         function loadGlobalSettings() {
@@ -235,15 +227,13 @@
 
         function saveGlobalSettings() {
             appGlobalSettings.apiKey = document.getElementById('global-api-key').value.trim();
-            // Defaulting if empty
-            appGlobalSettings.modelName = document.getElementById('global-model-name').value.trim() || 'gemini-2.5-flash-image-preview';
+            appGlobalSettings.modelName = document.getElementById('global-model-name').value.trim() || 'gemini-3.1-flash-image-preview';
             
             localStorage.setItem('galleryGlobalSettings_v1', JSON.stringify(appGlobalSettings));
             closeGlobalSettings();
             showToast("Pengaturan Global Tersimpan");
         }
 
-        // Initialize Settings
         loadGlobalSettings();
 
 
@@ -324,7 +314,6 @@
             setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        // --- MANAJEMEN SETTING CEPAT (INLINE) ---
         async function updateQuickSetting(id, key, value, element) {
             const imgRecord = globalImages.find(i => i.id === id);
             if (!imgRecord) return;
@@ -342,7 +331,6 @@
             await updateImageInDB(imgRecord);
         }
 
-        // --- RENDER DASHBOARD ---
         async function loadDashboard() {
             imageListContainer.innerHTML = '';
             globalImages = await getAllImagesFromDB();
@@ -577,7 +565,7 @@
             picker.classList.remove('hidden');
         }
 
-        // --- AI GENERATOR ---
+        // --- AI GENERATOR (Meniru Logika Lucid App) ---
         function openAIModal() {
             document.getElementById('ai-modal').classList.remove('hidden');
             document.getElementById('ai-modal').classList.add('flex');
@@ -610,15 +598,17 @@
             document.getElementById('ai-loading').classList.add('flex');
 
             try {
-                // Environment fallback API Key (Sistem runtime inject apiKey di sini jika kosong)
-                const systemApiKey = ""; 
-                const activeApiKey = appGlobalSettings.apiKey || systemApiKey;
-                const modelName = appGlobalSettings.modelName;
+                const activeApiKey = appGlobalSettings.apiKey;
+                const modelName = appGlobalSettings.modelName || 'gemini-3.1-flash-image-preview';
 
-                // Memanfaatkan `generateContent` untuk kedua kasus (Text-to-Image & Image-to-Image)
-                // Ini memastikan model custom masa depan bisa dipake tanpa mikirin URL :predict atau :generateContent
+                if (!activeApiKey) {
+                    showToast("API Key kosong! Isi dulu di Settings (⚙️).");
+                    throw new Error("No API Key");
+                }
+
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeApiKey}`;
                 
+                // Menyamakan payload 100% dengan cara Lucid app
                 let parts = [{ text: promptText }];
                 if (currentRefBase64) {
                     parts.push({ inlineData: { mimeType: currentRefMime, data: currentRefBase64 } });
@@ -626,46 +616,44 @@
 
                 const payload = {
                     contents: [{ parts: parts }],
-                    generationConfig: { responseModalities: ['IMAGE'] }
+                    generationConfig: { responseModalities: ["TEXT", "IMAGE"] } 
                 };
 
-                let response;
-                let retries = 0;
-                while (retries <= 5) {
-                    try {
-                        response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (response.ok) break; 
-                        if (retries === 5) throw new Error(`API Error: ${response.status}`);
-                    } catch (e) { if (retries === 5) throw e; }
-                    await new Promise(r => setTimeout(r, [1000, 2000, 4000, 8000, 16000][retries]));
-                    retries++;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    console.error("API Error Response:", errData);
+                    throw new Error("Google API Failed");
                 }
 
                 const result = await response.json();
                 
-                // Cari data base64 image dari response
-                const base64DataStr = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                // Ambil base64 string
+                const imgBase = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
 
-                if (base64DataStr) {
-                    const byteChars = atob(base64DataStr);
-                    const byteNums = new Array(byteChars.length);
-                    for (let i=0; i<byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-                    const blob = new Blob([new Uint8Array(byteNums)], {type: 'image/png'});
+                if (imgBase) {
+                    // Konversi yang paling aman tanpa error atob: langsung ubah via Data URI Fetch
+                    const dataUrl = `data:image/jpeg;base64,${imgBase}`;
+                    const fetchRes = await fetch(dataUrl);
+                    const blob = await fetchRes.blob();
                     
                     await saveImageToDB(blob, true);
                     closeAIModal();
                     loadDashboard();
                     setTimeout(() => dashboardScreen.scrollTo({ top: dashboardScreen.scrollHeight, behavior: 'smooth' }), 100);
+                    showToast('Gambar berhasil dibuat!');
                 } else {
-                    throw new Error("Invalid Format / API key salah");
+                    throw new Error("Format respons API tidak sesuai.");
                 }
+
             } catch (error) { 
-                showToast("Gagal. Cek koneksi, API key, atau nama model."); 
-                console.error(error);
+                console.error("AI Generation Error:", error);
+                showToast("Gagal memproses gambar. Cek API Key & Koneksi."); 
             } finally {
                 document.getElementById('ai-actions').classList.remove('hidden');
                 document.getElementById('ai-prompt').classList.remove('hidden');
