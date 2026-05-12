@@ -2,18 +2,14 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    
-    <!-- Trik Fullscreen & PWA Meta Tags ala iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#F2F2F7"> 
-    
     <title>Gallery</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Font bawaan Apple (San Francisco) */
         html, body {
             overscroll-behavior: none;
             -webkit-touch-callout: none;
@@ -26,14 +22,8 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
-        /* Area aman untuk notch/poni iPhone */
-        .safe-padding-top { padding-top: max(1rem, env(safe-area-inset-top)); }
-        .safe-padding-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
-
-        /* Sembunyiin scrollbar */
         ::-webkit-scrollbar { display: none; }
 
-        /* Animasi masuk */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -46,18 +36,14 @@
         }
         .animate-slide-up { animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
-        /* Hilangkan panah spinner di input number */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body class="text-black w-screen h-screen flex flex-col select-none overflow-hidden">
 
-    <!-- SCREEN 1: Dashboard / Gallery List -->
     <div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-28">
-        
-        <!-- Header (iOS Large Title Style) -->
-        <div class="px-6 pb-2 safe-padding-top bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50 flex justify-between items-end">
+        <div class="px-6 pb-2 pt-8 bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50 flex justify-between items-end">
             <h1 class="text-[34px] font-bold tracking-tight mt-4">Gallery</h1>
             <button onclick="openGlobalSettings()" class="w-10 h-10 mb-1 rounded-full bg-white shadow-sm flex items-center justify-center active:bg-gray-100 transition-colors border border-gray-200 text-[#007AFF]">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-[22px] w-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,25 +53,20 @@
             </button>
         </div>
 
-        <!-- Wadah List Gambar -->
-        <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-5">
-            <!-- Item gambar di-inject via JS -->
-        </div>
+        <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-5"></div>
 
-        <!-- Tombol "add more image" -->
         <div class="flex flex-col items-center justify-center cursor-pointer mt-6 mb-10 w-full max-w-md mx-auto px-4" onclick="document.getElementById('file-input').click()">
             <div class="w-full py-8 bg-white rounded-2xl flex flex-col items-center justify-center active:bg-gray-100 transition-colors shadow-sm border border-gray-100">
                 <svg class="w-10 h-10 text-[#007AFF] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
                 </svg>
-                <p class="text-[17px] text-[#007AFF] font-medium">Add More Image</p>
+                <p class="text-[17px] text-[#007AFF] font-medium">Add Image</p>
             </div>
         </div>
         <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <!-- Toolbar Bawah (Perform & Add AI) -->
-    <div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 safe-padding-bottom">
+    <div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 pb-6">
         <div class="w-full max-w-md mx-auto px-4 py-3 flex gap-3">
             <button onclick="startPerform()" class="flex-1 bg-black text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -102,12 +83,11 @@
         </div>
     </div>
 
-    <!-- SCREEN 2: Fullscreen Image View -->
     <div id="image-screen" class="fixed inset-0 hidden bg-black z-40">
         <img id="display-image-1" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-100" alt="Image View 1">
         <img id="display-image-2" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-0" alt="Image View 2">
         <div id="touch-area" class="absolute inset-0 z-10 touch-none"></div>
-        <div id="image-overlay-top" class="absolute top-0 left-0 w-full px-4 pb-3 flex justify-between items-end bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 safe-padding-top h-[100px] z-20 pointer-events-none">
+        <div id="image-overlay-top" class="absolute top-0 left-0 w-full px-4 pt-10 flex justify-between items-start bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 h-[120px] z-20 pointer-events-none">
             <button onclick="closeFullscreen()" class="text-[#007AFF] flex items-center gap-1 text-[17px] active:opacity-50 pointer-events-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
                 Gallery
@@ -120,25 +100,20 @@
         </div>
     </div>
 
-    <!-- MODAL: GLOBAL SETTINGS -->
     <div id="global-settings-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-[#F2F2F7] rounded-[20px] w-full max-w-[340px] flex flex-col text-left overflow-hidden transform scale-95 transition-transform duration-300" id="global-settings-box">
             <div class="p-5 pb-4">
-                <h3 class="text-[17px] font-semibold text-black mb-1 text-center">Global Settings</h3>
-                <p class="text-[13px] text-gray-500 mb-5 text-center">Atur kunci API dan Model AI Studio.</p>
-                
+                <h3 class="text-[17px] font-semibold text-black mb-1 text-center">Settings</h3>
+                <p class="text-[13px] text-gray-500 mb-5 text-center">Konfigurasi API dan Model.</p>
                 <div class="mb-4">
                     <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">API Key</label>
-                    <input type="password" id="global-api-key" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="Masukkan Google API Key...">
+                    <input type="password" id="global-api-key" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="Google API Key">
                 </div>
-
                 <div class="mb-2">
                     <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">Model AI</label>
                     <input type="text" id="global-model-name" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="gemini-3.1-flash-image-preview">
-                    <p class="text-[11px] text-gray-400 mt-2 px-1 leading-snug">Default diatur ke gemini-3.1-flash-image-preview.</p>
                 </div>
             </div>
-            
             <div class="flex border-t border-gray-300/80 bg-white">
                 <button onclick="closeGlobalSettings()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Batal</button>
                 <button onclick="saveGlobalSettings()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Simpan</button>
@@ -146,37 +121,30 @@
         </div>
     </div>
 
-    <!-- MODAL: Generate AI Image -->
     <div id="ai-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
         <div class="bg-white rounded-[20px] w-full max-w-[340px] flex flex-col text-left overflow-hidden transform scale-95 transition-transform duration-300" id="ai-modal-box">
             <div class="p-5 pb-4">
                 <h3 class="text-[17px] font-semibold text-black mb-1 text-center">AI Generator</h3>
-                <p class="text-[13px] text-gray-500 mb-4 text-center">Deskripsikan gambar yang ingin dibuat.</p>
-                <textarea id="ai-prompt" class="w-full bg-[#F2F2F7] rounded-xl p-3 outline-none text-[15px] resize-none text-black placeholder-gray-400 border border-transparent focus:border-[#007AFF] transition-colors" rows="3" placeholder="Cth: Buat suasana menjadi malam hari cyberpunk..."></textarea>
-                
+                <p class="text-[13px] text-gray-500 mb-4 text-center">Visualisasikan ide baru.</p>
+                <textarea id="ai-prompt" class="w-full bg-[#F2F2F7] rounded-xl p-3 outline-none text-[15px] resize-none text-black placeholder-gray-400 border border-transparent focus:border-[#007AFF] transition-colors" rows="3" placeholder="Deskripsikan gambar..."></textarea>
                 <div class="mt-4" id="ai-ref-section">
-                    <p class="text-[12px] text-gray-400 font-semibold mb-2 uppercase tracking-wide">Gambar Referensi (Opsional)</p>
                     <div id="ref-image-container" class="hidden relative w-16 h-16 mb-3">
                         <img id="ref-image-preview" class="w-full h-full object-cover rounded-[8px] border border-gray-200">
                         <button onclick="clearRefImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow active:scale-90">✕</button>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="document.getElementById('ref-file-input').click()" class="bg-gray-100 text-[#007AFF] px-3 py-1.5 rounded-full text-[13px] font-medium active:bg-gray-200 flex items-center gap-1.5 transition-colors">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
                             Upload Ref
                         </button>
                         <button onclick="showGalleryRefPicker()" class="bg-gray-100 text-[#007AFF] px-3 py-1.5 rounded-full text-[13px] font-medium active:bg-gray-200 flex items-center gap-1.5 transition-colors">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                            Dari Galeri
+                            Galeri
                         </button>
                     </div>
                     <div id="gallery-ref-picker" class="hidden mt-3 w-full overflow-x-auto flex gap-2 pb-1 scroll-smooth"></div>
                 </div>
                 <input type="file" id="ref-file-input" accept="image/*" class="hidden">
-
                 <div id="ai-loading" class="hidden flex-col items-center justify-center py-4">
                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#007AFF]"></div>
-                    <p class="text-[13px] mt-3 text-gray-500">AI sedang memproses...</p>
                 </div>
             </div>
             <div class="flex border-t border-gray-200" id="ai-actions">
@@ -186,7 +154,6 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast-container" class="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none w-max max-w-[90%]"></div>
 
     <script>
@@ -195,23 +162,19 @@
         })], {type: 'application/json'});
         document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(manifestBlob)}">`);
 
-        // --- GLOBAL SETTINGS LOGIC ---
         let appGlobalSettings = {
             apiKey: '',
-            modelName: 'gemini-3.1-flash-image-preview' // Default Hardcode
+            modelName: 'gemini-3.1-flash-image-preview'
         };
 
         function loadGlobalSettings() {
             const saved = localStorage.getItem('galleryGlobalSettings_v1');
-            if (saved) {
-                appGlobalSettings = JSON.parse(saved);
-            }
+            if (saved) appGlobalSettings = JSON.parse(saved);
         }
 
         function openGlobalSettings() {
             document.getElementById('global-api-key').value = appGlobalSettings.apiKey;
             document.getElementById('global-model-name').value = appGlobalSettings.modelName;
-            
             const modal = document.getElementById('global-settings-modal');
             const box = document.getElementById('global-settings-box');
             modal.classList.remove('hidden'); modal.classList.add('flex');
@@ -228,16 +191,13 @@
         function saveGlobalSettings() {
             appGlobalSettings.apiKey = document.getElementById('global-api-key').value.trim();
             appGlobalSettings.modelName = document.getElementById('global-model-name').value.trim() || 'gemini-3.1-flash-image-preview';
-            
             localStorage.setItem('galleryGlobalSettings_v1', JSON.stringify(appGlobalSettings));
             closeGlobalSettings();
-            showToast("Pengaturan Global Tersimpan");
+            showToast("Tersimpan");
         }
 
         loadGlobalSettings();
 
-
-        // --- KONFIGURASI INDEXEDDB ---
         const DB_NAME = 'ImageViewerDB_iOS_v2';
         const STORE_NAME = 'gallery_images';
         let globalImages = []; 
@@ -311,21 +271,18 @@
             toast.className = `bg-black/80 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-lg text-[15px] flex items-center justify-center animate-slide-up pointer-events-auto z-50`;
             toast.innerHTML = `<span>${message}</span>`;
             toastContainer.appendChild(toast);
-            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2000);
         }
 
         async function updateQuickSetting(id, key, value, element) {
             const imgRecord = globalImages.find(i => i.id === id);
             if (!imgRecord) return;
             if (!imgRecord.settings) imgRecord.settings = { ...DEFAULT_SETTINGS };
-
-            if (key === 'duration') {
-                imgRecord.settings[key] = value === '' ? 0 : parseFloat(value);
-            } else {
+            if (key === 'duration') imgRecord.settings[key] = value === '' ? 0 : parseFloat(value);
+            else {
                 imgRecord.settings[key] = value;
                 const parent = element.parentElement;
-                const buttons = parent.querySelectorAll('button');
-                buttons.forEach(btn => btn.className = 'flex-1 text-[13px] py-1.5 rounded-[6px] text-gray-500 bg-transparent transition-all');
+                parent.querySelectorAll('button').forEach(btn => btn.className = 'flex-1 text-[13px] py-1.5 rounded-[6px] text-gray-500 bg-transparent transition-all');
                 element.className = 'flex-1 text-[13px] py-1.5 rounded-[6px] bg-white shadow-sm font-semibold text-black transition-all';
             }
             await updateImageInDB(imgRecord);
@@ -335,63 +292,45 @@
             imageListContainer.innerHTML = '';
             globalImages = await getAllImagesFromDB();
             if (globalImages.length === 0) return;
-
             globalImages.forEach((imgData, index) => {
                 const objectUrl = URL.createObjectURL(imgData.file);
                 const title = imgData.isAI ? `Image ${index + 1} (AI)` : `Image ${index + 1}`;
                 const imgSet = imgData.settings || DEFAULT_SETTINGS;
-                const isFade = imgSet.transition === 'fade';
-                const isTap = imgSet.trigger === 'tap';
-                const dur = imgSet.duration;
-                
                 const itemHTML = `
                     <div class="bg-white rounded-[14px] overflow-hidden shadow-sm animate-fade-in border border-black/5">
                         <div class="px-4 py-3 border-b border-black/5">
                             <h2 class="text-[17px] font-medium text-black">${title}</h2>
                         </div>
                         <div class="w-full h-60 bg-gray-100 cursor-pointer" onclick="openFullscreen(${index})">
-                            <img src="${objectUrl}" class="w-full h-full object-cover" alt="${title}">
+                            <img src="${objectUrl}" class="w-full h-full object-cover">
                         </div>
                         <div class="p-4 bg-[#FAFAFA] flex flex-col gap-3 border-t border-black/5">
                             <div class="flex justify-between items-center">
                                 <span class="text-[14px] text-gray-600 font-medium">Transition</span>
                                 <div class="flex bg-gray-200/80 rounded-[8px] p-0.5 w-[160px]">
-                                    <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'fade', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${isFade ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Fade</button>
-                                    <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'instant', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${!isFade ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Instant</button>
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'fade', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.transition === 'fade' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Fade</button>
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'instant', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.transition !== 'fade' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Instant</button>
                                 </div>
                             </div>
                             <div class="flex justify-between items-center">
                                 <span class="text-[14px] text-gray-600 font-medium">Trigger</span>
                                 <div class="flex bg-gray-200/80 rounded-[8px] p-0.5 w-[160px]">
-                                    <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'tap', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${isTap ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Tap</button>
-                                    <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'swipe', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${!isTap ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Swipe</button>
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'tap', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.trigger === 'tap' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Tap</button>
+                                    <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'swipe', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.trigger !== 'tap' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Swipe</button>
                                 </div>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-[14px] text-gray-600 font-medium">Duration (sec)</span>
-                                <input type="number" step="0.1" min="0" value="${dur}" onchange="updateQuickSetting(${imgData.id}, 'duration', this.value, this)" class="w-[160px] bg-white border border-gray-200 rounded-[8px] px-3 py-1.5 text-[14px] font-semibold outline-none focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] text-center shadow-sm transition-all">
-                            </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 imageListContainer.insertAdjacentHTML('beforeend', itemHTML);
             });
         }
 
         async function startPerform() {
-            if (globalImages.length === 0) {
-                showToast("Tambahkan gambar ke galeri dulu!");
-                return;
-            }
-            try {
-                const elem = document.documentElement;
-                if (elem.requestFullscreen) await elem.requestFullscreen();
-                else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen();
-            } catch (e) {}
-
+            if (globalImages.length === 0) return;
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) await elem.requestFullscreen();
             isPerformMode = true;
             overlayTop.classList.add('hidden'); 
-            showToast("Perform Mode: Swipe kebawah dengan 2 Jari untuk keluar");
             openFullscreen(0); 
         }
 
@@ -399,15 +338,10 @@
             if(globalImages.length === 0) return;
             currentIndex = index;
             const url = URL.createObjectURL(globalImages[currentIndex].file);
-            
             const img1 = document.getElementById('display-image-1');
             const img2 = document.getElementById('display-image-2');
-            
-            img1.style.transitionDuration = '0s';
-            img2.style.transitionDuration = '0s';
-            img1.src = url; img1.style.opacity = 1;
-            img2.style.opacity = 0; activeImageLayer = 1;
-
+            img1.style.transitionDuration = '0s'; img2.style.transitionDuration = '0s';
+            img1.src = url; img1.style.opacity = 1; img2.style.opacity = 0; activeImageLayer = 1;
             dashboardScreen.classList.add('hidden');
             imageScreen.classList.remove('hidden');
             document.querySelector('meta[name="theme-color"]').setAttribute("content", "#000000");
@@ -417,7 +351,6 @@
             imageScreen.classList.add('hidden');
             dashboardScreen.classList.remove('hidden');
             document.querySelector('meta[name="theme-color"]').setAttribute("content", "#F2F2F7");
-            
             isPerformMode = false;
             overlayTop.classList.remove('hidden');
             if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
@@ -428,34 +361,24 @@
             const currentImgSettings = globalImages[currentIndex].settings || DEFAULT_SETTINGS;
             if (direction === 'next') currentIndex = (currentIndex + 1) % globalImages.length;
             else currentIndex = (currentIndex - 1 + globalImages.length) % globalImages.length;
-
             const url = URL.createObjectURL(globalImages[currentIndex].file);
             const img1 = document.getElementById('display-image-1');
             const img2 = document.getElementById('display-image-2');
-
             let dur = currentImgSettings.transition === 'instant' ? 0 : parseFloat(currentImgSettings.duration);
-            if (isNaN(dur) || dur < 0) dur = 0;
-
-            img1.style.transitionDuration = `${dur}s`;
-            img2.style.transitionDuration = `${dur}s`;
-
-            if (activeImageLayer === 1) {
-                img2.src = url; img2.style.opacity = 1; img1.style.opacity = 0; activeImageLayer = 2;
-            } else {
-                img1.src = url; img1.style.opacity = 1; img2.style.opacity = 0; activeImageLayer = 1;
-            }
+            img1.style.transitionDuration = `${dur}s`; img2.style.transitionDuration = `${dur}s`;
+            if (activeImageLayer === 1) { img2.src = url; img2.style.opacity = 1; img1.style.opacity = 0; activeImageLayer = 2; }
+            else { img1.src = url; img1.style.opacity = 1; img2.style.opacity = 0; activeImageLayer = 1; }
         }
 
         const touchArea = document.getElementById('touch-area');
-        let startX = 0, startY = 0, isTwoFingerGesture = false, twoFingerStartY = null, activeTouches = 0;
+        let startX = 0, startY = 0, isTwoFingerGesture = false, twoFingerStartY = null;
 
         touchArea.addEventListener('touchstart', (e) => {
-            activeTouches = e.touches.length;
-            if (activeTouches === 2) {
+            if (e.touches.length === 2) {
                 isTwoFingerGesture = true;
                 twoFingerStartY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
                 e.preventDefault(); 
-            } else if (activeTouches === 1 && !isTwoFingerGesture) {
+            } else if (e.touches.length === 1) {
                 startX = e.touches[0].clientX; startY = e.touches[0].clientY;
             }
         }, { passive: false });
@@ -465,205 +388,107 @@
         }, { passive: false });
 
         touchArea.addEventListener('touchend', (e) => {
-            activeTouches = e.touches.length;
             if (isTwoFingerGesture) {
-                if (activeTouches === 0 && twoFingerStartY !== null) {
+                if (e.touches.length === 0 && twoFingerStartY !== null) {
                     if ((e.changedTouches[0].clientY - twoFingerStartY) > 50) closeFullscreen();
                     twoFingerStartY = null; isTwoFingerGesture = false;
                 }
                 return; 
             }
-            if (e.changedTouches.length === 1 && !isTwoFingerGesture) {
+            if (e.changedTouches.length === 1) {
                 let diffX = startX - e.changedTouches[0].clientX;
                 let diffY = startY - e.changedTouches[0].clientY;
                 let distance = Math.sqrt(diffX*diffX + diffY*diffY);
                 const activeTrigger = (globalImages[currentIndex].settings || DEFAULT_SETTINGS).trigger;
-
-                if (distance < 10) { 
-                    if (activeTrigger === 'tap') changeImage('next');
-                } else { 
-                    if (activeTrigger === 'swipe' && Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 40) {
-                        if (diffY > 0) changeImage('next'); else changeImage('prev'); 
-                    }
-                }
+                if (distance < 10) { if (activeTrigger === 'tap') changeImage('next'); }
+                else { if (activeTrigger === 'swipe' && Math.abs(diffY) > 40) changeImage(diffY > 0 ? 'next' : 'prev'); }
             }
         });
 
         document.getElementById('btn-hapus').addEventListener('click', async () => {
-            if (globalImages.length > 0 && confirm("Hapus gambar ini?")) {
+            if (globalImages.length > 0) {
                 await deleteImageFromDB(globalImages[currentIndex].id);
                 await loadDashboard(); 
                 if (globalImages.length === 0) closeFullscreen();
-                else {
-                    currentIndex = currentIndex >= globalImages.length ? globalImages.length - 1 : currentIndex;
-                    const url = URL.createObjectURL(globalImages[currentIndex].file);
-                    const activeImg = activeImageLayer === 1 ? document.getElementById('display-image-1') : document.getElementById('display-image-2');
-                    activeImg.src = url;
-                }
-                showToast('Terhapus');
+                else openFullscreen(currentIndex >= globalImages.length ? globalImages.length - 1 : currentIndex);
             }
         });
 
         fileInput.addEventListener('change', async (e) => {
             if (e.target.files[0]) {
-                await saveImageToDB(e.target.files[0], false);
+                await saveImageToDB(e.target.files[0]);
                 loadDashboard();
             }
             fileInput.value = ''; 
         });
 
-        // --- REFERENCE IMAGE LOGIC ---
         let currentRefBase64 = null;
         let currentRefMime = null;
 
-        function blobToBase64(blob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve({ base64: reader.result.split(',')[1], mime: blob.type });
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        }
-
         async function setRefImage(fileOrBlob) {
-            const data = await blobToBase64(fileOrBlob);
-            currentRefBase64 = data.base64;
-            currentRefMime = data.mime;
-            
-            document.getElementById('ref-image-preview').src = URL.createObjectURL(fileOrBlob);
-            document.getElementById('ref-image-container').classList.remove('hidden');
-            document.getElementById('gallery-ref-picker').classList.add('hidden');
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                currentRefBase64 = reader.result.split(',')[1];
+                currentRefMime = fileOrBlob.type;
+                document.getElementById('ref-image-preview').src = URL.createObjectURL(fileOrBlob);
+                document.getElementById('ref-image-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(fileOrBlob);
         }
 
-        function clearRefImage() {
-            currentRefBase64 = null;
-            currentRefMime = null;
-            document.getElementById('ref-image-container').classList.add('hidden');
-        }
-
-        document.getElementById('ref-file-input').addEventListener('change', async (e) => {
-            if (e.target.files[0]) await setRefImage(e.target.files[0]);
-            e.target.value = ''; 
-        });
+        function clearRefImage() { currentRefBase64 = null; document.getElementById('ref-image-container').classList.add('hidden'); }
 
         function showGalleryRefPicker() {
             const picker = document.getElementById('gallery-ref-picker');
             picker.innerHTML = '';
-            
-            if (globalImages.length === 0) {
-                picker.innerHTML = '<span class="text-[12px] text-gray-500 italic mt-1">Galeri kosong.</span>';
-            } else {
-                globalImages.forEach(imgData => {
-                    const url = URL.createObjectURL(imgData.file);
-                    const imgEl = document.createElement('img');
-                    imgEl.src = url;
-                    imgEl.className = 'w-14 h-14 rounded-lg object-cover flex-shrink-0 cursor-pointer border border-gray-300 active:opacity-50 transition-opacity';
-                    imgEl.onclick = () => setRefImage(imgData.file);
-                    picker.appendChild(imgEl);
-                });
-            }
+            globalImages.forEach(imgData => {
+                const imgEl = document.createElement('img');
+                imgEl.src = URL.createObjectURL(imgData.file);
+                imgEl.className = 'w-14 h-14 rounded-lg object-cover flex-shrink-0 cursor-pointer border border-gray-300';
+                imgEl.onclick = () => setRefImage(imgData.file);
+                picker.appendChild(imgEl);
+            });
             picker.classList.remove('hidden');
         }
 
-        // --- AI GENERATOR (Meniru Logika Lucid App) ---
         function openAIModal() {
             document.getElementById('ai-modal').classList.remove('hidden');
             document.getElementById('ai-modal').classList.add('flex');
-            setTimeout(() => {
-                document.getElementById('ai-modal').classList.remove('opacity-0');
-                document.getElementById('ai-modal-box').classList.remove('scale-95');
-            }, 10);
-            document.getElementById('ai-prompt').value = '';
-            clearRefImage(); 
-            document.getElementById('gallery-ref-picker').classList.add('hidden');
+            setTimeout(() => { document.getElementById('ai-modal').classList.remove('opacity-0'); document.getElementById('ai-modal-box').classList.remove('scale-95'); }, 10);
+            clearRefImage();
         }
 
         function closeAIModal() {
             document.getElementById('ai-modal').classList.add('opacity-0');
             document.getElementById('ai-modal-box').classList.add('scale-95');
-            setTimeout(() => {
-                document.getElementById('ai-modal').classList.add('hidden');
-                document.getElementById('ai-modal').classList.remove('flex');
-            }, 300);
+            setTimeout(() => { document.getElementById('ai-modal').classList.add('hidden'); }, 300);
         }
 
         async function generateAIImage() {
-            const promptText = document.getElementById('ai-prompt').value.trim();
-            if (!promptText) return;
-
+            const prompt = document.getElementById('ai-prompt').value.trim();
+            if (!prompt || !appGlobalSettings.apiKey) return;
             document.getElementById('ai-actions').classList.add('hidden');
-            document.getElementById('ai-prompt').classList.add('hidden');
-            document.getElementById('ai-ref-section').classList.add('hidden');
             document.getElementById('ai-loading').classList.remove('hidden');
-            document.getElementById('ai-loading').classList.add('flex');
-
             try {
-                const activeApiKey = appGlobalSettings.apiKey;
-                const modelName = appGlobalSettings.modelName || 'gemini-3.1-flash-image-preview';
-
-                if (!activeApiKey) {
-                    showToast("API Key kosong! Isi dulu di Settings (⚙️).");
-                    throw new Error("No API Key");
-                }
-
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeApiKey}`;
-                
-                // Menyamakan payload 100% dengan cara Lucid app
-                let parts = [{ text: promptText }];
-                if (currentRefBase64) {
-                    parts.push({ inlineData: { mimeType: currentRefMime, data: currentRefBase64 } });
-                }
-
-                const payload = {
-                    contents: [{ parts: parts }],
-                    generationConfig: { responseModalities: ["TEXT", "IMAGE"] } 
-                };
-
-                const response = await fetch(url, {
+                const parts = [{ text: prompt }];
+                if (currentRefBase64) parts.push({ inlineData: { mimeType: currentRefMime, data: currentRefBase64 } });
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appGlobalSettings.modelName}:generateContent?key=${appGlobalSettings.apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ["TEXT", "IMAGE"] } })
                 });
-
-                if (!response.ok) {
-                    const errData = await response.json();
-                    console.error("API Error Response:", errData);
-                    throw new Error("Google API Failed");
-                }
-
                 const result = await response.json();
-                
-                // Ambil base64 string
                 const imgBase = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-
                 if (imgBase) {
-                    // Konversi yang paling aman tanpa error atob: langsung ubah via Data URI Fetch
-                    const dataUrl = `data:image/jpeg;base64,${imgBase}`;
-                    const fetchRes = await fetch(dataUrl);
-                    const blob = await fetchRes.blob();
-                    
+                    const blob = await (await fetch(`data:image/jpeg;base64,${imgBase}`)).blob();
                     await saveImageToDB(blob, true);
                     closeAIModal();
                     loadDashboard();
-                    setTimeout(() => dashboardScreen.scrollTo({ top: dashboardScreen.scrollHeight, behavior: 'smooth' }), 100);
-                    showToast('Gambar berhasil dibuat!');
-                } else {
-                    throw new Error("Format respons API tidak sesuai.");
                 }
-
-            } catch (error) { 
-                console.error("AI Generation Error:", error);
-                showToast("Gagal memproses gambar. Cek API Key & Koneksi."); 
-            } finally {
-                document.getElementById('ai-actions').classList.remove('hidden');
-                document.getElementById('ai-prompt').classList.remove('hidden');
-                document.getElementById('ai-ref-section').classList.remove('hidden');
-                document.getElementById('ai-loading').classList.add('hidden');
-                document.getElementById('ai-loading').classList.remove('flex');
-            }
+            } catch (e) { showToast("Gagal"); }
+            finally { document.getElementById('ai-actions').classList.remove('hidden'); document.getElementById('ai-loading').classList.add('hidden'); }
         }
 
-        // Init App
         loadDashboard();
     </script>
 </body>
