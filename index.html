@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -22,124 +22,118 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
-```
-    ::-webkit-scrollbar { display: none; }
+        ::-webkit-scrollbar { display: none; }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-    
-    @keyframes slideUpModal {
-        from { transform: translateY(100%); }
-        to { transform: translateY(0); }
-    }
-    .animate-slide-up { animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    
-    input[type=number]::-webkit-inner-spin-button, 
-    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        @keyframes slideUpModal {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-    /* FIX: ensure display-image transitions work */
-    #display-image-1, #display-image-2 {
-        transition-property: opacity;
-        transition-timing-function: ease-in-out;
-    }
-</style>
-```
-
+        #display-image-1, #display-image-2 {
+            transition-property: opacity;
+            transition-timing-function: ease-in-out;
+        }
+    </style>
 </head>
 <body class="text-black w-screen h-screen flex flex-col select-none overflow-hidden">
 
-```
-<div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-28">
-    <div class="px-6 pb-2 pt-8 bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50 flex justify-between items-end">
-        <h1 class="text-[34px] font-bold tracking-tight mt-4">Gallery</h1>
-        <button onclick="openGlobalSettings()" class="w-10 h-10 mb-1 rounded-full bg-white shadow-sm flex items-center justify-center active:bg-gray-100 transition-colors border border-gray-200 text-[#007AFF]">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-[22px] w-[22px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-32">
+    <div class="px-6 pb-4 pt-12 bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50 flex justify-between items-end">
+        <h1 class="text-3xl font-bold tracking-tight">Gallery</h1>
+        <button onclick="openGlobalSettings()" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center active:bg-gray-100 transition-colors border border-gray-200 text-[#007AFF]">
+            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
         </button>
     </div>
 
-    <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-5"></div>
+    <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-6"></div>
 
     <div class="flex flex-col items-center justify-center cursor-pointer mt-6 mb-10 w-full max-w-md mx-auto px-4" onclick="document.getElementById('file-input').click()">
         <div class="w-full py-8 bg-white rounded-2xl flex flex-col items-center justify-center active:bg-gray-100 transition-colors shadow-sm border border-gray-100">
-            <svg class="w-10 h-10 text-[#007AFF] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg width="40" height="40" class="text-[#007AFF] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
             </svg>
-            <p class="text-[17px] text-[#007AFF] font-medium">Add Image</p>
+            <p class="text-[17px] text-[#007AFF] font-medium">Add Media</p>
         </div>
     </div>
-    <input type="file" id="file-input" accept="image/*" class="hidden">
+    <input type="file" id="file-input" accept="image/*" style="display: none;">
 </div>
 
-<div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 pb-6">
-    <div class="w-full max-w-md mx-auto px-4 py-3 flex gap-3">
+<div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 pb-8 pt-4">
+    <div class="w-full max-w-md mx-auto px-4 flex gap-3">
         <button onclick="startPerform()" class="flex-1 bg-black text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
             </svg>
-            Perform
+            View
         </button>
         <button onclick="openAIModal()" class="flex-1 bg-[#007AFF] text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-[#005bb5] transition-colors flex items-center justify-center gap-2 shadow-sm">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            Add AI
+            Generate
         </button>
     </div>
 </div>
 
-<div id="image-screen" class="fixed inset-0 hidden bg-black z-40">
-    <img id="display-image-1" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-100" alt="Image View 1">
-    <img id="display-image-2" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-0" alt="Image View 2">
+<div id="image-screen" class="fixed inset-0 bg-black z-40" style="display: none;">
+    <img id="display-image-1" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-100" alt="View 1">
+    <img id="display-image-2" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-0" alt="View 2">
     <div id="touch-area" class="absolute inset-0 z-10 touch-none"></div>
-    <div id="image-overlay-top" class="absolute top-0 left-0 w-full px-4 pt-10 flex justify-between items-start bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 h-[120px] z-20 pointer-events-none">
+    <div id="image-overlay-top" class="absolute top-0 left-0 w-full px-4 pt-14 flex justify-between items-start bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 h-[140px] z-20 pointer-events-none">
         <button onclick="closeFullscreen()" class="text-[#007AFF] flex items-center gap-1 text-[17px] active:opacity-50 pointer-events-auto">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
             Gallery
         </button>
         <div class="flex gap-4 pointer-events-auto">
             <button id="btn-hapus" class="text-white active:opacity-50">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             </button>
         </div>
     </div>
 </div>
 
-<div id="global-settings-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+<div id="global-settings-modal" class="fixed inset-0 bg-black/40 items-center justify-center z-50 p-4 transition-opacity duration-300" style="display: none; opacity: 0;">
     <div class="bg-[#F2F2F7] rounded-[20px] w-full max-w-[340px] flex flex-col text-left overflow-hidden transform scale-95 transition-transform duration-300" id="global-settings-box">
         <div class="p-5 pb-4">
             <h3 class="text-[17px] font-semibold text-black mb-1 text-center">Settings</h3>
-            <p class="text-[13px] text-gray-500 mb-5 text-center">Konfigurasi API dan Model.</p>
+            <p class="text-[13px] text-gray-500 mb-5 text-center">API Configuration</p>
             <div class="mb-4">
                 <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">API Key</label>
                 <input type="password" id="global-api-key" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="Google API Key">
             </div>
             <div class="mb-2">
-                <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">Model AI</label>
+                <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">AI Model</label>
                 <input type="text" id="global-model-name" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="gemini-2.0-flash-preview-image-generation">
             </div>
         </div>
         <div class="flex border-t border-gray-300/80 bg-white">
-            <button onclick="closeGlobalSettings()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Batal</button>
-            <button onclick="saveGlobalSettings()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Simpan</button>
+            <button onclick="closeGlobalSettings()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Cancel</button>
+            <button onclick="saveGlobalSettings()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Save</button>
         </div>
     </div>
 </div>
 
-<div id="ai-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+<div id="ai-modal" class="fixed inset-0 bg-black/40 items-center justify-center z-50 p-4 transition-opacity duration-300" style="display: none; opacity: 0;">
     <div class="bg-white rounded-[20px] w-full max-w-[340px] flex flex-col text-left overflow-hidden transform scale-95 transition-transform duration-300" id="ai-modal-box">
         <div class="p-5 pb-4">
-            <h3 class="text-[17px] font-semibold text-black mb-1 text-center">AI Generator</h3>
-            <p class="text-[13px] text-gray-500 mb-4 text-center">Visualisasikan ide baru.</p>
-            <textarea id="ai-prompt" class="w-full bg-[#F2F2F7] rounded-xl p-3 outline-none text-[15px] resize-none text-black placeholder-gray-400 border border-transparent focus:border-[#007AFF] transition-colors" rows="3" placeholder="Deskripsikan gambar..."></textarea>
+            <h3 class="text-[17px] font-semibold text-black mb-1 text-center">Generator</h3>
+            <p class="text-[13px] text-gray-500 mb-4 text-center">Create visual concepts</p>
+            <textarea id="ai-prompt" class="w-full bg-[#F2F2F7] rounded-xl p-3 outline-none text-[15px] resize-none text-black placeholder-gray-400 border border-transparent focus:border-[#007AFF] transition-colors" rows="3" placeholder="Describe the image..."></textarea>
             <div class="mt-4" id="ai-ref-section">
-                <!-- FIX: ref-image-container uses hidden correctly -->
-                <div id="ref-image-container" class="hidden relative w-16 h-16 mb-3">
+                <div id="ref-image-container" class="relative w-16 h-16 mb-3" style="display: none;">
                     <img id="ref-image-preview" class="w-full h-full object-cover rounded-[8px] border border-gray-200">
                     <button onclick="clearRefImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow active:scale-90">✕</button>
                 </div>
@@ -148,26 +142,24 @@
                         Upload Ref
                     </button>
                     <button onclick="showGalleryRefPicker()" class="bg-gray-100 text-[#007AFF] px-3 py-1.5 rounded-full text-[13px] font-medium active:bg-gray-200 flex items-center gap-1.5 transition-colors">
-                        Galeri
+                        Gallery
                     </button>
                 </div>
-                <!-- FIX: gallery-ref-picker: removed conflicting static flex class; toggled via JS -->
-                <div id="gallery-ref-picker" class="hidden mt-3 w-full overflow-x-auto pb-1 scroll-smooth"></div>
+                <div id="gallery-ref-picker" class="mt-3 w-full overflow-x-auto pb-1 scroll-smooth gap-2" style="display: none;"></div>
             </div>
-            <!-- FIX: ai-loading: removed conflicting 'flex-col' from initial class; toggled properly -->
-            <input type="file" id="ref-file-input" accept="image/*" class="hidden">
-            <div id="ai-loading" class="hidden items-center justify-center py-4">
+            <input type="file" id="ref-file-input" accept="image/*" style="display: none;">
+            <div id="ai-loading" class="items-center justify-center py-4" style="display: none;">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#007AFF]"></div>
             </div>
         </div>
         <div class="flex border-t border-gray-200" id="ai-actions">
-            <button onclick="closeAIModal()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Batal</button>
-            <button onclick="generateAIImage()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Buat</button>
+            <button onclick="closeAIModal()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Cancel</button>
+            <button onclick="generateAIImage()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Generate</button>
         </div>
     </div>
 </div>
 
-<div id="toast-container" class="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none w-max max-w-[90%]"></div>
+<div id="toast-container" class="fixed top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none w-max max-w-[90%]"></div>
 
 <script>
     const manifestBlob = new Blob([JSON.stringify({
@@ -190,15 +182,15 @@
         document.getElementById('global-model-name').value = appGlobalSettings.modelName;
         const modal = document.getElementById('global-settings-modal');
         const box = document.getElementById('global-settings-box');
-        modal.classList.remove('hidden'); modal.classList.add('flex');
-        setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+        modal.style.display = 'flex';
+        setTimeout(() => { modal.style.opacity = '1'; box.classList.remove('scale-95'); }, 10);
     }
 
     function closeGlobalSettings() {
         const modal = document.getElementById('global-settings-modal');
         const box = document.getElementById('global-settings-box');
-        modal.classList.add('opacity-0'); box.classList.add('scale-95');
-        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+        modal.style.opacity = '0'; box.classList.add('scale-95');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
     }
 
     function saveGlobalSettings() {
@@ -206,7 +198,7 @@
         appGlobalSettings.modelName = document.getElementById('global-model-name').value.trim() || 'gemini-2.0-flash-preview-image-generation';
         localStorage.setItem('galleryGlobalSettings_v1', JSON.stringify(appGlobalSettings));
         closeGlobalSettings();
-        showToast("Tersimpan");
+        showToast("Settings saved");
     }
 
     loadGlobalSettings();
@@ -310,7 +302,7 @@
         if (globalImages.length === 0) return;
         globalImages.forEach((imgData, index) => {
             const objectUrl = URL.createObjectURL(imgData.file);
-            const title = imgData.isAI ? `Image ${index + 1} (AI)` : `Image ${index + 1}`;
+            const title = imgData.isAI ? `Media ${index + 1}` : `Media ${index + 1}`;
             const imgSet = imgData.settings || DEFAULT_SETTINGS;
             const itemHTML = `
                 <div class="bg-white rounded-[14px] overflow-hidden shadow-sm animate-fade-in border border-black/5">
@@ -341,35 +333,36 @@
         });
     }
 
-    async function startPerform() {
-        if (globalImages.length === 0) { showToast("Tambahkan gambar dulu"); return; }
+    function startPerform() {
+        if (globalImages.length === 0) { showToast("Add an image first"); return; }
         const elem = document.documentElement;
-        if (elem.requestFullscreen) await elem.requestFullscreen().catch(() => {});
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(() => {});
+        }
         isPerformMode = true;
-        overlayTop.classList.add('hidden'); 
+        overlayTop.style.display = 'none';
         openFullscreen(0); 
     }
 
     function openFullscreen(index) {
         if (globalImages.length === 0) return;
-        // FIX: clamp index to valid range
         currentIndex = Math.max(0, Math.min(index, globalImages.length - 1));
         const url = URL.createObjectURL(globalImages[currentIndex].file);
         const img1 = document.getElementById('display-image-1');
         const img2 = document.getElementById('display-image-2');
         img1.style.transitionDuration = '0s'; img2.style.transitionDuration = '0s';
-        img1.src = url; img1.style.opacity = 1; img2.style.opacity = 0; activeImageLayer = 1;
-        dashboardScreen.classList.add('hidden');
-        imageScreen.classList.remove('hidden');
+        img1.src = url; img1.style.opacity = '1'; img2.style.opacity = '0'; activeImageLayer = 1;
+        dashboardScreen.style.display = 'none';
+        imageScreen.style.display = 'block';
         document.querySelector('meta[name="theme-color"]').setAttribute("content", "#000000");
     }
 
     function closeFullscreen() {
-        imageScreen.classList.add('hidden');
-        dashboardScreen.classList.remove('hidden');
+        imageScreen.style.display = 'none';
+        dashboardScreen.style.display = 'flex';
         document.querySelector('meta[name="theme-color"]').setAttribute("content", "#F2F2F7");
         isPerformMode = false;
-        overlayTop.classList.remove('hidden');
+        overlayTop.style.display = 'flex';
         if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
     }
 
@@ -381,11 +374,10 @@
         const url = URL.createObjectURL(globalImages[currentIndex].file);
         const img1 = document.getElementById('display-image-1');
         const img2 = document.getElementById('display-image-2');
-        // FIX: duration fallback to DEFAULT_SETTINGS.duration if undefined
         let dur = currentImgSettings.transition === 'instant' ? 0 : parseFloat(currentImgSettings.duration ?? DEFAULT_SETTINGS.duration);
         img1.style.transitionDuration = `${dur}s`; img2.style.transitionDuration = `${dur}s`;
-        if (activeImageLayer === 1) { img2.src = url; img2.style.opacity = 1; img1.style.opacity = 0; activeImageLayer = 2; }
-        else { img1.src = url; img1.style.opacity = 1; img2.style.opacity = 0; activeImageLayer = 1; }
+        if (activeImageLayer === 1) { img2.src = url; img2.style.opacity = '1'; img1.style.opacity = '0'; activeImageLayer = 2; }
+        else { img1.src = url; img1.style.opacity = '1'; img2.style.opacity = '0'; activeImageLayer = 1; }
     }
 
     const touchArea = document.getElementById('touch-area');
@@ -420,17 +412,19 @@
             let diffY = startY - e.changedTouches[0].clientY;
             let distance = Math.sqrt(diffX*diffX + diffY*diffY);
             const activeTrigger = (globalImages[currentIndex]?.settings || DEFAULT_SETTINGS).trigger;
-            if (distance < 10) { if (activeTrigger === 'tap') changeImage('next'); }
-            else { if (activeTrigger === 'swipe' && Math.abs(diffY) > 40) changeImage(diffY > 0 ? 'next' : 'prev'); }
+            if (distance < 10) { 
+                if (activeTrigger === 'tap') changeImage('next'); 
+            } else { 
+                if (activeTrigger === 'swipe' && Math.abs(diffX) > 40) changeImage(diffX > 0 ? 'next' : 'prev'); 
+            }
         }
     });
 
-    // FIX: delete now properly waits for loadDashboard before calling openFullscreen
     document.getElementById('btn-hapus').addEventListener('click', async () => {
         if (globalImages.length === 0) return;
         const deletedIndex = currentIndex;
         await deleteImageFromDB(globalImages[deletedIndex].id);
-        await loadDashboard(); // updates globalImages
+        await loadDashboard(); 
         if (globalImages.length === 0) {
             closeFullscreen();
         } else {
@@ -443,7 +437,7 @@
         if (e.target.files[0]) {
             await saveImageToDB(e.target.files[0]);
             await loadDashboard();
-            showToast("Gambar ditambahkan");
+            showToast("Saved to gallery");
         }
         fileInput.value = ''; 
     });
@@ -451,12 +445,10 @@
     let currentRefBase64 = null;
     let currentRefMime = null;
 
-    // FIX: attach ref-file-input change event (was missing in original)
     document.getElementById('ref-file-input').addEventListener('change', async (e) => {
         if (e.target.files[0]) {
             await setRefImage(e.target.files[0]);
-            // Hide gallery picker when file is uploaded
-            document.getElementById('gallery-ref-picker').classList.add('hidden');
+            document.getElementById('gallery-ref-picker').style.display = 'none';
         }
         e.target.value = '';
     });
@@ -468,8 +460,6 @@
                 currentRefBase64 = reader.result.split(',')[1];
                 currentRefMime = fileOrBlob.type || 'image/jpeg';
                 document.getElementById('ref-image-preview').src = URL.createObjectURL(fileOrBlob);
-                document.getElementById('ref-image-container').classList.remove('hidden');
-                // FIX: show ref-image-container as flex, not block
                 document.getElementById('ref-image-container').style.display = 'flex';
                 resolve();
             };
@@ -480,80 +470,67 @@
     function clearRefImage() {
         currentRefBase64 = null;
         currentRefMime = null;
-        document.getElementById('ref-image-container').classList.add('hidden');
-        document.getElementById('ref-image-container').style.display = '';
+        document.getElementById('ref-image-container').style.display = 'none';
     }
 
     function showGalleryRefPicker() {
         const picker = document.getElementById('gallery-ref-picker');
         picker.innerHTML = '';
-        if (globalImages.length === 0) { showToast("Belum ada gambar di galeri"); return; }
+        if (globalImages.length === 0) { showToast("Gallery is empty"); return; }
         globalImages.forEach(imgData => {
             const imgEl = document.createElement('img');
             imgEl.src = URL.createObjectURL(imgData.file);
             imgEl.className = 'w-14 h-14 rounded-lg object-cover flex-shrink-0 cursor-pointer border border-gray-300 active:opacity-70';
             imgEl.onclick = () => {
                 setRefImage(imgData.file);
-                // FIX: hide picker after selection
-                picker.classList.add('hidden');
-                picker.style.display = '';
+                picker.style.display = 'none';
             };
             picker.appendChild(imgEl);
         });
-        // FIX: toggle visibility + display flex properly
-        if (picker.classList.contains('hidden')) {
-            picker.classList.remove('hidden');
+        if (picker.style.display === 'none' || picker.style.display === '') {
             picker.style.display = 'flex';
-            picker.style.gap = '8px';
         } else {
-            picker.classList.add('hidden');
-            picker.style.display = '';
+            picker.style.display = 'none';
         }
     }
 
     function openAIModal() {
-        // FIX: reset modal state on open
         document.getElementById('ai-prompt').value = '';
         clearRefImage();
-        document.getElementById('gallery-ref-picker').classList.add('hidden');
-        document.getElementById('gallery-ref-picker').style.display = '';
+        document.getElementById('gallery-ref-picker').style.display = 'none';
         setAILoadingState(false);
 
         const modal = document.getElementById('ai-modal');
         const box = document.getElementById('ai-modal-box');
-        modal.classList.remove('hidden'); modal.classList.add('flex');
-        setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+        modal.style.display = 'flex';
+        setTimeout(() => { modal.style.opacity = '1'; box.classList.remove('scale-95'); }, 10);
     }
 
     function closeAIModal() {
-        // FIX: always reset loading state on close
         setAILoadingState(false);
 
         const modal = document.getElementById('ai-modal');
         const box = document.getElementById('ai-modal-box');
-        modal.classList.add('opacity-0'); box.classList.add('scale-95');
-        setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+        modal.style.opacity = '0'; box.classList.add('scale-95');
+        setTimeout(() => { modal.style.display = 'none'; }, 300);
     }
 
-    // FIX: centralized loading state toggle for AI modal
     function setAILoadingState(loading) {
         const loadingEl = document.getElementById('ai-loading');
         const actionsEl = document.getElementById('ai-actions');
         if (loading) {
-            actionsEl.classList.add('hidden');
-            loadingEl.classList.remove('hidden');
-            loadingEl.style.display = 'flex'; // FIX: ensure flex display
+            actionsEl.style.display = 'none';
+            loadingEl.style.display = 'flex';
         } else {
-            loadingEl.classList.add('hidden');
-            loadingEl.style.display = '';
-            actionsEl.classList.remove('hidden');
+            loadingEl.style.display = 'none';
+            actionsEl.style.display = 'flex';
         }
     }
 
     async function generateAIImage() {
         const prompt = document.getElementById('ai-prompt').value.trim();
-        if (!prompt) { showToast("Masukkan deskripsi gambar"); return; }
-        if (!appGlobalSettings.apiKey) { showToast("API Key belum diatur"); return; }
+        if (!prompt) { showToast("Describe the concept"); return; }
+        if (!appGlobalSettings.apiKey) { showToast("Please setup API key"); return; }
 
         setAILoadingState(true);
         try {
@@ -575,12 +552,12 @@
                 await saveImageToDB(blob, true);
                 closeAIModal();
                 await loadDashboard();
-                showToast("Gambar AI berhasil dibuat");
+                showToast("Generation complete");
             } else {
-                showToast("Gagal: respons tidak mengandung gambar");
+                showToast("Generation failed");
             }
         } catch (e) {
-            showToast(`Gagal: ${e.message || 'Error tidak diketahui'}`);
+            showToast(`Error: ${e.message || 'Unknown error'}`);
         } finally {
             setAILoadingState(false);
         }
