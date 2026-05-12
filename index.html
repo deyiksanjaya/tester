@@ -2,12 +2,26 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Trik Fullscreen & PWA Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    
     <title>Offline Image Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Sembunyikan scrollbar */
-        body { margin: 0; overflow: hidden; background-color: #000; }
+        /* Reset CSS buat nahan sifat asli web (scroll mantul, text ke-select, dll) */
+        html, body {
+            overscroll-behavior: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
+            margin: 0; padding: 0;
+            background-color: #000;
+        }
         
         /* Animasi untuk toast notifikasi */
         @keyframes slideUp {
@@ -19,10 +33,10 @@
         }
     </style>
 </head>
-<body class="text-white h-screen w-screen flex flex-col font-sans select-none">
+<body class="text-white w-screen h-[100dvh] flex flex-col font-sans select-none overflow-hidden bg-black">
 
     <!-- Screen 1: Upload Area -->
-    <div id="upload-screen" class="flex-1 flex flex-col items-center justify-center p-6 bg-gray-900 hidden">
+    <div id="upload-screen" class="flex-1 flex flex-col items-center justify-center p-6 bg-gray-900 hidden h-full w-full">
         <div class="max-w-md w-full p-8 border-2 border-dashed border-gray-600 rounded-2xl bg-gray-800 text-center hover:bg-gray-750 transition-colors cursor-pointer" onclick="document.getElementById('file-input').click()">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -37,20 +51,20 @@
     </div>
 
     <!-- Screen 2: Fullscreen Image View -->
-    <div id="image-screen" class="flex-1 relative hidden bg-black group">
+    <div id="image-screen" class="fixed inset-0 w-full h-[100dvh] hidden bg-black group">
         <!-- Gambarnya -->
-        <img id="display-image" class="w-full h-full object-contain" alt="Fullscreen Image">
+        <img id="display-image" class="w-full h-full object-contain pointer-events-auto" alt="Fullscreen Image">
 
-        <!-- Tombol Kontrol -->
-        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-b from-black/70 to-transparent">
-            <button id="btn-ganti" class="bg-gray-800/80 hover:bg-gray-700 text-white px-4 py-2 rounded-full backdrop-blur-sm shadow-lg flex items-center gap-2 text-sm font-medium transition-all">
+        <!-- Tombol Kontrol (Langsung mentok atas tanpa safe-area) -->
+        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+            <button id="btn-ganti" class="bg-gray-800/80 hover:bg-gray-700 text-white px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-2 text-sm font-medium transition-all pointer-events-auto active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                Hapus & Ganti
+                Hapus
             </button>
             
-            <button id="btn-fullscreen" class="bg-blue-600/80 hover:bg-blue-500 text-white px-4 py-2 rounded-full backdrop-blur-sm shadow-lg flex items-center gap-2 text-sm font-medium transition-all">
+            <button id="btn-fullscreen" class="bg-blue-600/80 hover:bg-blue-500 text-white px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-2 text-sm font-medium transition-all pointer-events-auto active:scale-95">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                 </svg>
@@ -60,66 +74,69 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm"></div>
+    <div id="toast-container" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm pointer-events-none"></div>
 
     <script>
+        // --- DYNAMIC MANIFEST BUAT PWA ---
+        const manifest = {
+            name: "Offline Image Viewer",
+            short_name: "ImageViewer",
+            start_url: location.href,
+            display: "standalone",
+            background_color: "#000000",
+            theme_color: "#000000"
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(manifestBlob)}">`);
+
         // --- KONFIGURASI INDEXEDDB ---
         const DB_NAME = 'ImageViewerDB';
         const STORE_NAME = 'offline_images';
         const IMAGE_ID = 'my_saved_image';
-        let currentObjectUrl = null; // Buat nyimpen URL memori sementara
+        let currentObjectUrl = null;
 
-        // Fungsi bantu untuk buka database
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, 1);
-
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
                     if (!db.objectStoreNames.contains(STORE_NAME)) {
                         db.createObjectStore(STORE_NAME);
                     }
                 };
-
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
         }
 
-        // Fungsi simpan gambar ke DB
         async function saveImageToDB(file) {
             const db = await openDB();
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(file, IMAGE_ID); // Simpan file aslinya
-
+                const request = store.put(file, IMAGE_ID);
                 request.onsuccess = () => resolve();
                 request.onerror = () => reject(request.error);
             });
         }
 
-        // Fungsi ambil gambar dari DB
         async function getImageFromDB() {
             const db = await openDB();
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(STORE_NAME, 'readonly');
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.get(IMAGE_ID);
-
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
         }
 
-        // Fungsi hapus gambar dari DB
         async function deleteImageFromDB() {
             const db = await openDB();
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.delete(IMAGE_ID);
-
                 request.onsuccess = () => resolve();
                 request.onerror = () => reject(request.error);
             });
@@ -135,12 +152,11 @@
         const btnFullscreen = document.getElementById('btn-fullscreen');
         const toastContainer = document.getElementById('toast-container');
 
-        // Fungsi Toast notifikasi
         function showToast(message, type = 'error') {
             const toast = document.createElement('div');
             const bgColor = type === 'error' ? 'bg-red-600' : 'bg-green-600';
             
-            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 toast-enter`;
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 toast-enter pointer-events-auto`;
             
             const icon = type === 'error' 
                 ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`
@@ -157,12 +173,8 @@
             }, 3000);
         }
 
-        // Render gambar ke layar (menggunakan Blob URL)
         function renderImage(fileOrBlob) {
-            // Bersihkan URL memori yang lama biar gak bocor (memory leak)
-            if (currentObjectUrl) {
-                URL.revokeObjectURL(currentObjectUrl);
-            }
+            if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
             
             currentObjectUrl = URL.createObjectURL(fileOrBlob);
             displayImage.src = currentObjectUrl;
@@ -182,7 +194,6 @@
             }
         }
 
-        // Cek DB saat app pertama kali dibuka
         async function initApp() {
             try {
                 const savedFile = await getImageFromDB();
@@ -197,7 +208,6 @@
             }
         }
 
-        // Event saat gambar dipilih
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -208,7 +218,6 @@
             }
 
             try {
-                // Simpan langsung file-nya ke IndexedDB
                 await saveImageToDB(file);
                 showToast('Gambar berhasil disimpan offline!', 'success');
                 renderImage(file);
@@ -218,7 +227,6 @@
             }
         });
 
-        // Event Tombol Hapus & Ganti
         btnGanti.addEventListener('click', async () => {
             try {
                 await deleteImageFromDB();
@@ -231,7 +239,6 @@
             }
         });
 
-        // Event Tombol Fullscreen
         btnFullscreen.addEventListener('click', () => {
             const elem = document.documentElement;
             if (!document.fullscreenElement) {
@@ -245,7 +252,7 @@
             }
         });
 
-        // Double tap / click untuk fullscreen cepat
+        // Trik biar double tap di mobile lebih responsif dan support mouse dblclick
         let lastTap = 0;
         displayImage.addEventListener('touchstart', (e) => {
             const currentTime = new Date().getTime();
@@ -255,13 +262,12 @@
                 e.preventDefault();
             }
             lastTap = currentTime;
-        });
+        }, { passive: false });
 
         displayImage.addEventListener('dblclick', () => {
              btnFullscreen.click();
         });
 
-        // Mulai aplikasi
         initApp();
     </script>
 </body>
