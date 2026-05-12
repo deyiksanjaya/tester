@@ -3,306 +3,266 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner Teks Presisi</title>
-    <!-- Tailwind CSS -->
+    <title>Offline Image Viewer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Tesseract.js -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    
     <style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Sembunyikan scrollbar */
+        body { margin: 0; overflow: hidden; background-color: #000; }
         
-        /* Animasi Garis Scanner */
-        .scan-line {
-            position: absolute;
-            width: 100%;
-            height: 3px;
-            background: #10b981;
-            box-shadow: 0 0 10px #10b981, 0 0 20px #10b981;
-            top: 0;
-            left: 0;
-            animation: scan 2.5s ease-in-out infinite;
-            display: none;
+        /* Animasi untuk toast notifikasi */
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        
-        @keyframes scan {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-
-        .scanning .scan-line {
-            display: block;
-        }
-
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #10b981;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-            display: inline-block;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Frame kotak fokus biar user tau di mana harus ngepasin tulisan */
-        .focus-frame {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            height: 60%;
-            border: 2px dashed rgba(255, 255, 255, 0.5);
-            border-radius: 12px;
-            pointer-events: none;
+        .toast-enter {
+            animation: slideUp 0.3s ease-out forwards;
         }
     </style>
 </head>
-<body class="bg-slate-900 min-h-screen p-4 flex flex-col items-center justify-center font-sans text-slate-800">
+<body class="text-white h-screen w-screen flex flex-col font-sans select-none">
 
-    <div class="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-        <!-- Header -->
-        <div class="bg-slate-800 p-5 text-white flex items-center justify-between border-b border-slate-700">
-            <div>
-                <h1 class="text-xl font-bold flex items-center gap-2">
-                    <i data-lucide="focus" class="w-6 h-6 text-emerald-400"></i>
-                    Smart Scanner
-                </h1>
-                <p class="text-slate-400 text-xs mt-1">Fokus pada teks di latar solid</p>
-            </div>
-            <select id="language" class="bg-slate-700 text-white text-xs p-2 rounded-lg border border-slate-600 outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="eng">English</option>
-                <option value="ind">Indonesia</option>
-            </select>
+    <!-- Screen 1: Upload Area -->
+    <div id="upload-screen" class="flex-1 flex flex-col items-center justify-center p-6 bg-gray-900 hidden">
+        <div class="max-w-md w-full p-8 border-2 border-dashed border-gray-600 rounded-2xl bg-gray-800 text-center hover:bg-gray-750 transition-colors cursor-pointer" onclick="document.getElementById('file-input').click()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <h2 class="text-xl font-bold mb-2">Pilih Gambar</h2>
+            <p class="text-sm text-gray-400 mb-4">Tap di sini untuk load gambar dari perangkatmu.</p>
+            <p class="text-xs text-green-400 bg-green-900/30 p-2 rounded-lg">
+                Sistem menggunakan IndexedDB. File ukuran besar (puluhan MB) bisa disimpan offline dengan aman.
+            </p>
         </div>
+        <input type="file" id="file-input" accept="image/*" class="hidden">
+    </div>
 
-        <div class="p-4 space-y-4">
-            
-            <!-- Area Kamera -->
-            <div class="relative w-full h-64 bg-black rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
-                <video id="videoElement" class="w-full h-full object-cover hidden" autoplay playsinline></video>
-                
-                <!-- Overlay Focus Frame & Scanner -->
-                <div id="scanOverlay" class="absolute inset-0 pointer-events-none hidden">
-                    <div class="focus-frame"></div>
-                    <div class="scan-line"></div>
-                </div>
+    <!-- Screen 2: Fullscreen Image View -->
+    <div id="image-screen" class="flex-1 relative hidden bg-black group">
+        <!-- Gambarnya -->
+        <img id="display-image" class="w-full h-full object-contain" alt="Fullscreen Image">
 
-                <!-- Pesan Kamera -->
-                <div id="cameraMessage" class="absolute text-center text-slate-400 p-4">
-                    <i data-lucide="camera" class="w-10 h-10 mx-auto mb-2 opacity-50"></i>
-                    <p class="text-sm font-medium">Kamera belum aktif</p>
-                </div>
-                
-                <!-- Hidden Canvas buat image processing (hitam putih & kontras) -->
-                <canvas id="canvasElement" class="hidden"></canvas>
-            </div>
-
-            <!-- Kontrol Utama -->
-            <button id="toggleCameraBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2" onclick="toggleCamera()">
-                <i data-lucide="power" class="w-5 h-5"></i>
-                <span id="btnText">Mulai Scan</span>
+        <!-- Tombol Kontrol -->
+        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-b from-black/70 to-transparent">
+            <button id="btn-ganti" class="bg-gray-800/80 hover:bg-gray-700 text-white px-4 py-2 rounded-full backdrop-blur-sm shadow-lg flex items-center gap-2 text-sm font-medium transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Hapus & Ganti
             </button>
-
-            <!-- Status -->
-            <div id="ocrStatus" class="hidden items-center justify-center gap-2 text-sm text-emerald-600 bg-emerald-50 border border-emerald-100 p-2 rounded-lg font-medium transition-all">
-                <span id="spinner" class="loader w-4 h-4"></span>
-                <span id="statusText">Menyiapkan lensa...</span>
-            </div>
-
-            <!-- Area Hasil -->
-            <div class="flex flex-col space-y-2">
-                <div class="flex justify-between items-center">
-                    <label class="block text-sm font-semibold text-slate-700 flex items-center gap-1">
-                        <i data-lucide="text-cursor-input" class="w-4 h-4"></i> Hasil Ekstraksi:
-                    </label>
-                    <button onclick="copyToClipboard()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-1.5 px-3 rounded-lg flex items-center gap-1 transition">
-                        <i data-lucide="copy" class="w-3 h-3"></i> Salin
-                    </button>
-                </div>
-                <!-- Pakai textarea biar gampang dicopy -->
-                <textarea id="resultText" class="w-full h-32 p-3 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none resize-none no-scrollbar focus:ring-2 focus:ring-emerald-500 transition-colors" placeholder="Arahkan kotak fokus ke teks yang ada di latar solid. Hasil yang sudah difilter akan muncul di sini..." readonly></textarea>
-            </div>
-
+            
+            <button id="btn-fullscreen" class="bg-blue-600/80 hover:bg-blue-500 text-white px-4 py-2 rounded-full backdrop-blur-sm shadow-lg flex items-center gap-2 text-sm font-medium transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                Layar Penuh
+            </button>
         </div>
     </div>
 
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm"></div>
+
     <script>
-        lucide.createIcons();
+        // --- KONFIGURASI INDEXEDDB ---
+        const DB_NAME = 'ImageViewerDB';
+        const STORE_NAME = 'offline_images';
+        const IMAGE_ID = 'my_saved_image';
+        let currentObjectUrl = null; // Buat nyimpen URL memori sementara
 
-        let videoStream = null;
-        let isScanning = false;
-        let isCameraOn = false;
+        // Fungsi bantu untuk buka database
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
 
-        const video = document.getElementById('videoElement');
-        const canvas = document.getElementById('canvasElement');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const toggleBtn = document.getElementById('toggleCameraBtn');
-        const btnText = document.getElementById('btnText');
-        const scanOverlay = document.getElementById('scanOverlay');
-        const cameraMessage = document.getElementById('cameraMessage');
-        const resultText = document.getElementById('resultText');
-        const ocrStatus = document.getElementById('ocrStatus');
-        const statusText = document.getElementById('statusText');
-        const spinner = document.getElementById('spinner');
-        const languageSelect = document.getElementById('language');
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
 
-        async function toggleCamera() {
-            if (isCameraOn) {
-                stopCamera();
-            } else {
-                await startCamera();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Fungsi simpan gambar ke DB
+        async function saveImageToDB(file) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(file, IMAGE_ID); // Simpan file aslinya
+
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Fungsi ambil gambar dari DB
+        async function getImageFromDB() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(IMAGE_ID);
+
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // Fungsi hapus gambar dari DB
+        async function deleteImageFromDB() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.delete(IMAGE_ID);
+
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+
+        // --- LOGIKA UI & APLIKASI ---
+        const uploadScreen = document.getElementById('upload-screen');
+        const imageScreen = document.getElementById('image-screen');
+        const fileInput = document.getElementById('file-input');
+        const displayImage = document.getElementById('display-image');
+        const btnGanti = document.getElementById('btn-ganti');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+        const toastContainer = document.getElementById('toast-container');
+
+        // Fungsi Toast notifikasi
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-600' : 'bg-green-600';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 toast-enter`;
+            
+            const icon = type === 'error' 
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+            
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(100%)';
+                toast.style.transition = 'all 0.3s ease-in';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Render gambar ke layar (menggunakan Blob URL)
+        function renderImage(fileOrBlob) {
+            // Bersihkan URL memori yang lama biar gak bocor (memory leak)
+            if (currentObjectUrl) {
+                URL.revokeObjectURL(currentObjectUrl);
+            }
+            
+            currentObjectUrl = URL.createObjectURL(fileOrBlob);
+            displayImage.src = currentObjectUrl;
+            
+            uploadScreen.classList.add('hidden');
+            imageScreen.classList.remove('hidden');
+        }
+
+        function showUpload() {
+            uploadScreen.classList.remove('hidden');
+            imageScreen.classList.add('hidden');
+            displayImage.src = '';
+            fileInput.value = '';
+            if (currentObjectUrl) {
+                URL.revokeObjectURL(currentObjectUrl);
+                currentObjectUrl = null;
             }
         }
 
-        async function startCamera() {
+        // Cek DB saat app pertama kali dibuka
+        async function initApp() {
             try {
-                videoStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' } // Prioritas kamera belakang
-                });
-                
-                video.srcObject = videoStream;
-                video.classList.remove('hidden');
-                cameraMessage.classList.add('hidden');
-                scanOverlay.classList.remove('hidden');
-                
-                isCameraOn = true;
-                btnText.textContent = "Matikan Scanner";
-                toggleBtn.classList.replace('bg-emerald-600', 'bg-red-500');
-                toggleBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-red-600');
-                
-                startScanning();
-
+                const savedFile = await getImageFromDB();
+                if (savedFile) {
+                    renderImage(savedFile);
+                } else {
+                    showUpload();
+                }
             } catch (error) {
-                console.error("Kamera error:", error);
-                alert("Gagal akses kamera. Pastikan izin kamera sudah diberikan.");
+                console.error("Gagal membaca database", error);
+                showUpload();
             }
         }
 
-        function stopCamera() {
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-            }
-            video.srcObject = null;
-            video.classList.add('hidden');
-            cameraMessage.classList.remove('hidden');
-            scanOverlay.classList.add('hidden');
-            
-            isCameraOn = false;
-            stopScanning();
+        // Event saat gambar dipilih
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-            btnText.textContent = "Mulai Scan";
-            toggleBtn.classList.replace('bg-red-500', 'bg-emerald-600');
-            toggleBtn.classList.replace('hover:bg-red-600', 'hover:bg-emerald-700');
-            ocrStatus.classList.add('hidden');
-        }
-
-        function startScanning() {
-            isScanning = true;
-            scanOverlay.classList.add('scanning');
-            ocrStatus.classList.remove('hidden');
-            updateStatus('Mencari teks yang jelas...', 'loading');
-            
-            scanLoop();
-        }
-
-        function stopScanning() {
-            isScanning = false;
-            scanOverlay.classList.remove('scanning');
-        }
-
-        async function scanLoop() {
-            if (!isScanning || !isCameraOn) return;
-
-            if (video.videoWidth === 0) {
-                setTimeout(scanLoop, 500);
+            if (!file.type.startsWith('image/')) {
+                showToast('Yang dipilih bukan file gambar boss!');
                 return;
             }
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            // FILTER GAMBAR: Bikin hitam-putih dan naikkan kontras drastis.
-            // Ini ngebantu banget ngehilangin noise background dan nebelin teks di latar solid.
-            ctx.filter = 'grayscale(100%) contrast(250%) brightness(120%)';
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            ctx.filter = 'none'; // Reset filter
-
-            const selectedLang = languageSelect.value;
-
             try {
-                const result = await Tesseract.recognize(canvas, selectedLang);
-                
-                // FILTER CONFIDENCE: Jangan ambil semua teks!
-                // Cuma ambil kata yang AI-nya yakin di atas 65% aja. (Ini ngehilangin karakter ngaco)
-                let validWords = [];
-                if (result.data && result.data.words) {
-                    result.data.words.forEach(word => {
-                        if (word.confidence > 65 && word.text.trim().length > 1) {
-                            validWords.push(word.text);
-                        }
-                    });
-                }
-                
-                const cleanText = validWords.join(' ').trim();
-                
-                if (cleanText.length > 0) {
-                    // Cuma update kalau teksnya bener-bener berubah biar nggak kedap-kedip parah
-                    if (resultText.value !== cleanText) {
-                        resultText.value = cleanText;
-                        resultText.classList.add('bg-emerald-50', 'border-emerald-300');
-                        setTimeout(() => resultText.classList.remove('bg-emerald-50', 'border-emerald-300'), 500);
-                    }
-                    updateStatus('Teks terdeteksi!', 'success');
-                } else {
-                    updateStatus('Mencari teks yang jelas...', 'loading');
+                // Simpan langsung file-nya ke IndexedDB
+                await saveImageToDB(file);
+                showToast('Gambar berhasil disimpan offline!', 'success');
+                renderImage(file);
+            } catch (error) {
+                console.error("Gagal menyimpan ke DB", error);
+                showToast('Gagal menyimpan gambar ke penyimpanan offline.');
+            }
+        });
+
+        // Event Tombol Hapus & Ganti
+        btnGanti.addEventListener('click', async () => {
+            try {
+                await deleteImageFromDB();
+                showUpload();
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
                 }
             } catch (error) {
-                console.error("OCR Error:", error);
+                showToast('Gagal menghapus gambar dari sistem.');
             }
+        });
 
-            // Timeout scan ditaruh di 800ms biar ngasih napas ke prosesor HP
-            if (isScanning) {
-                setTimeout(scanLoop, 800);
-            }
-        }
-
-        // Fungsi buat ngatur UI status
-        function updateStatus(message, state) {
-            statusText.textContent = message;
-            if (state === 'success') {
-                spinner.classList.add('hidden');
-                ocrStatus.classList.replace('text-slate-600', 'text-emerald-700');
-                ocrStatus.classList.replace('bg-slate-50', 'bg-emerald-100');
+        // Event Tombol Fullscreen
+        btnFullscreen.addEventListener('click', () => {
+            const elem = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) elem.requestFullscreen();
+                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+                else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
             } else {
-                spinner.classList.remove('hidden');
-                ocrStatus.classList.replace('text-emerald-700', 'text-slate-600');
-                ocrStatus.classList.replace('bg-emerald-100', 'bg-slate-50');
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                else if (document.msExitFullscreen) document.msExitFullscreen();
             }
-        }
+        });
 
-        function copyToClipboard() {
-            if (!resultText.value) return;
-            
-            resultText.select();
-            document.execCommand('copy');
-            window.getSelection().removeAllRanges();
-            
-            updateStatus('Teks disalin!', 'success');
-            setTimeout(() => {
-                if (isScanning) updateStatus('Mencari teks yang jelas...', 'loading');
-            }, 2000);
-        }
+        // Double tap / click untuk fullscreen cepat
+        let lastTap = 0;
+        displayImage.addEventListener('touchstart', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 500 && tapLength > 0) {
+                btnFullscreen.click();
+                e.preventDefault();
+            }
+            lastTap = currentTime;
+        });
 
+        displayImage.addEventListener('dblclick', () => {
+             btnFullscreen.click();
+        });
+
+        // Mulai aplikasi
+        initApp();
     </script>
 </body>
 </html>
