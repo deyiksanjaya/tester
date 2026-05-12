@@ -3,276 +3,565 @@
 <head>
     <meta charset="UTF-8">
     
-    <!-- Trik Fullscreen & PWA Meta Tags -->
+    <!-- Trik Fullscreen & PWA Meta Tags ala iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#F2F2F7"> 
     
-    <title>Offline Image Viewer</title>
+    <title>Gallery</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Reset CSS buat nahan sifat asli web (scroll mantul, text ke-select, dll) */
+        /* Font bawaan Apple (San Francisco) */
         html, body {
             overscroll-behavior: none;
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none;
+            touch-action: pan-y;
             margin: 0; padding: 0;
-            background-color: #000;
             width: 100vw;
-            height: 100vh; /* Paksain 100vh biar nerabas safe area bawah */
+            height: 100vh;
+            background-color: #F2F2F7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
-        /* Animasi untuk toast notifikasi */
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        /* Area aman untuk notch/poni iPhone */
+        .safe-padding-top { padding-top: max(1rem, env(safe-area-inset-top)); }
+        .safe-padding-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+
+        /* Sembunyiin scrollbar */
+        ::-webkit-scrollbar { display: none; }
+
+        /* Animasi masuk */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .toast-enter {
-            animation: slideUp 0.3s ease-out forwards;
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        @keyframes slideUpModal {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
         }
+        .animate-slide-up { animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        /* Hilangkan panah spinner di input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
-<body class="text-white w-screen h-screen flex flex-col font-sans select-none overflow-hidden bg-black">
+<body class="text-black w-screen h-screen flex flex-col select-none overflow-hidden">
 
-    <!-- Screen 1: Upload Area -->
-    <div id="upload-screen" class="flex-1 flex flex-col items-center justify-center p-6 bg-gray-900 hidden h-full w-full">
-        <div class="max-w-md w-full p-8 border-2 border-dashed border-gray-600 rounded-2xl bg-gray-800 text-center hover:bg-gray-750 transition-colors cursor-pointer" onclick="document.getElementById('file-input').click()">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <h2 class="text-xl font-bold mb-2">Pilih Gambar</h2>
-            <p class="text-sm text-gray-400 mb-4">Tap di sini untuk load gambar dari perangkatmu.</p>
-            <p class="text-xs text-green-400 bg-green-900/30 p-2 rounded-lg">
-                Sistem menggunakan IndexedDB. File ukuran besar (puluhan MB) bisa disimpan offline dengan aman.
-            </p>
+    <!-- SCREEN 1: Dashboard / Gallery List -->
+    <div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-28">
+        
+        <!-- Header (iOS Large Title Style) -->
+        <div class="px-6 pb-2 safe-padding-top bg-[#F2F2F7] sticky top-0 z-20 flex justify-between items-end border-b border-gray-200/50">
+            <h1 class="text-[34px] font-bold tracking-tight mt-4">Gallery</h1>
+        </div>
+
+        <!-- Wadah List Gambar -->
+        <div id="image-list" class="flex flex-col gap-5 w-full max-w-md mx-auto px-4 mt-5">
+            <!-- Item gambar di-inject via JS -->
+        </div>
+
+        <!-- Tombol "add more image" -->
+        <div class="flex flex-col items-center justify-center cursor-pointer mt-6 mb-10 w-full max-w-md mx-auto px-4" onclick="document.getElementById('file-input').click()">
+            <div class="w-full py-8 bg-white rounded-2xl flex flex-col items-center justify-center active:bg-gray-100 transition-colors shadow-sm border border-gray-100">
+                <svg class="w-10 h-10 text-[#007AFF] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <p class="text-[17px] text-[#007AFF] font-medium">Add More Image</p>
+            </div>
         </div>
         <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <!-- Screen 2: Fullscreen Image View -->
-    <!-- Pake fixed inset-0 tanpa limit height biar ngisi 100% ruang yang dikasih viewport-fit=cover -->
-    <div id="image-screen" class="fixed inset-0 hidden bg-black group">
-        <!-- Gambarnya -->
-        <img id="display-image" class="w-full h-full object-contain pointer-events-auto" alt="Fullscreen Image">
-
-        <!-- Tombol Kontrol (Langsung mentok atas tanpa safe-area) -->
-        <div class="absolute top-0 left-0 w-full p-4 flex justify-between items-start opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-            <button id="btn-ganti" class="bg-gray-800/80 hover:bg-gray-700 text-white px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-2 text-sm font-medium transition-all pointer-events-auto active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    <!-- Tombol "add AI image" (Bottom Toolbar ala iOS) -->
+    <div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 safe-padding-bottom">
+        <div class="w-full max-w-md mx-auto px-4 py-3">
+            <button onclick="openAIModal()" class="w-full bg-[#007AFF] text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-[#005bb5] transition-colors flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Hapus
-            </button>
-            
-            <button id="btn-fullscreen" class="bg-blue-600/80 hover:bg-blue-500 text-white px-4 py-2 rounded-full backdrop-blur-md shadow-lg flex items-center gap-2 text-sm font-medium transition-all pointer-events-auto active:scale-95">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                </svg>
-                Layar Penuh
+                Add AI Image
             </button>
         </div>
     </div>
 
-    <!-- Toast Notification Container -->
-    <!-- Gue angkat dikit jadi bottom-12 biar kalau ada notif gak ketutupan banget sama bezel bawah -->
-    <div id="toast-container" class="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm pointer-events-none"></div>
+    <!-- SCREEN 2: Fullscreen Image View -->
+    <div id="image-screen" class="fixed inset-0 hidden bg-black z-40">
+        
+        <!-- Dua layer gambar untuk efek transisi Crossfade yang mulus -->
+        <img id="display-image-1" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-100" alt="Image View 1">
+        <img id="display-image-2" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-0" alt="Image View 2">
+
+        <!-- Area sentuh / gesture -->
+        <div id="touch-area" class="absolute inset-0 z-10 touch-none"></div>
+
+        <!-- Kontrol Overlay Atas -->
+        <div id="image-overlay-top" class="absolute top-0 left-0 w-full px-4 pb-3 flex justify-between items-end bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 safe-padding-top h-[100px] z-20 pointer-events-none">
+            <button onclick="closeFullscreen()" class="text-[#007AFF] flex items-center gap-1 text-[17px] active:opacity-50 pointer-events-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                </svg>
+                Gallery
+            </button>
+            <div class="flex gap-4 pointer-events-auto">
+                <button id="btn-hapus" class="text-white active:opacity-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Settings per Gambar -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-[#F2F2F7] rounded-[20px] w-full max-w-[320px] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300" id="settings-modal-box">
+            
+            <div class="p-5 pb-4">
+                <h3 class="text-[17px] font-bold text-black mb-1 text-center" id="settings-title">Image Settings</h3>
+                <p class="text-[13px] text-gray-500 mb-5 text-center px-4">Atur cara layar berpindah ke gambar selanjutnya.</p>
+                
+                <!-- Transition Setting -->
+                <div class="mb-5">
+                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide">Transition</label>
+                    <div class="flex bg-gray-200/80 rounded-[9px] p-1 shadow-inner">
+                        <button id="set-trans-fade" onclick="updateModalSetting('transition', 'fade')" class="flex-1 py-1.5 text-[14px] rounded-[7px] bg-white shadow font-semibold text-black transition-all">Fade</button>
+                        <button id="set-trans-instant" onclick="updateModalSetting('transition', 'instant')" class="flex-1 py-1.5 text-[14px] rounded-[7px] text-gray-500 font-semibold transition-all">Instant</button>
+                    </div>
+                </div>
+
+                <!-- Trigger Setting -->
+                <div class="mb-5">
+                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide">Trigger</label>
+                    <div class="flex bg-gray-200/80 rounded-[9px] p-1 shadow-inner">
+                        <button id="set-trig-tap" onclick="updateModalSetting('trigger', 'tap')" class="flex-1 py-1.5 text-[14px] rounded-[7px] bg-white shadow font-semibold text-black transition-all">Tap</button>
+                        <button id="set-trig-swipe" onclick="updateModalSetting('trigger', 'swipe')" class="flex-1 py-1.5 text-[14px] rounded-[7px] text-gray-500 font-semibold transition-all">Swipe Up</button>
+                    </div>
+                </div>
+
+                <!-- Duration Setting -->
+                <div>
+                    <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide">Duration (seconds)</label>
+                    <div class="relative">
+                        <input type="number" id="set-duration" step="0.1" min="0" class="w-full bg-white rounded-[10px] px-4 py-3 text-[17px] font-semibold outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tutup Modal -->
+            <div class="flex border-t border-gray-300/80 bg-white">
+                <button onclick="saveAndCloseSettings()" class="flex-1 py-3.5 text-[17px] font-bold text-[#007AFF] active:bg-gray-100 transition-colors">Selesai</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Generate AI Image -->
+    <div id="ai-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-[20px] w-full max-w-[340px] flex flex-col text-center overflow-hidden transform scale-95 transition-transform duration-300" id="ai-modal-box">
+            <div class="p-5 pb-4">
+                <h3 class="text-[17px] font-semibold text-black mb-1">AI Generator</h3>
+                <p class="text-[13px] text-gray-500 mb-4">Masukkan deskripsi untuk membuat gambar.</p>
+                <textarea id="ai-prompt" class="w-full bg-[#F2F2F7] rounded-xl p-3 outline-none text-[15px] resize-none text-black placeholder-gray-400 border border-transparent focus:border-[#007AFF] transition-colors" rows="4" placeholder="Contoh: Pemandangan kota masa depan..."></textarea>
+                
+                <div id="ai-loading" class="hidden flex-col items-center justify-center py-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#007AFF]"></div>
+                    <p class="text-[13px] mt-3 text-gray-500">Memproses...</p>
+                </div>
+            </div>
+            <div class="flex border-t border-gray-200" id="ai-actions">
+                <button onclick="closeAIModal()" class="flex-1 py-3 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Batal</button>
+                <button onclick="generateAIImage()" class="flex-1 py-3 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Buat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none w-max max-w-[90%]"></div>
 
     <script>
-        // --- DYNAMIC MANIFEST BUAT PWA ---
-        const manifest = {
-            name: "Offline Image Viewer",
-            short_name: "ImageViewer",
-            start_url: location.href,
-            display: "standalone",
-            background_color: "#000000",
-            theme_color: "#000000"
-        };
-        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+        const manifestBlob = new Blob([JSON.stringify({
+            name: "Gallery", short_name: "Gallery", start_url: location.href, display: "standalone", background_color: "#F2F2F7", theme_color: "#F2F2F7"
+        })], {type: 'application/json'});
         document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(manifestBlob)}">`);
 
         // --- KONFIGURASI INDEXEDDB ---
-        const DB_NAME = 'ImageViewerDB';
-        const STORE_NAME = 'offline_images';
-        const IMAGE_ID = 'my_saved_image';
-        let currentObjectUrl = null;
+        const DB_NAME = 'ImageViewerDB_iOS_v2';
+        const STORE_NAME = 'gallery_images';
+        let globalImages = []; 
+        let currentIndex = 0;
+        let activeImageLayer = 1; 
+
+        // Default settings buat gambar baru
+        const DEFAULT_SETTINGS = { transition: 'fade', trigger: 'tap', duration: 0.5 };
 
         function openDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, 1);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME);
-                    }
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
                 };
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
         }
 
-        async function saveImageToDB(file) {
+        async function saveImageToDB(file, isAI = false) {
             const db = await openDB();
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(file, IMAGE_ID);
-                request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
+                // Kita tambahin settings ke record DB pas nyimpen
+                const request = store.add({ 
+                    file: file, 
+                    timestamp: new Date().getTime(), 
+                    isAI: isAI,
+                    settings: { ...DEFAULT_SETTINGS } 
+                });
+                request.onsuccess = () => resolve(request.result);
             });
         }
 
-        async function getImageFromDB() {
+        async function updateImageInDB(record) {
             const db = await openDB();
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
+                const transaction = db.transaction(STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(record); // Update / overwrite
+                request.onsuccess = () => resolve();
+            });
+        }
+
+        async function getAllImagesFromDB() {
+            const db = await openDB();
+            return new Promise((resolve) => {
                 const transaction = db.transaction(STORE_NAME, 'readonly');
                 const store = transaction.objectStore(STORE_NAME);
-                const request = store.get(IMAGE_ID);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result.sort((a,b) => a.timestamp - b.timestamp));
             });
         }
 
-        async function deleteImageFromDB() {
+        async function deleteImageFromDB(id) {
             const db = await openDB();
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const transaction = db.transaction(STORE_NAME, 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                const request = store.delete(IMAGE_ID);
+                const request = store.delete(id);
                 request.onsuccess = () => resolve();
-                request.onerror = () => reject(request.error);
             });
         }
 
-
-        // --- LOGIKA UI & APLIKASI ---
-        const uploadScreen = document.getElementById('upload-screen');
+        const dashboardScreen = document.getElementById('dashboard-screen');
         const imageScreen = document.getElementById('image-screen');
         const fileInput = document.getElementById('file-input');
-        const displayImage = document.getElementById('display-image');
-        const btnGanti = document.getElementById('btn-ganti');
-        const btnFullscreen = document.getElementById('btn-fullscreen');
+        const imageListContainer = document.getElementById('image-list');
         const toastContainer = document.getElementById('toast-container');
 
-        function showToast(message, type = 'error') {
+        function showToast(message) {
             const toast = document.createElement('div');
-            const bgColor = type === 'error' ? 'bg-red-600' : 'bg-green-600';
-            
-            toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 toast-enter pointer-events-auto`;
-            
-            const icon = type === 'error' 
-                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>`
-                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
-            
-            toast.innerHTML = `${icon} <span>${message}</span>`;
+            toast.className = `bg-black/80 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-lg text-[15px] flex items-center justify-center animate-slide-up pointer-events-auto`;
+            toast.innerHTML = `<span>${message}</span>`;
             toastContainer.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(100%)';
-                toast.style.transition = 'all 0.3s ease-in';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
         }
 
-        function renderImage(fileOrBlob) {
-            if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+        // --- MANAJEMEN SETTING PER GAMBAR ---
+        let editingImageId = null;
+        let tempModalSettings = { transition: 'fade', trigger: 'tap', duration: 0.5 };
+
+        function updateModalSetting(key, val) {
+            tempModalSettings[key] = val;
+            renderSettingsUI();
+        }
+
+        function renderSettingsUI() {
+            // Update UI Button Transition
+            const isFade = tempModalSettings.transition === 'fade';
+            document.getElementById('set-trans-fade').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${isFade ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
+            document.getElementById('set-trans-instant').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${!isFade ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
+
+            // Update UI Button Trigger
+            const isTap = tempModalSettings.trigger === 'tap';
+            document.getElementById('set-trig-tap').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${isTap ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
+            document.getElementById('set-trig-swipe').className = `flex-1 py-1.5 text-[14px] rounded-[7px] font-semibold transition-all ${!isTap ? 'bg-white shadow text-black' : 'text-gray-500 bg-transparent'}`;
+
+            document.getElementById('set-duration').value = tempModalSettings.duration;
+        }
+
+        function openSettings(id, title) {
+            editingImageId = id;
+            document.getElementById('settings-title').innerText = title + " Settings";
             
-            currentObjectUrl = URL.createObjectURL(fileOrBlob);
-            displayImage.src = currentObjectUrl;
+            const imgRecord = globalImages.find(i => i.id === id);
+            // Kalau gambar jadul blm ada settingnya, pake default
+            tempModalSettings = { ...(imgRecord.settings || DEFAULT_SETTINGS) }; 
+
+            renderSettingsUI();
             
-            uploadScreen.classList.add('hidden');
+            const modal = document.getElementById('settings-modal');
+            const box = document.getElementById('settings-modal-box');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            setTimeout(() => { modal.classList.remove('opacity-0'); box.classList.remove('scale-95'); }, 10);
+        }
+
+        async function saveAndCloseSettings() {
+            // Simpan durasi dari input
+            const inputDur = document.getElementById('set-duration').value;
+            tempModalSettings.duration = inputDur === '' ? 0 : parseFloat(inputDur);
+
+            // Simpan ke DB
+            const imgRecord = globalImages.find(i => i.id === editingImageId);
+            if (imgRecord) {
+                imgRecord.settings = { ...tempModalSettings };
+                await updateImageInDB(imgRecord);
+            }
+
+            // Tutup Modal
+            const modal = document.getElementById('settings-modal');
+            const box = document.getElementById('settings-modal-box');
+            modal.classList.add('opacity-0'); box.classList.add('scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
+            
+            showToast("Settings tersimpan");
+        }
+
+
+        // --- RENDER DASHBOARD ---
+        async function loadDashboard() {
+            imageListContainer.innerHTML = '';
+            globalImages = await getAllImagesFromDB();
+            if (globalImages.length === 0) return;
+
+            globalImages.forEach((imgData, index) => {
+                const objectUrl = URL.createObjectURL(imgData.file);
+                const title = imgData.isAI ? `Image ${index + 1} (AI)` : `Image ${index + 1}`;
+                
+                const itemHTML = `
+                    <div class="bg-white rounded-[14px] overflow-hidden shadow-sm animate-fade-in border border-black/5">
+                        <div class="px-4 py-3 border-b border-black/5 flex justify-between items-center">
+                            <h2 class="text-[17px] font-medium text-black">${title}</h2>
+                            <!-- Tombol Settings per Gambar (Icon Gear) -->
+                            <button onclick="openSettings(${imgData.id}, '${title}')" class="text-gray-400 hover:text-[#007AFF] active:scale-95 transition-all bg-gray-100 p-1.5 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="w-full h-60 bg-gray-100 cursor-pointer" onclick="openFullscreen(${index})">
+                            <img src="${objectUrl}" class="w-full h-full object-cover" alt="${title}">
+                        </div>
+                    </div>
+                `;
+                imageListContainer.insertAdjacentHTML('beforeend', itemHTML);
+            });
+        }
+
+        // --- VIEWER & TRANSISI ---
+        function openFullscreen(index) {
+            if(globalImages.length === 0) return;
+            currentIndex = index;
+            const url = URL.createObjectURL(globalImages[currentIndex].file);
+            
+            const img1 = document.getElementById('display-image-1');
+            const img2 = document.getElementById('display-image-2');
+            
+            img1.style.transitionDuration = '0s';
+            img2.style.transitionDuration = '0s';
+
+            img1.src = url;
+            img1.style.opacity = 1;
+            img2.style.opacity = 0;
+            activeImageLayer = 1;
+
+            dashboardScreen.classList.add('hidden');
             imageScreen.classList.remove('hidden');
+            document.querySelector('meta[name="theme-color"]').setAttribute("content", "#000000");
         }
 
-        function showUpload() {
-            uploadScreen.classList.remove('hidden');
+        function closeFullscreen() {
             imageScreen.classList.add('hidden');
-            displayImage.src = '';
-            fileInput.value = '';
-            if (currentObjectUrl) {
-                URL.revokeObjectURL(currentObjectUrl);
-                currentObjectUrl = null;
+            dashboardScreen.classList.remove('hidden');
+            document.querySelector('meta[name="theme-color"]').setAttribute("content", "#F2F2F7");
+        }
+
+        function changeImage(direction = 'next') {
+            if (globalImages.length <= 1) return;
+            
+            // Baca settingan gambar SAAT INI (bukan gambar berikutnya)
+            const currentImgSettings = globalImages[currentIndex].settings || DEFAULT_SETTINGS;
+
+            if (direction === 'next') {
+                currentIndex = (currentIndex + 1) % globalImages.length;
+            } else {
+                currentIndex = (currentIndex - 1 + globalImages.length) % globalImages.length;
+            }
+
+            const url = URL.createObjectURL(globalImages[currentIndex].file);
+            const img1 = document.getElementById('display-image-1');
+            const img2 = document.getElementById('display-image-2');
+
+            // Eksekusi durasi dan transisi berdasarkan settingan gambar yang DITINGGALKAN
+            let dur = currentImgSettings.transition === 'instant' ? 0 : parseFloat(currentImgSettings.duration);
+            if (isNaN(dur) || dur < 0) dur = 0;
+
+            img1.style.transitionDuration = `${dur}s`;
+            img2.style.transitionDuration = `${dur}s`;
+
+            if (activeImageLayer === 1) {
+                img2.src = url;
+                img2.style.opacity = 1;
+                img1.style.opacity = 0;
+                activeImageLayer = 2;
+            } else {
+                img1.src = url;
+                img1.style.opacity = 1;
+                img2.style.opacity = 0;
+                activeImageLayer = 1;
             }
         }
 
-        async function initApp() {
-            try {
-                const savedFile = await getImageFromDB();
-                if (savedFile) {
-                    renderImage(savedFile);
-                } else {
-                    showUpload();
+        // Logic Touch Screen
+        const touchArea = document.getElementById('touch-area');
+        let startX = 0, startY = 0;
+
+        touchArea.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        touchArea.addEventListener('touchend', (e) => {
+            let endX = e.changedTouches[0].clientX;
+            let endY = e.changedTouches[0].clientY;
+            let diffX = startX - endX;
+            let diffY = startY - endY;
+            let distance = Math.sqrt(diffX*diffX + diffY*diffY);
+
+            // Cek trigger dari gambar yang sedang aktif diliat
+            const activeTrigger = (globalImages[currentIndex].settings || DEFAULT_SETTINGS).trigger;
+
+            // Deteksi Tap
+            if (distance < 10) {
+                if (activeTrigger === 'tap') {
+                    changeImage('next');
                 }
-            } catch (error) {
-                console.error("Gagal membaca database", error);
-                showUpload();
+            } 
+            // Deteksi Swipe
+            else {
+                if (activeTrigger === 'swipe') {
+                    // Swipe minimal 40px
+                    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 40) {
+                        if (diffY > 0) changeImage('next'); // Swipe Up
+                        else changeImage('prev'); // Swipe Down
+                    }
+                }
             }
-        }
+        });
+
+        // Hapus Gambar
+        document.getElementById('btn-hapus').addEventListener('click', async () => {
+            if (globalImages.length > 0 && confirm("Hapus gambar ini?")) {
+                await deleteImageFromDB(globalImages[currentIndex].id);
+                await loadDashboard(); 
+                
+                if (globalImages.length === 0) {
+                    closeFullscreen();
+                } else {
+                    currentIndex = currentIndex >= globalImages.length ? globalImages.length - 1 : currentIndex;
+                    const url = URL.createObjectURL(globalImages[currentIndex].file);
+                    const activeImg = activeImageLayer === 1 ? document.getElementById('display-image-1') : document.getElementById('display-image-2');
+                    activeImg.src = url;
+                }
+                showToast('Terhapus');
+            }
+        });
 
         fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (!file.type.startsWith('image/')) {
-                showToast('Yang dipilih bukan file gambar boss!');
-                return;
+            if (e.target.files[0]) {
+                await saveImageToDB(e.target.files[0], false);
+                loadDashboard();
             }
-
-            try {
-                await saveImageToDB(file);
-                showToast('Gambar berhasil disimpan offline!', 'success');
-                renderImage(file);
-            } catch (error) {
-                console.error("Gagal menyimpan ke DB", error);
-                showToast('Gagal menyimpan gambar ke penyimpanan offline.');
-            }
+            fileInput.value = ''; 
         });
 
-        btnGanti.addEventListener('click', async () => {
+        // --- AI GENERATOR ---
+        function openAIModal() {
+            document.getElementById('ai-modal').classList.remove('hidden');
+            document.getElementById('ai-modal').classList.add('flex');
+            setTimeout(() => {
+                document.getElementById('ai-modal').classList.remove('opacity-0');
+                document.getElementById('ai-modal-box').classList.remove('scale-95');
+            }, 10);
+            document.getElementById('ai-prompt').value = '';
+        }
+
+        function closeAIModal() {
+            document.getElementById('ai-modal').classList.add('opacity-0');
+            document.getElementById('ai-modal-box').classList.add('scale-95');
+            setTimeout(() => {
+                document.getElementById('ai-modal').classList.add('hidden');
+                document.getElementById('ai-modal').classList.remove('flex');
+            }, 300);
+        }
+
+        async function generateAIImage() {
+            const promptText = document.getElementById('ai-prompt').value.trim();
+            if (!promptText) return;
+
+            document.getElementById('ai-actions').classList.add('hidden');
+            document.getElementById('ai-prompt').classList.add('hidden');
+            document.getElementById('ai-loading').classList.remove('hidden');
+            document.getElementById('ai-loading').classList.add('flex');
+
             try {
-                await deleteImageFromDB();
-                showUpload();
-                if (document.fullscreenElement) {
-                    document.exitFullscreen();
+                const apiKey = ""; 
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+                
+                let response;
+                let retries = 0;
+                while (retries <= 5) {
+                    try {
+                        response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ instances: { prompt: promptText }, parameters: { sampleCount: 1 } })
+                        });
+                        if (response.ok) break; 
+                        if (retries === 5) throw new Error("Gagal");
+                    } catch (e) { if (retries === 5) throw e; }
+                    await new Promise(r => setTimeout(r, [1000, 2000, 4000, 8000, 16000][retries]));
+                    retries++;
                 }
-            } catch (error) {
-                showToast('Gagal menghapus gambar dari sistem.');
+
+                const result = await response.json();
+                if (result.predictions && result.predictions[0] && result.predictions[0].bytesBase64Encoded) {
+                    const byteChars = atob(result.predictions[0].bytesBase64Encoded);
+                    const byteNums = new Array(byteChars.length);
+                    for (let i=0; i<byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+                    const blob = new Blob([new Uint8Array(byteNums)], {type: 'image/png'});
+                    
+                    await saveImageToDB(blob, true);
+                    closeAIModal();
+                    loadDashboard();
+                    setTimeout(() => dashboardScreen.scrollTo({ top: dashboardScreen.scrollHeight, behavior: 'smooth' }), 100);
+                } else throw new Error("Invalid");
+            } catch (error) { showToast("Gagal membuat gambar"); } 
+            finally {
+                document.getElementById('ai-actions').classList.remove('hidden');
+                document.getElementById('ai-prompt').classList.remove('hidden');
+                document.getElementById('ai-loading').classList.add('hidden');
+                document.getElementById('ai-loading').classList.remove('flex');
             }
-        });
+        }
 
-        btnFullscreen.addEventListener('click', () => {
-            const elem = document.documentElement;
-            if (!document.fullscreenElement) {
-                if (elem.requestFullscreen) elem.requestFullscreen();
-                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-                else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-                else if (document.msExitFullscreen) document.msExitFullscreen();
-            }
-        });
-
-        // Trik biar double tap di mobile lebih responsif dan support mouse dblclick
-        let lastTap = 0;
-        displayImage.addEventListener('touchstart', (e) => {
-            const currentTime = new Date().getTime();
-            const tapLength = currentTime - lastTap;
-            if (tapLength < 500 && tapLength > 0) {
-                btnFullscreen.click();
-                e.preventDefault();
-            }
-            lastTap = currentTime;
-        }, { passive: false });
-
-        displayImage.addEventListener('dblclick', () => {
-             btnFullscreen.click();
-        });
-
-        initApp();
+        // Init App
+        loadDashboard();
     </script>
 </body>
 </html>
