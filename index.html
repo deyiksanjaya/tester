@@ -6,7 +6,7 @@
     <!-- Trik Fullscreen & PWA Meta Tags ala iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#F2F2F7"> 
     
@@ -46,6 +46,7 @@
         }
         .animate-slide-up { animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
+        /* Hilangkan panah spinner di input number */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
@@ -55,7 +56,7 @@
     <!-- SCREEN 1: Dashboard / Gallery List -->
     <div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-28">
         
-        <!-- Header -->
+        <!-- Header (iOS Large Title Style) -->
         <div class="px-6 pb-2 safe-padding-top bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50 flex justify-between items-end">
             <h1 class="text-[34px] font-bold tracking-tight mt-4">Gallery</h1>
             <button onclick="openGlobalSettings()" class="w-10 h-10 mb-1 rounded-full bg-white shadow-sm flex items-center justify-center active:bg-gray-100 transition-colors border border-gray-200 text-[#007AFF]">
@@ -66,26 +67,36 @@
             </button>
         </div>
 
-        <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-5"></div>
+        <!-- Wadah List Gambar -->
+        <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-5">
+            <!-- Item gambar di-inject via JS -->
+        </div>
 
+        <!-- Tombol "add more image" -->
         <div class="flex flex-col items-center justify-center cursor-pointer mt-6 mb-10 w-full max-w-md mx-auto px-4" onclick="document.getElementById('file-input').click()">
             <div class="w-full py-8 bg-white rounded-2xl flex flex-col items-center justify-center active:bg-gray-100 transition-colors shadow-sm border border-gray-100">
-                <svg class="w-10 h-10 text-[#007AFF] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" /></svg>
+                <svg class="w-10 h-10 text-[#007AFF] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
+                </svg>
                 <p class="text-[17px] text-[#007AFF] font-medium">Add More Image</p>
             </div>
         </div>
         <input type="file" id="file-input" accept="image/*" class="hidden">
     </div>
 
-    <!-- Toolbar Bawah -->
+    <!-- Toolbar Bawah (Perform & Add AI) -->
     <div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 safe-padding-bottom">
         <div class="w-full max-w-md mx-auto px-4 py-3 flex gap-3">
             <button onclick="startPerform()" class="flex-1 bg-black text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                </svg>
                 Perform
             </button>
             <button onclick="openAIModal()" class="flex-1 bg-[#007AFF] text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-[#005bb5] transition-colors flex items-center justify-center gap-2 shadow-sm">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
                 Add AI
             </button>
         </div>
@@ -178,57 +189,16 @@
     <!-- Toast Notification -->
     <div id="toast-container" class="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none w-max max-w-[90%]"></div>
 
-    <!-- FLOATING DEBUG CONSOLE -->
-    <div id="debug-console" class="fixed bottom-0 left-0 w-full bg-black/95 backdrop-blur-md border-t border-gray-700 z-[9999] flex flex-col transition-transform duration-300 h-[280px] translate-y-[240px]">
-        <div class="h-10 w-full bg-gray-900 flex justify-between items-center px-4 shrink-0 shadow-lg">
-            <span class="text-[11px] font-bold text-gray-300 tracking-widest uppercase">API Console</span>
-            <div class="flex gap-3">
-                <button onclick="document.getElementById('debug-log').innerHTML=''" class="text-[10px] font-bold text-red-400 bg-red-400/10 px-2.5 py-1 rounded active:scale-95">CLEAR</button>
-                <button onclick="toggleDebugConsole()" id="debug-toggle-btn" class="text-[10px] font-bold text-white bg-white/20 px-2.5 py-1 rounded active:scale-95">EXPAND</button>
-            </div>
-        </div>
-        <div id="debug-log" class="flex-1 overflow-y-auto p-3 text-[10px] font-mono leading-relaxed space-y-1.5 break-words" style="overscroll-behavior: contain;">
-            <div class="text-gray-500">[INFO] Console siap memantau request API...</div>
-        </div>
-    </div>
-
     <script>
         const manifestBlob = new Blob([JSON.stringify({
             name: "Gallery", short_name: "Gallery", start_url: location.href, display: "standalone", background_color: "#000000", theme_color: "#000000"
         })], {type: 'application/json'});
         document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(manifestBlob)}">`);
 
-        // --- DEBUG CONSOLE LOGIC ---
-        function logDebug(msg, type='info') {
-            const logContainer = document.getElementById('debug-log');
-            let colorClass = 'text-green-400';
-            if (type === 'error') colorClass = 'text-red-400';
-            if (type === 'warn') colorClass = 'text-yellow-400';
-            if (type === 'info') colorClass = 'text-blue-300';
-            
-            const time = new Date().toLocaleTimeString('id-ID', { hour12: false });
-            logContainer.innerHTML += `<div class="${colorClass}">[${time}] ${msg}</div>`;
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        function toggleDebugConsole(forceExpand = false) {
-            const cons = document.getElementById('debug-console');
-            const btn = document.getElementById('debug-toggle-btn');
-            const isMinimized = cons.classList.contains('translate-y-[240px]');
-            
-            if (isMinimized || forceExpand) {
-                cons.classList.remove('translate-y-[240px]');
-                btn.innerText = 'MINIMIZE';
-            } else if (!forceExpand) {
-                cons.classList.add('translate-y-[240px]');
-                btn.innerText = 'EXPAND';
-            }
-        }
-
         // --- GLOBAL SETTINGS LOGIC ---
         let appGlobalSettings = {
             apiKey: '',
-            modelName: 'gemini-3.1-flash-image-preview'
+            modelName: 'gemini-3.1-flash-image-preview' // Default Hardcode
         };
 
         function loadGlobalSettings() {
@@ -258,6 +228,7 @@
         function saveGlobalSettings() {
             appGlobalSettings.apiKey = document.getElementById('global-api-key').value.trim();
             appGlobalSettings.modelName = document.getElementById('global-model-name').value.trim() || 'gemini-3.1-flash-image-preview';
+            
             localStorage.setItem('galleryGlobalSettings_v1', JSON.stringify(appGlobalSettings));
             closeGlobalSettings();
             showToast("Pengaturan Global Tersimpan");
@@ -594,7 +565,7 @@
             picker.classList.remove('hidden');
         }
 
-        // --- AI GENERATOR (REVISI AMAN + LOG DEBUG) ---
+        // --- AI GENERATOR (Meniru Logika Lucid App) ---
         function openAIModal() {
             document.getElementById('ai-modal').classList.remove('hidden');
             document.getElementById('ai-modal').classList.add('flex');
@@ -626,51 +597,27 @@
             document.getElementById('ai-loading').classList.remove('hidden');
             document.getElementById('ai-loading').classList.add('flex');
 
-            logDebug("--- Memulai request AI ---", "info");
-            toggleDebugConsole(true); // Buka otomatis kalau mulai jalan biar keliatan
-
             try {
-                const systemApiKey = ""; 
-                const activeApiKey = appGlobalSettings.apiKey || systemApiKey;
-                const rawModelName = appGlobalSettings.modelName || 'gemini-3.1-flash-image-preview';
+                const activeApiKey = appGlobalSettings.apiKey;
+                const modelName = appGlobalSettings.modelName || 'gemini-3.1-flash-image-preview';
 
                 if (!activeApiKey) {
-                    throw new Error("API Key kosong. Silahkan isi di Settings.");
+                    showToast("API Key kosong! Isi dulu di Settings (⚙️).");
+                    throw new Error("No API Key");
                 }
 
-                logDebug(`Model yang dipakai: ${rawModelName}`, "info");
-
-                let url, payload;
-
-                // Logika Penentuan Endpoint yang bener-bener anti gagal:
-                // Imagen WAJIB pake :predict, Gemini Flash WAJIB pake :generateContent
-                if (rawModelName.toLowerCase().includes('imagen') && !currentRefBase64) {
-                    logDebug("Tipe Model: Imagen (Text-to-Image murni)", "info");
-                    url = `https://generativelanguage.googleapis.com/v1beta/models/${rawModelName}:predict?key=${activeApiKey}`;
-                    payload = { instances: { prompt: promptText }, parameters: { sampleCount: 1 } };
-                } else {
-                    logDebug(currentRefBase64 ? "Tipe Model: Gemini (Image-to-Image)" : "Tipe Model: Gemini (Text-to-Image)", "info");
-                    url = `https://generativelanguage.googleapis.com/v1beta/models/${rawModelName}:generateContent?key=${activeApiKey}`;
-                    
-                    let parts = [{ text: promptText }];
-                    if (currentRefBase64) {
-                        parts.push({ inlineData: { mimeType: currentRefMime, data: currentRefBase64 } });
-                    }
-                    payload = {
-                        contents: [{ parts: parts }],
-                        generationConfig: { responseModalities: ["IMAGE"] } 
-                    };
-                }
-
-                // Log aman (tanpa print seluruh base64 image biar nggak macet browsernya)
-                let safeLogPayload = JSON.parse(JSON.stringify(payload));
-                if (safeLogPayload.contents?.[0]?.parts?.[1]?.inlineData?.data) {
-                    safeLogPayload.contents[0].parts[1].inlineData.data = "<BASE64_TERSEMBUNYI_BIAR_GAK_LAG>";
-                }
-                logDebug(`Endpoint: ${url.split('?')[0]}`, "info");
-                logDebug(`Payload dikirim: ${JSON.stringify(safeLogPayload)}`, "info");
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeApiKey}`;
                 
-                logDebug("Menunggu respon dari Google...", "info");
+                // Menyamakan payload 100% dengan cara Lucid app
+                let parts = [{ text: promptText }];
+                if (currentRefBase64) {
+                    parts.push({ inlineData: { mimeType: currentRefMime, data: currentRefBase64 } });
+                }
+
+                const payload = {
+                    contents: [{ parts: parts }],
+                    generationConfig: { responseModalities: ["TEXT", "IMAGE"] } 
+                };
 
                 const response = await fetch(url, {
                     method: 'POST',
@@ -678,31 +625,20 @@
                     body: JSON.stringify(payload)
                 });
 
-                logDebug(`Status Respon: HTTP ${response.status} ${response.statusText}`, response.ok ? "success" : "error");
+                if (!response.ok) {
+                    const errData = await response.json();
+                    console.error("API Error Response:", errData);
+                    throw new Error("Google API Failed");
+                }
 
                 const result = await response.json();
                 
-                // Print Full Error Body kalau gagal
-                if (!response.ok) {
-                    logDebug(`Isi Error Body: ${JSON.stringify(result)}`, "error");
-                    throw new Error(`API Error: HTTP ${response.status}`);
-                }
+                // Ambil base64 string
+                const imgBase = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
 
-                let base64DataStr = null;
-
-                // Cari data base64 image (struktur Imagen vs Gemini beda)
-                if (result.predictions && result.predictions[0]?.bytesBase64Encoded) {
-                    base64DataStr = result.predictions[0].bytesBase64Encoded;
-                } else if (result.candidates?.[0]?.content?.parts) {
-                    const imgPart = result.candidates[0].content.parts.find(p => p.inlineData);
-                    if (imgPart) base64DataStr = imgPart.inlineData.data;
-                }
-
-                if (base64DataStr) {
-                    logDebug("Berhasil ekstrak base64! Konversi ke gambar...", "success");
-                    
-                    // Cara paling aman convert base64 ke File Blob (anti error di iOS)
-                    const dataUrl = `data:image/jpeg;base64,${base64DataStr}`;
+                if (imgBase) {
+                    // Konversi yang paling aman tanpa error atob: langsung ubah via Data URI Fetch
+                    const dataUrl = `data:image/jpeg;base64,${imgBase}`;
                     const fetchRes = await fetch(dataUrl);
                     const blob = await fetchRes.blob();
                     
@@ -711,16 +647,13 @@
                     loadDashboard();
                     setTimeout(() => dashboardScreen.scrollTo({ top: dashboardScreen.scrollHeight, behavior: 'smooth' }), 100);
                     showToast('Gambar berhasil dibuat!');
-                    logDebug("Selesai! Gambar sukses disimpan.", "success");
                 } else {
-                    logDebug(`Tidak nemu data gambar di respon. Isi JSON asli: ${JSON.stringify(result)}`, "warn");
-                    throw new Error("Invalid Format JSON");
+                    throw new Error("Format respons API tidak sesuai.");
                 }
 
             } catch (error) { 
-                logDebug(`Gagal Total: ${error.message}`, "error");
-                showToast("Gagal. Lihat API Console di bawah."); 
-                console.error(error);
+                console.error("AI Generation Error:", error);
+                showToast("Gagal memproses gambar. Cek API Key & Koneksi."); 
             } finally {
                 document.getElementById('ai-actions').classList.remove('hidden');
                 document.getElementById('ai-prompt').classList.remove('hidden');
