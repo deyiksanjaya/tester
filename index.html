@@ -6,7 +6,7 @@
     <!-- Trik Fullscreen & PWA Meta Tags ala iOS -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#F2F2F7"> 
     
@@ -26,7 +26,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         
-        /* Area aman untuk notch/poni iPhone */
+        /* Area aman untuk notch/poni iPhone untuk UI teks aja */
         .safe-padding-top { padding-top: max(1rem, env(safe-area-inset-top)); }
         .safe-padding-bottom { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
 
@@ -100,9 +100,9 @@
 
     <!-- SCREEN 2: Fullscreen Image View -->
     <div id="image-screen" class="fixed inset-0 hidden bg-black z-40">
-        <!-- Dua layer gambar untuk efek transisi Crossfade yang mulus -->
-        <img id="display-image-1" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-100" alt="Image View 1">
-        <img id="display-image-2" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-0" alt="Image View 2">
+        <!-- Dua layer gambar. Diubah menjadi object-cover biar mentok tanpa bar hitam -->
+        <img id="display-image-1" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-100" alt="Image View 1">
+        <img id="display-image-2" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-0" alt="Image View 2">
 
         <!-- Area sentuh / gesture -->
         <div id="touch-area" class="absolute inset-0 z-10 touch-none"></div>
@@ -150,7 +150,7 @@
 
     <script>
         const manifestBlob = new Blob([JSON.stringify({
-            name: "Gallery", short_name: "Gallery", start_url: location.href, display: "standalone", background_color: "#F2F2F7", theme_color: "#F2F2F7"
+            name: "Gallery", short_name: "Gallery", start_url: location.href, display: "standalone", background_color: "#000000", theme_color: "#000000"
         })], {type: 'application/json'});
         document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(manifestBlob)}">`);
 
@@ -312,7 +312,6 @@
                 return;
             }
 
-            // Trik buat maksa OS masuk Fullscreen kalau di-support browser
             try {
                 const elem = document.documentElement;
                 if (elem.requestFullscreen) await elem.requestFullscreen();
@@ -320,10 +319,10 @@
             } catch (e) {}
 
             isPerformMode = true;
-            overlayTop.classList.add('hidden'); // Sembunyikan UI
+            overlayTop.classList.add('hidden'); 
             
             showToast("Perform Mode: Swipe kebawah dengan 2 Jari untuk keluar");
-            openFullscreen(0); // Selalu mulai dari awal pas perform
+            openFullscreen(0); 
         }
 
         function openFullscreen(index) {
@@ -352,7 +351,6 @@
             dashboardScreen.classList.remove('hidden');
             document.querySelector('meta[name="theme-color"]').setAttribute("content", "#F2F2F7");
             
-            // Reset Perform Mode states
             isPerformMode = false;
             overlayTop.classList.remove('hidden');
             
@@ -402,13 +400,11 @@
         touchArea.addEventListener('touchstart', (e) => {
             activeTouches = e.touches.length;
             
-            // Tangkap momen 2 jari nyentuh layar
             if (activeTouches === 2) {
                 isTwoFingerGesture = true;
                 twoFingerStartY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                e.preventDefault(); // Nahan zoom/scroll bawaan OS
+                e.preventDefault(); 
             } 
-            // Kalau 1 jari, normal tap/swipe
             else if (activeTouches === 1 && !isTwoFingerGesture) {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
@@ -416,7 +412,6 @@
         }, { passive: false });
 
         touchArea.addEventListener('touchmove', (e) => {
-            // Tahan pergerakan liar OS kalau lagi gerakin 2 jari
             if (isTwoFingerGesture || e.touches.length === 2) {
                 e.preventDefault();
             }
@@ -425,23 +420,19 @@
         touchArea.addEventListener('touchend', (e) => {
             activeTouches = e.touches.length;
 
-            // Handle Keluar Perform Mode (Swipe Down 2 Jari)
             if (isTwoFingerGesture) {
-                // Tunggu sampai semua jari diangkat
                 if (activeTouches === 0 && twoFingerStartY !== null) {
-                    let endY = e.changedTouches[0].clientY; // Posisi jari terakhir yg diangkat
+                    let endY = e.changedTouches[0].clientY; 
                     
-                    // Kalau jarak usap ke bawah lebih dari 50px
                     if ((endY - twoFingerStartY) > 50) {
                         closeFullscreen();
                     }
                     twoFingerStartY = null;
                     isTwoFingerGesture = false;
                 }
-                return; // Stop disini biar nggak ke-trigger jadi tap biasa
+                return; 
             }
 
-            // Normal Gesture (Tap / Swipe Up/Down 1 Jari)
             if (e.changedTouches.length === 1 && !isTwoFingerGesture) {
                 let endX = e.changedTouches[0].clientX;
                 let endY = e.changedTouches[0].clientY;
@@ -451,21 +442,20 @@
 
                 const activeTrigger = (globalImages[currentIndex].settings || DEFAULT_SETTINGS).trigger;
 
-                if (distance < 10) { // Tap/Sentuh Biasa
+                if (distance < 10) { 
                     if (activeTrigger === 'tap') changeImage('next');
-                } else { // Swipe/Usap
+                } else { 
                     if (activeTrigger === 'swipe') {
-                        // Pastikan swipe-nya vertikal, bukan horizontal
                         if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 40) {
-                            if (diffY > 0) changeImage('next'); // Swipe Naik
-                            else changeImage('prev'); // Swipe Turun
+                            if (diffY > 0) changeImage('next'); 
+                            else changeImage('prev'); 
                         }
                     }
                 }
             }
         });
 
-        // Hapus Gambar (Hanya aktif saat bukan di mode Perform)
+        // Hapus Gambar
         document.getElementById('btn-hapus').addEventListener('click', async () => {
             if (globalImages.length > 0 && confirm("Hapus gambar ini?")) {
                 await deleteImageFromDB(globalImages[currentIndex].id);
