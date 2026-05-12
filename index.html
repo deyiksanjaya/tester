@@ -21,6 +21,8 @@
             touch-action: none;
             margin: 0; padding: 0;
             background-color: #000;
+            width: 100vw;
+            height: 100vh; /* Paksain 100vh biar nerabas safe area bawah */
         }
         
         /* Animasi untuk toast notifikasi */
@@ -33,7 +35,7 @@
         }
     </style>
 </head>
-<body class="text-white w-screen h-[100dvh] flex flex-col font-sans select-none overflow-hidden bg-black">
+<body class="text-white w-screen h-screen flex flex-col font-sans select-none overflow-hidden bg-black">
 
     <!-- Screen 1: Upload Area -->
     <div id="upload-screen" class="flex-1 flex flex-col items-center justify-center p-6 bg-gray-900 hidden h-full w-full">
@@ -51,7 +53,8 @@
     </div>
 
     <!-- Screen 2: Fullscreen Image View -->
-    <div id="image-screen" class="fixed inset-0 w-full h-[100dvh] hidden bg-black group">
+    <!-- Pake fixed inset-0 tanpa limit height biar ngisi 100% ruang yang dikasih viewport-fit=cover -->
+    <div id="image-screen" class="fixed inset-0 hidden bg-black group">
         <!-- Gambarnya -->
         <img id="display-image" class="w-full h-full object-contain pointer-events-auto" alt="Fullscreen Image">
 
@@ -74,7 +77,8 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm pointer-events-none"></div>
+    <!-- Gue angkat dikit jadi bottom-12 biar kalau ada notif gak ketutupan banget sama bezel bawah -->
+    <div id="toast-container" class="fixed bottom-12 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[90%] max-w-sm pointer-events-none"></div>
 
     <script>
         // --- DYNAMIC MANIFEST BUAT PWA ---
