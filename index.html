@@ -1,569 +1,307 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#F2F2F7"> 
-    <title>Gallery</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        html, body {
-            overscroll-behavior: none;
-            -webkit-touch-callout: none;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: pan-y;
-            margin: 0; padding: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #F2F2F7;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-
-        ::-webkit-scrollbar { display: none; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        
-        @keyframes slideUpModal {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        .animate-slide-up { animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-
-        #display-image-1, #display-image-2 {
-            transition-property: opacity;
-            transition-timing-function: ease-in-out;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Bulan & Tarot</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    overflow: hidden;
+    overscroll-behavior-y: none;
+  }
+</style>
 </head>
-<body class="text-black w-screen h-screen flex flex-col select-none overflow-hidden">
+<body class="text-white font-sans selection:bg-white/20">
 
-<div id="dashboard-screen" class="flex-1 flex flex-col w-full h-full overflow-y-auto relative pb-32">
-    <div class="px-6 pb-4 pt-12 bg-[#F2F2F7] sticky top-0 z-20 border-b border-gray-200/50 flex justify-between items-end">
-        <h1 class="text-3xl font-bold tracking-tight">Gallery</h1>
-        <button onclick="openGlobalSettings()" class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center active:bg-gray-100 transition-colors border border-gray-200 text-[#007AFF]">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-        </button>
-    </div>
-
-    <div id="image-list" class="flex flex-col gap-6 w-full max-w-md mx-auto px-4 mt-6"></div>
-
-    <div class="flex flex-col items-center justify-center cursor-pointer mt-6 mb-10 w-full max-w-md mx-auto px-4" onclick="document.getElementById('file-input').click()">
-        <div class="w-full py-8 bg-white rounded-2xl flex flex-col items-center justify-center active:bg-gray-100 transition-colors shadow-sm border border-gray-100">
-            <svg width="40" height="40" class="text-[#007AFF] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4" />
-            </svg>
-            <p class="text-[17px] text-[#007AFF] font-medium">Add Media</p>
-        </div>
-    </div>
-    <input type="file" id="file-input" accept="image/*" style="display: none;">
+<div class="fixed top-12 left-1/2 -translate-x-1/2 z-50 flex items-center p-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
+  <button id="tab-btn-bulan" onclick="switchTab('bulan')" class="px-6 py-2 rounded-full text-xs tracking-widest uppercase font-medium transition-all duration-300 bg-white text-black">
+    Bulan Lahir
+  </button>
+  <button id="tab-btn-tarot" onclick="switchTab('tarot')" class="px-6 py-2 rounded-full text-xs tracking-widest uppercase font-medium transition-all duration-300 text-white/50 hover:text-white">
+    Tarot
+  </button>
 </div>
 
-<div class="fixed bottom-0 left-0 w-full bg-[#F9F9F9]/90 backdrop-blur-xl border-t border-gray-300/60 z-30 pb-8 pt-4">
-    <div class="w-full max-w-md mx-auto px-4 flex gap-3">
-        <button onclick="startPerform()" class="flex-1 bg-black text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-gray-800 transition-colors flex items-center justify-center gap-2 shadow-sm">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-            View
-        </button>
-        <button onclick="openAIModal()" class="flex-1 bg-[#007AFF] text-white rounded-xl py-3.5 text-[17px] font-semibold active:bg-[#005bb5] transition-colors flex items-center justify-center gap-2 shadow-sm">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Generate
-        </button>
-    </div>
-</div>
+<div class="relative w-screen h-[100dvh] overflow-hidden m-0 p-0">
+  
+  <div id="view-bulan" class="absolute inset-0 w-full h-full z-20 transition-opacity duration-500 opacity-100">
+    <div id="carousel" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory hide-scrollbar overscroll-x-contain"></div>
+    <div id="dots" class="absolute bottom-12 left-1/2 -translate-x-1/2 z-30 flex justify-center items-center gap-2.5 px-5 py-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 shadow-2xl pointer-events-none"></div>
+  </div>
 
-<div id="image-screen" class="fixed inset-0 bg-black z-40" style="display: none;">
-    <img id="display-image-1" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-100" alt="View 1">
-    <img id="display-image-2" class="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-0" alt="View 2">
-    <div id="touch-area" class="absolute inset-0 z-10 touch-none"></div>
-    <div id="image-overlay-top" class="absolute top-0 left-0 w-full px-4 pt-14 flex justify-between items-start bg-gradient-to-b from-black/60 to-transparent transition-opacity duration-300 h-[140px] z-20 pointer-events-none">
-        <button onclick="closeFullscreen()" class="text-[#007AFF] flex items-center gap-1 text-[17px] active:opacity-50 pointer-events-auto">
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
-            Gallery
-        </button>
-        <div class="flex gap-4 pointer-events-auto">
-            <button id="btn-hapus" class="text-white active:opacity-50">
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-            </button>
+  <div id="view-tarot" class="absolute inset-0 w-full h-full z-10 overflow-y-auto hide-scrollbar opacity-0 pointer-events-none transition-opacity duration-500 flex flex-col items-center justify-center pt-40 pb-40 px-8 bg-black">
+    
+    <div class="flex flex-col items-center justify-center max-w-2xl text-center w-full min-h-[60vh]">
+      
+      <div id="tarot-text-container" class="opacity-0 transition-opacity duration-1000 w-full flex flex-col items-center hidden mb-14">
+        <div class="opacity-30 mb-10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l3 6 6 1-4 4 1 6-6-3-6 3 1-6-4-4 6-1 3-6z"></path>
+          </svg>
         </div>
-    </div>
-</div>
+        <h2 id="tarot-name" class="text-4xl md:text-6xl font-light tracking-tight mb-5 text-white"></h2>
+        <span id="tarot-character" class="text-[10px] md:text-xs tracking-[0.2em] uppercase font-medium opacity-50 mb-12 text-white"></span>
+        <div class="w-16 h-px bg-white/20 mx-auto mb-12"></div>
+        <p id="tarot-meaning" class="text-lg md:text-xl font-light text-white/70 leading-relaxed max-w-xl"></p>
+      </div>
 
-<div id="global-settings-modal" class="fixed inset-0 bg-black/40 items-center justify-center z-50 p-4 transition-opacity duration-300" style="display: none; opacity: 0;">
-    <div class="bg-[#F2F2F7] rounded-[20px] w-full max-w-[340px] flex flex-col text-left overflow-hidden transform scale-95 transition-transform duration-300" id="global-settings-box">
-        <div class="p-5 pb-4">
-            <h3 class="text-[17px] font-semibold text-black mb-1 text-center">Settings</h3>
-            <p class="text-[13px] text-gray-500 mb-5 text-center">API Configuration</p>
-            <div class="mb-4">
-                <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">API Key</label>
-                <input type="password" id="global-api-key" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="Google API Key">
-            </div>
-            <div class="mb-2">
-                <label class="text-[13px] text-gray-500 font-medium mb-1.5 block uppercase tracking-wide px-1">AI Model</label>
-                <input type="text" id="global-model-name" class="w-full bg-white rounded-xl px-4 py-3 text-[15px] outline-none focus:ring-2 focus:ring-[#007AFF] transition-all shadow-sm border border-gray-200" placeholder="gemini-2.0-flash-preview-image-generation">
-            </div>
-        </div>
-        <div class="flex border-t border-gray-300/80 bg-white">
-            <button onclick="closeGlobalSettings()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Cancel</button>
-            <button onclick="saveGlobalSettings()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Save</button>
-        </div>
+      <button id="btn-draw" onclick="drawTarotCard()" class="px-8 py-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/40 transition-all duration-300 text-xs tracking-widest uppercase font-medium shrink-0">
+        Tarik Kartu
+      </button>
+      
     </div>
-</div>
 
-<div id="ai-modal" class="fixed inset-0 bg-black/40 items-center justify-center z-50 p-4 transition-opacity duration-300" style="display: none; opacity: 0;">
-    <div class="bg-white rounded-[20px] w-full max-w-[340px] flex flex-col text-left overflow-hidden transform scale-95 transition-transform duration-300" id="ai-modal-box">
-        <div class="p-5 pb-4">
-            <h3 class="text-[17px] font-semibold text-black mb-1 text-center">Generator</h3>
-            <p class="text-[13px] text-gray-500 mb-4 text-center">Create visual concepts</p>
-            <textarea id="ai-prompt" class="w-full bg-[#F2F2F7] rounded-xl p-3 outline-none text-[15px] resize-none text-black placeholder-gray-400 border border-transparent focus:border-[#007AFF] transition-colors" rows="3" placeholder="Describe the image..."></textarea>
-            <div class="mt-4" id="ai-ref-section">
-                <div id="ref-image-container" class="relative w-16 h-16 mb-3" style="display: none;">
-                    <img id="ref-image-preview" class="w-full h-full object-cover rounded-[8px] border border-gray-200">
-                    <button onclick="clearRefImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow active:scale-90">✕</button>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="document.getElementById('ref-file-input').click()" class="bg-gray-100 text-[#007AFF] px-3 py-1.5 rounded-full text-[13px] font-medium active:bg-gray-200 flex items-center gap-1.5 transition-colors">
-                        Upload Ref
-                    </button>
-                    <button onclick="showGalleryRefPicker()" class="bg-gray-100 text-[#007AFF] px-3 py-1.5 rounded-full text-[13px] font-medium active:bg-gray-200 flex items-center gap-1.5 transition-colors">
-                        Gallery
-                    </button>
-                </div>
-                <div id="gallery-ref-picker" class="mt-3 w-full overflow-x-auto pb-1 scroll-smooth gap-2" style="display: none;"></div>
-            </div>
-            <input type="file" id="ref-file-input" accept="image/*" style="display: none;">
-            <div id="ai-loading" class="items-center justify-center py-4" style="display: none;">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#007AFF]"></div>
-            </div>
-        </div>
-        <div class="flex border-t border-gray-200" id="ai-actions">
-            <button onclick="closeAIModal()" class="flex-1 py-3.5 text-[17px] text-[#007AFF] active:bg-gray-100 transition-colors border-r border-gray-200">Cancel</button>
-            <button onclick="generateAIImage()" class="flex-1 py-3.5 text-[17px] font-semibold text-[#007AFF] active:bg-gray-100 transition-colors">Generate</button>
-        </div>
-    </div>
-</div>
+  </div>
 
-<div id="toast-container" class="fixed top-14 left-1/2 -translate-x-1/2 z-[60] flex flex-col gap-2 pointer-events-none w-max max-w-[90%]"></div>
+</div>
 
 <script>
-    const manifestBlob = new Blob([JSON.stringify({
-        name: "Gallery", short_name: "Gallery", start_url: location.href, display: "standalone", background_color: "#000000", theme_color: "#000000"
-    })], {type: 'application/json'});
-    document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(manifestBlob)}">`);
+const tarotDeck = {
+  "ace": [
+    { name: "Ace of Wands", meaning: "Awal baru yang penuh energi, inspirasi kreatif, dan potensi besar untuk memulai sesuatu yang kamu impikan." },
+    { name: "Ace of Cups", meaning: "Cinta yang meluap, kedamaian spiritual, dan kebahagiaan emosional yang segera memenuhi harimu." },
+    { name: "Ace of Swords", meaning: "Kejelasan mental, kemenangan atas kesulitan, dan kekuatan pikiran untuk memutus kebingungan." },
+    { name: "Ace of Pentacles", meaning: "Peluang finansial baru, kemakmuran materi, dan pondasi yang kuat untuk masa depan yang stabil." }
+  ],
+  "2": [
+    { name: "Two of Wands", meaning: "Perencanaan masa depan, keberanian untuk melangkah keluar, dan eksplorasi peluang di luar zona nyaman." },
+    { name: "Two of Cups", meaning: "Kemitraan yang harmonis, keseimbangan dalam hubungan, dan rasa saling menghargai yang mendalam." },
+    { name: "Two of Swords", meaning: "Kebutuhan untuk membuat keputusan sulit, mencari jalan tengah, dan menyeimbangkan logika serta perasaan." },
+    { name: "Two of Pentacles", meaning: "Kemampuan mengelola prioritas, adaptasi terhadap perubahan, dan menjaga keseimbangan di tengah kesibukan." }
+  ],
+  "3": [
+    { name: "Three of Wands", meaning: "Perluasan visi, kesuksesan yang mulai terlihat di ufuk, dan buah dari kerja keras yang segera tiba." },
+    { name: "Three of Cups", meaning: "Perayaan bersama teman dekat, kebahagiaan kolektif, dan dukungan sosial yang menguatkan jiwamu." },
+    { name: "Three of Swords", meaning: "Pelepasan luka lama, pemulihan emosional, dan keberanian untuk menghadapi kenyataan pahit demi pertumbuhan." },
+    { name: "Three of Pentacles", meaning: "Kolaborasi yang produktif, pengakuan atas keahlianmu, dan hasil kerja tim yang sangat memuaskan." }
+  ],
+  "4": [
+    { name: "Four of Wands", meaning: "Stabilitas rumah tangga, perayaan pencapaian kecil, dan rasa aman yang menyelimuti lingkungan terdekatmu." },
+    { name: "Four of Cups", meaning: "Momen kontemplasi, perlunya melihat peluang baru yang ada di depan mata, dan evaluasi diri yang mendalam." },
+    { name: "Four of Swords", meaning: "Waktu untuk beristirahat sejenak, memulihkan energi fisik, dan menjauhkan diri dari kebisingan dunia." },
+    { name: "Four of Pentacles", meaning: "Keinginan untuk menjaga apa yang sudah dimiliki, stabilitas keuangan, dan perlunya sikap lebih terbuka." }
+  ],
+  "5": [
+    { name: "Five of Wands", meaning: "Persaingan yang sehat, tantangan yang memacu adrenalin, dan perlunya fokus untuk memenangkan kompetisi." },
+    { name: "Five of Cups", meaning: "Belajar dari masa lalu, melihat sisa harapan yang masih ada, dan bangkit dari kekecewaan dengan lebih bijak." },
+    { name: "Five of Swords", meaning: "Kemenangan yang butuh evaluasi, menghindari konflik yang tidak perlu, dan fokus pada perdamaian diri." },
+    { name: "Five of Pentacles", meaning: "Dukungan yang datang di saat sulit, pentingnya mencari bantuan, dan ketangguhan mental menghadapi rintangan." }
+  ],
+  "6": [
+    { name: "Six of Wands", meaning: "Keberhasilan yang diakui publik, kepercayaan diri yang meningkat, dan momen kemenangan yang layak dirayakan." },
+    { name: "Six of Cups", meaning: "Nostalgia yang manis, pertemuan dengan sosok masa lalu, dan kebaikan hati yang kembali kepadamu." },
+    { name: "Six of Swords", meaning: "Transisi menuju kondisi yang lebih tenang, meninggalkan beban lama, dan perjalanan menuju kedamaian." },
+    { name: "Six of Pentacles", meaning: "Kemurahan hati, berbagi rezeki yang adil, dan keseimbangan antara memberi serta menerima bantuan." }
+  ],
+  "7": [
+    { name: "Seven of Wands", meaning: "Keteguhan dalam mempertahankan prinsip, keberanian menghadapi tekanan, dan kekuatan untuk tetap berdiri tegak." },
+    { name: "Seven of Cups", meaning: "Banyak pilihan menarik di depan, perlunya fokus pada satu tujuan, dan kemampuan membedakan realita dari ilusi." },
+    { name: "Seven of Swords", meaning: "Kebutuhan akan strategi cerdik, kemandirian dalam bertindak, dan kewaspadaan terhadap situasi di sekitarmu." },
+    { name: "Seven of Pentacles", meaning: "Kesabaran menunggu hasil panen, investasi jangka panjang, dan evaluasi atas kemajuan yang sudah dicapai." }
+  ],
+  "8": [
+    { name: "Eight of Wands", meaning: "Pergerakan cepat, berita baik yang segera tiba, dan momentum positif yang tidak boleh disia siakan." },
+    { name: "Eight of Cups", meaning: "Perjalanan mencari makna lebih dalam, melepaskan hal yang tidak lagi berguna, dan pertumbuhan spiritual yang pesat." },
+    { name: "Eight of Swords", meaning: "Menyadari bahwa batasan hanya ada di pikiran, keberanian untuk membebaskan diri, dan perspektif baru yang mencerahkan." },
+    { name: "Eight of Pentacles", meaning: "Dedikasi pada keahlian, proses belajar yang tekun, dan fokus pada kualitas hasil karya yang kamu buat." }
+  ],
+  "9": [
+    { name: "Nine of Wands", meaning: "Ketangguhan di garis finis, perlindungan terhadap pencapaianmu, dan kekuatan cadangan yang segera keluar." },
+    { name: "Nine of Cups", meaning: "Kepuasan batin yang mendalam, harapan yang menjadi kenyataan, dan rasa syukur atas segala berkah hidup." },
+    { name: "Nine of Swords", meaning: "Menghadapi rasa cemas dengan logika, menyadari bahwa ketakutan tidak nyata, dan ketenangan yang kembali hadir." },
+    { name: "Nine of Pentacles", meaning: "Kemandirian finansial, menikmati hasil kerja keras dengan elegan, dan rasa bangga atas pencapaian pribadi." }
+  ],
+  "10": [
+    { name: "Ten of Wands", meaning: "Tanggung jawab besar yang segera tuntas, perlunya delegasi tugas, dan akhir dari perjuangan yang melelahkan." },
+    { name: "Ten of Cups", meaning: "Kebahagiaan keluarga yang sempurna, keselarasan hubungan, dan rasa memiliki yang sangat kuat." },
+    { name: "Ten of Swords", meaning: "Akhir dari siklus buruk, fajar baru yang segera menyingsing, dan kelegaan setelah melewati masa sulit." },
+    { name: "Ten of Pentacles", meaning: "Warisan yang berharga, kemakmuran keluarga jangka panjang, dan pondasi hidup yang sangat kokoh." }
+  ],
+  "knight": [
+    { name: "Knight of Wands", meaning: "Aksi penuh gairah, keberanian mengambil risiko besar, dan semangat petualangan yang membara dalam dirimu." },
+    { name: "Knight of Cups", meaning: "Pesan cinta yang romantis, tawaran emosional yang tulus, dan imajinasi yang membawa keberuntungan." },
+    { name: "Knight of Swords", meaning: "Kecepatan bertindak, ketajaman analisis dalam masalah rumit, dan tekad baja untuk mencapai target." },
+    { name: "Knight of Pentacles", meaning: "Metode kerja yang sangat terstruktur, kesabaran yang luar biasa, dan hasil nyata dari ketekunanmu." }
+  ],
+  "queen": [
+    { name: "Queen of Wands", meaning: "Kepercayaan diri yang menarik perhatian, kemandirian yang menginspirasi, dan energi hangat yang memikat orang lain." },
+    { name: "Queen of Cups", meaning: "Intuisi emosional yang sangat tajam, empati yang mendalam, dan ketenangan batin yang menjadi kekuatanmu." },
+    { name: "Queen of Swords", meaning: "Objektivitas dalam menilai situasi, kejujuran yang lugas, dan kemandirian intelektual yang sangat kuat." },
+    { name: "Queen of Pentacles", meaning: "Kemampuan mengayomi dan mengelola sumber daya, kemakmuran praktis, dan kehangatan dalam berbagi rezeki." }
+  ]
+};
 
-    let appGlobalSettings = {
-        apiKey: '',
-        modelName: 'gemini-2.0-flash-preview-image-generation'
-    };
+const monthData = [
+  { id: 'januari', name: 'Januari', icon: 'snowflake', tarotRank: 'ace', tarotCharacter: 'Cermat, Antusias', color: 'from-blue-900/20 to-black', prediction: 'Kamu sering menjadi tempat bersandar bagi orang lain, padahal kamu sendiri kadang butuh didengarkan. Ada banyak ide di kepalamu yang belum sempat direalisasikan karena kamu terlalu sibuk membantu orang di sekitarmu.' },
+  { id: 'februari', name: 'Februari', icon: 'cloud-rain', tarotRank: '2', tarotCharacter: 'Antusias, Positif', color: 'from-indigo-900/20 to-black', prediction: 'Banyak yang mengira kamu sosok yang santai, tapi sebenarnya kamu sangat memikirkan detail kecil dari setiap perkataan orang. Kamu punya kemampuan alami untuk membaca situasi yang sering kali tidak disadari orang lain.' },
+  { id: 'maret', name: 'Maret', icon: 'seedling', tarotRank: '3', tarotCharacter: 'Positif, Ambisius', color: 'from-teal-900/20 to-black', prediction: 'Kamu punya dinding pertahanan tersendiri untuk melindungi perasaanmu. Orang melihatmu ramah, tapi hanya sedikit yang benar benar tahu apa yang kamu rasakan di balik senyumanmu sehari hari.' },
+  { id: 'april', name: 'April', icon: 'flower', tarotRank: '4', tarotCharacter: 'Ambisius, Tangguh', color: 'from-rose-900/20 to-black', prediction: 'Kamu tidak suka terjebak dalam rutinitas yang membosankan. Meski dari luar terlihat selalu penuh energi, ada kalanya kamu merasa kelelahan dan hanya ingin diam di tempat yang tenang tanpa gangguan siapa pun.' },
+  { id: 'mei', name: 'Mei', icon: 'sun-low', tarotRank: '5', tarotCharacter: 'Tangguh, Gesit', color: 'from-emerald-900/20 to-black', prediction: 'Kamu sangat menghargai keamanan dan kenyamanan dalam hidup. Terkadang kamu ragu melangkah keluar dari zona nyaman karena takut mengecewakan diri sendiri, padahal potensimu jauh lebih besar dari yang kamu bayangkan.' },
+  { id: 'juni', name: 'Juni', icon: 'sun', tarotRank: '6', tarotCharacter: 'Gesit, Caring', color: 'from-sky-900/20 to-black', prediction: 'Kamu pintar menyembunyikan kesedihan di balik candaan. Orang suka berada di dekatmu karena energimu, tapi kamu sering merasa kesepian justru saat sedang berada di tengah keramaian.' },
+  { id: 'juli', name: 'Juli', icon: 'wave-sine', tarotRank: '7', tarotCharacter: 'Caring, Loyal', color: 'from-cyan-900/20 to-black', prediction: 'Kamu sering menempatkan kebahagiaan orang lain di atas kebahagiaanmu sendiri. Kamu mungkin terlihat tegar, tapi kata kata kasar dari orang terdekat bisa sangat membekas di pikiranmu.' },
+  { id: 'agustus', name: 'Agustus', icon: 'flame', tarotRank: '8', tarotCharacter: 'Loyal, Visioner', color: 'from-orange-900/20 to-black', prediction: 'Kamu punya standar yang sangat tinggi untuk dirimu sendiri. Walau sering terlihat kuat dan tahu arah, di dalam hati kamu kadang khawatir apakah kamu sudah mengambil keputusan yang tepat untuk masa depanmu.' },
+  { id: 'september', name: 'September', icon: 'leaf', tarotRank: '9', tarotCharacter: 'Visioner, Lincah', color: 'from-amber-900/20 to-black', prediction: 'Kamu adalah pengamat yang ulung dan menyukai segala sesuatu yang teratur. Terkadang kamu terlalu keras mengkritik dirimu sendiri atas kesalahan kecil yang bahkan tidak disadari oleh orang lain.' },
+  { id: 'oktober', name: 'Oktober', icon: 'wind', tarotRank: '10', tarotCharacter: 'Lincah, Serius', color: 'from-pink-900/20 to-black', prediction: 'Kamu selalu menghindari konflik sebisa mungkin demi kedamaian. Dalam usahamu untuk membuat semua orang senang, kamu sering lupa menanyakan pada dirimu sendiri apa yang sebenarnya membuatmu bahagia.' },
+  { id: 'november', name: 'November', icon: 'moon', tarotRank: 'knight', tarotCharacter: 'Serius, Saksama', color: 'from-purple-900/20 to-black', prediction: 'Kamu tidak mudah percaya pada orang yang baru dikenal. Intuisimu sangat tajam dalam menilai karakter seseorang, tapi kamu memilih untuk diam dan mengamati dari jauh sebelum benar benar membuka diri.' },
+  { id: 'desember', name: 'Desember', icon: 'stars', tarotRank: 'queen', tarotCharacter: 'Saksama, Cermat', color: 'from-zinc-900/20 to-black', prediction: 'Kamu selalu mencari makna lebih dalam dari setiap kejadian di hidupmu. Walau sering terlihat santai, pikiranmu tidak pernah berhenti memikirkan rencana rencana besar yang ingin kamu capai suatu hari nanti.' }
+];
 
-    function loadGlobalSettings() {
-        const saved = localStorage.getItem('galleryGlobalSettings_v1');
-        if (saved) appGlobalSettings = JSON.parse(saved);
+const carousel = document.getElementById('carousel');
+const dotsContainer = document.getElementById('dots');
+let activeIndex = 0;
+
+function initApp() {
+  carousel.innerHTML = monthData.map(month => {
+    let fullText = month.prediction;
+    const limit = 70;
+    let shortText = fullText;
+    let remainText = "";
+    
+    if (fullText.length > limit) {
+      let cutIndex = fullText.lastIndexOf(' ', limit);
+      if (cutIndex === -1) cutIndex = limit;
+      shortText = fullText.substring(0, cutIndex);
+      remainText = fullText.substring(cutIndex);
     }
 
-    function openGlobalSettings() {
-        document.getElementById('global-api-key').value = appGlobalSettings.apiKey;
-        document.getElementById('global-model-name').value = appGlobalSettings.modelName;
-        const modal = document.getElementById('global-settings-modal');
-        const box = document.getElementById('global-settings-box');
-        modal.style.display = 'flex';
-        setTimeout(() => { modal.style.opacity = '1'; box.classList.remove('scale-95'); }, 10);
-    }
+    return `
+    <div id="slide-${month.id}" class="flex-none w-full h-full snap-center relative bg-gradient-to-b ${month.color} overflow-y-auto hide-scrollbar">
+      <div class="absolute inset-0 bg-black/40 fixed pointer-events-none"></div>
+      <div class="relative w-full min-h-full flex flex-col justify-center items-center px-8 md:px-20 pt-32 pb-40 max-w-4xl mx-auto">
+        
+        <div class="flex flex-col items-center justify-center w-full max-w-md mx-auto text-center">
+          <img src="https://api.iconify.design/tabler/${month.icon}.svg?color=white" alt="${month.name}" class="w-24 h-24 md:w-32 md:h-32 opacity-90 drop-shadow-xl mb-12" loading="lazy">
+          <h1 class="text-4xl md:text-5xl font-light tracking-tight mb-12">${month.name}</h1>
+        </div>
+        
+        <div class="w-16 h-px bg-white/20 mb-12 mx-auto"></div>
+        
+        <div class="relative w-full max-w-2xl text-center mx-auto text-lg md:text-xl leading-relaxed font-light text-white/90">
+          <p class="inline">
+            <span>${shortText}</span><span id="dots-${month.id}" class="${remainText ? 'inline' : 'hidden'}">...</span><span id="remain-${month.id}" class="hidden">${remainText}</span>
+            ${remainText ? `<button id="btn-${month.id}" onclick="toggleCard('${month.id}')" class="inline text-white/50 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 ml-1 font-medium">Selengkapnya</button>` : ''}
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  `}).join('');
 
-    function closeGlobalSettings() {
-        const modal = document.getElementById('global-settings-modal');
-        const box = document.getElementById('global-settings-box');
-        modal.style.opacity = '0'; box.classList.add('scale-95');
-        setTimeout(() => { modal.style.display = 'none'; }, 300);
-    }
+  dotsContainer.innerHTML = monthData.map((_, index) => `
+    <div class="dot h-1.5 rounded-full transition-all duration-300 ${index === 0 ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}"></div>
+  `).join('');
 
-    function saveGlobalSettings() {
-        appGlobalSettings.apiKey = document.getElementById('global-api-key').value.trim();
-        appGlobalSettings.modelName = document.getElementById('global-model-name').value.trim() || 'gemini-2.0-flash-preview-image-generation';
-        localStorage.setItem('galleryGlobalSettings_v1', JSON.stringify(appGlobalSettings));
-        closeGlobalSettings();
-        showToast("Settings saved");
-    }
+  carousel.addEventListener('scroll', handleScroll);
+}
 
-    loadGlobalSettings();
+function toggleCard(id) {
+  const dots = document.getElementById(`dots-${id}`);
+  const remain = document.getElementById(`remain-${id}`);
+  const btn = document.getElementById(`btn-${id}`);
+  
+  if (remain.classList.contains('hidden')) {
+    remain.classList.replace('hidden', 'inline');
+    dots.classList.replace('inline', 'hidden');
+    btn.innerText = 'Tutup';
+  } else {
+    remain.classList.replace('inline', 'hidden');
+    dots.classList.replace('hidden', 'inline');
+    btn.innerText = 'Selengkapnya';
+  }
+}
 
-    const DB_NAME = 'ImageViewerDB_iOS_v2';
-    const STORE_NAME = 'gallery_images';
-    let globalImages = []; 
-    let currentIndex = 0;
-    let activeImageLayer = 1; 
-    let isPerformMode = false;
-
-    const DEFAULT_SETTINGS = { transition: 'fade', trigger: 'tap', duration: 0.5 };
-
-    function openDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, 1);
-            request.onupgradeneeded = (e) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-            };
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    async function saveImageToDB(file, isAI = false) {
-        const db = await openDB();
-        return new Promise((resolve) => {
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.add({ file: file, timestamp: new Date().getTime(), isAI: isAI, settings: { ...DEFAULT_SETTINGS } });
-            request.onsuccess = () => resolve(request.result);
-        });
-    }
-
-    async function updateImageInDB(record) {
-        const db = await openDB();
-        return new Promise((resolve) => {
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.put(record); 
-            request.onsuccess = () => resolve();
-        });
-    }
-
-    async function getAllImagesFromDB() {
-        const db = await openDB();
-        return new Promise((resolve) => {
-            const transaction = db.transaction(STORE_NAME, 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result.sort((a,b) => a.timestamp - b.timestamp));
-        });
-    }
-
-    async function deleteImageFromDB(id) {
-        const db = await openDB();
-        return new Promise((resolve) => {
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-        });
-    }
-
-    const dashboardScreen = document.getElementById('dashboard-screen');
-    const imageScreen = document.getElementById('image-screen');
-    const fileInput = document.getElementById('file-input');
-    const imageListContainer = document.getElementById('image-list');
-    const toastContainer = document.getElementById('toast-container');
-    const overlayTop = document.getElementById('image-overlay-top');
-
-    function showToast(message) {
-        const toast = document.createElement('div');
-        toast.className = `bg-black/80 backdrop-blur-md text-white px-5 py-2.5 rounded-full shadow-lg text-[15px] flex items-center justify-center animate-slide-up pointer-events-auto z-50`;
-        toast.innerHTML = `<span>${message}</span>`;
-        toastContainer.appendChild(toast);
-        setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 2000);
-    }
-
-    async function updateQuickSetting(id, key, value, element) {
-        const imgRecord = globalImages.find(i => i.id === id);
-        if (!imgRecord) return;
-        if (!imgRecord.settings) imgRecord.settings = { ...DEFAULT_SETTINGS };
-        if (key === 'duration') {
-            imgRecord.settings[key] = value === '' ? 0 : parseFloat(value);
-        } else {
-            imgRecord.settings[key] = value;
-            const parent = element.parentElement;
-            parent.querySelectorAll('button').forEach(btn => {
-                btn.className = 'flex-1 text-[13px] py-1.5 rounded-[6px] text-gray-500 bg-transparent transition-all';
-            });
-            element.className = 'flex-1 text-[13px] py-1.5 rounded-[6px] bg-white shadow-sm font-semibold text-black transition-all';
-        }
-        await updateImageInDB(imgRecord);
-    }
-
-    async function loadDashboard() {
-        imageListContainer.innerHTML = '';
-        globalImages = await getAllImagesFromDB();
-        if (globalImages.length === 0) return;
-        globalImages.forEach((imgData, index) => {
-            const objectUrl = URL.createObjectURL(imgData.file);
-            const title = imgData.isAI ? `Media ${index + 1}` : `Media ${index + 1}`;
-            const imgSet = imgData.settings || DEFAULT_SETTINGS;
-            const itemHTML = `
-                <div class="bg-white rounded-[14px] overflow-hidden shadow-sm animate-fade-in border border-black/5">
-                    <div class="px-4 py-3 border-b border-black/5">
-                        <h2 class="text-[17px] font-medium text-black">${title}</h2>
-                    </div>
-                    <div class="w-full h-60 bg-gray-100 cursor-pointer" onclick="openFullscreen(${index})">
-                        <img src="${objectUrl}" class="w-full h-full object-cover">
-                    </div>
-                    <div class="p-4 bg-[#FAFAFA] flex flex-col gap-3 border-t border-black/5">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[14px] text-gray-600 font-medium">Transition</span>
-                            <div class="flex bg-gray-200/80 rounded-[8px] p-0.5 w-[160px]">
-                                <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'fade', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.transition === 'fade' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Fade</button>
-                                <button onclick="updateQuickSetting(${imgData.id}, 'transition', 'instant', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.transition !== 'fade' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Instant</button>
-                            </div>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[14px] text-gray-600 font-medium">Trigger</span>
-                            <div class="flex bg-gray-200/80 rounded-[8px] p-0.5 w-[160px]">
-                                <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'tap', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.trigger === 'tap' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Tap</button>
-                                <button onclick="updateQuickSetting(${imgData.id}, 'trigger', 'swipe', this)" class="flex-1 text-[13px] py-1.5 rounded-[6px] transition-all ${imgSet.trigger !== 'tap' ? 'bg-white shadow-sm font-semibold text-black' : 'text-gray-500'}">Swipe</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            imageListContainer.insertAdjacentHTML('beforeend', itemHTML);
-        });
-    }
-
-    function startPerform() {
-        if (globalImages.length === 0) { showToast("Add an image first"); return; }
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch(() => {});
-        }
-        isPerformMode = true;
-        overlayTop.style.display = 'none';
-        openFullscreen(0); 
-    }
-
-    function openFullscreen(index) {
-        if (globalImages.length === 0) return;
-        currentIndex = Math.max(0, Math.min(index, globalImages.length - 1));
-        const url = URL.createObjectURL(globalImages[currentIndex].file);
-        const img1 = document.getElementById('display-image-1');
-        const img2 = document.getElementById('display-image-2');
-        img1.style.transitionDuration = '0s'; img2.style.transitionDuration = '0s';
-        img1.src = url; img1.style.opacity = '1'; img2.style.opacity = '0'; activeImageLayer = 1;
-        dashboardScreen.style.display = 'none';
-        imageScreen.style.display = 'block';
-        document.querySelector('meta[name="theme-color"]').setAttribute("content", "#000000");
-    }
-
-    function closeFullscreen() {
-        imageScreen.style.display = 'none';
-        dashboardScreen.style.display = 'flex';
-        document.querySelector('meta[name="theme-color"]').setAttribute("content", "#F2F2F7");
-        isPerformMode = false;
-        overlayTop.style.display = 'flex';
-        if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
-    }
-
-    function changeImage(direction = 'next') {
-        if (globalImages.length <= 1) return;
-        const currentImgSettings = globalImages[currentIndex].settings || DEFAULT_SETTINGS;
-        if (direction === 'next') currentIndex = (currentIndex + 1) % globalImages.length;
-        else currentIndex = (currentIndex - 1 + globalImages.length) % globalImages.length;
-        const url = URL.createObjectURL(globalImages[currentIndex].file);
-        const img1 = document.getElementById('display-image-1');
-        const img2 = document.getElementById('display-image-2');
-        let dur = currentImgSettings.transition === 'instant' ? 0 : parseFloat(currentImgSettings.duration ?? DEFAULT_SETTINGS.duration);
-        img1.style.transitionDuration = `${dur}s`; img2.style.transitionDuration = `${dur}s`;
-        if (activeImageLayer === 1) { img2.src = url; img2.style.opacity = '1'; img1.style.opacity = '0'; activeImageLayer = 2; }
-        else { img1.src = url; img1.style.opacity = '1'; img2.style.opacity = '0'; activeImageLayer = 1; }
-    }
-
-    const touchArea = document.getElementById('touch-area');
-    let startX = 0, startY = 0, isTwoFingerGesture = false, twoFingerStartY = null;
-
-    touchArea.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            isTwoFingerGesture = true;
-            twoFingerStartY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-            e.preventDefault(); 
-        } else if (e.touches.length === 1) {
-            isTwoFingerGesture = false;
-            startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-        }
-    }, { passive: false });
-
-    touchArea.addEventListener('touchmove', (e) => {
-        if (isTwoFingerGesture || e.touches.length === 2) e.preventDefault();
-    }, { passive: false });
-
-    touchArea.addEventListener('touchend', (e) => {
-        if (isTwoFingerGesture) {
-            if (e.touches.length === 0 && twoFingerStartY !== null) {
-                const endY = (e.changedTouches[0].clientY + (e.changedTouches[1]?.clientY ?? e.changedTouches[0].clientY)) / (e.changedTouches.length > 1 ? 2 : 1);
-                if ((endY - twoFingerStartY) > 50) closeFullscreen();
-                twoFingerStartY = null; isTwoFingerGesture = false;
-            }
-            return; 
-        }
-        if (e.changedTouches.length === 1) {
-            let diffX = startX - e.changedTouches[0].clientX;
-            let diffY = startY - e.changedTouches[0].clientY;
-            let distance = Math.sqrt(diffX*diffX + diffY*diffY);
-            const activeTrigger = (globalImages[currentIndex]?.settings || DEFAULT_SETTINGS).trigger;
-            if (distance < 10) { 
-                if (activeTrigger === 'tap') changeImage('next'); 
-            } else { 
-                if (activeTrigger === 'swipe' && Math.abs(diffX) > 40) changeImage(diffX > 0 ? 'next' : 'prev'); 
-            }
-        }
+function handleScroll() {
+  const scrollPosition = carousel.scrollLeft;
+  const itemWidth = carousel.clientWidth;
+  if (itemWidth === 0) return;
+  const newIndex = Math.round(scrollPosition / itemWidth);
+  const dots = document.querySelectorAll('.dot');
+  
+  if (newIndex !== activeIndex) {
+    activeIndex = newIndex;
+    dots.forEach((dot, index) => {
+      dot.className = `dot h-1.5 rounded-full transition-all duration-300 ${index === activeIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}`;
     });
+  }
+}
 
-    document.getElementById('btn-hapus').addEventListener('click', async () => {
-        if (globalImages.length === 0) return;
-        const deletedIndex = currentIndex;
-        await deleteImageFromDB(globalImages[deletedIndex].id);
-        await loadDashboard(); 
-        if (globalImages.length === 0) {
-            closeFullscreen();
-        } else {
-            const nextIndex = deletedIndex >= globalImages.length ? globalImages.length - 1 : deletedIndex;
-            openFullscreen(nextIndex);
-        }
-    });
+function switchTab(tab) {
+  const bulanView = document.getElementById('view-bulan');
+  const tarotView = document.getElementById('view-tarot');
+  const btnBulan = document.getElementById('tab-btn-bulan');
+  const btnTarot = document.getElementById('tab-btn-tarot');
 
-    fileInput.addEventListener('change', async (e) => {
-        if (e.target.files[0]) {
-            await saveImageToDB(e.target.files[0]);
-            await loadDashboard();
-            showToast("Saved to gallery");
-        }
-        fileInput.value = ''; 
-    });
+  if (tab === 'bulan') {
+    bulanView.classList.replace('opacity-0', 'opacity-100');
+    bulanView.style.zIndex = '20';
+    bulanView.classList.remove('pointer-events-none');
+    tarotView.classList.replace('opacity-100', 'opacity-0');
+    tarotView.style.zIndex = '10';
+    tarotView.classList.add('pointer-events-none');
+    btnBulan.className = 'px-6 py-2 rounded-full text-xs tracking-widest uppercase font-medium transition-all duration-300 bg-white text-black';
+    btnTarot.className = 'px-6 py-2 rounded-full text-xs tracking-widest uppercase font-medium transition-all duration-300 text-white/50 hover:text-white';
+  } else {
+    bulanView.classList.replace('opacity-100', 'opacity-0');
+    bulanView.style.zIndex = '10';
+    bulanView.classList.add('pointer-events-none');
+    tarotView.classList.replace('opacity-0', 'opacity-100');
+    tarotView.style.zIndex = '20';
+    tarotView.classList.remove('pointer-events-none');
+    btnTarot.className = 'px-6 py-2 rounded-full text-xs tracking-widest uppercase font-medium transition-all duration-300 bg-white text-black';
+    btnBulan.className = 'px-6 py-2 rounded-full text-xs tracking-widest uppercase font-medium transition-all duration-300 text-white/50 hover:text-white';
+  }
+}
 
-    let currentRefBase64 = null;
-    let currentRefMime = null;
+function drawTarotCard() {
+  const btn = document.getElementById('btn-draw');
+  const textContainer = document.getElementById('tarot-text-container');
+  btn.disabled = true;
 
-    document.getElementById('ref-file-input').addEventListener('change', async (e) => {
-        if (e.target.files[0]) {
-            await setRefImage(e.target.files[0]);
-            document.getElementById('gallery-ref-picker').style.display = 'none';
-        }
-        e.target.value = '';
-    });
+  if (!textContainer.classList.contains('hidden')) {
+    textContainer.style.opacity = '0';
+    setTimeout(() => {
+      textContainer.classList.add('hidden');
+      btn.innerText = 'Mengocok...';
+      setTimeout(() => performDraw(btn, textContainer), 400);
+    }, 600);
+  } else {
+    btn.innerText = 'Menarik...';
+    performDraw(btn, textContainer);
+  }
+}
 
-    async function setRefImage(fileOrBlob) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                currentRefBase64 = reader.result.split(',')[1];
-                currentRefMime = fileOrBlob.type || 'image/jpeg';
-                document.getElementById('ref-image-preview').src = URL.createObjectURL(fileOrBlob);
-                document.getElementById('ref-image-container').style.display = 'flex';
-                resolve();
-            };
-            reader.readAsDataURL(fileOrBlob);
-        });
-    }
+function performDraw(btn, textContainer) {
+  const monthInfo = monthData[activeIndex];
+  const rank = monthInfo.tarotRank;
+  const cards = tarotDeck[rank];
+  const result = cards[Math.floor(Math.random() * cards.length)];
 
-    function clearRefImage() {
-        currentRefBase64 = null;
-        currentRefMime = null;
-        document.getElementById('ref-image-container').style.display = 'none';
-    }
+  document.getElementById('tarot-name').innerText = result.name;
+  document.getElementById('tarot-character').innerText = monthInfo.tarotCharacter;
+  document.getElementById('tarot-meaning').innerText = result.meaning;
 
-    function showGalleryRefPicker() {
-        const picker = document.getElementById('gallery-ref-picker');
-        picker.innerHTML = '';
-        if (globalImages.length === 0) { showToast("Gallery is empty"); return; }
-        globalImages.forEach(imgData => {
-            const imgEl = document.createElement('img');
-            imgEl.src = URL.createObjectURL(imgData.file);
-            imgEl.className = 'w-14 h-14 rounded-lg object-cover flex-shrink-0 cursor-pointer border border-gray-300 active:opacity-70';
-            imgEl.onclick = () => {
-                setRefImage(imgData.file);
-                picker.style.display = 'none';
-            };
-            picker.appendChild(imgEl);
-        });
-        if (picker.style.display === 'none' || picker.style.display === '') {
-            picker.style.display = 'flex';
-        } else {
-            picker.style.display = 'none';
-        }
-    }
+  textContainer.classList.remove('hidden');
+  setTimeout(() => {
+    textContainer.style.opacity = '1';
+    document.getElementById('view-tarot').scrollTo({ top: 0, behavior: 'smooth' });
+  }, 50);
 
-    function openAIModal() {
-        document.getElementById('ai-prompt').value = '';
-        clearRefImage();
-        document.getElementById('gallery-ref-picker').style.display = 'none';
-        setAILoadingState(false);
+  btn.innerText = 'Tarik Kartu Lain';
+  btn.disabled = false;
+}
 
-        const modal = document.getElementById('ai-modal');
-        const box = document.getElementById('ai-modal-box');
-        modal.style.display = 'flex';
-        setTimeout(() => { modal.style.opacity = '1'; box.classList.remove('scale-95'); }, 10);
-    }
-
-    function closeAIModal() {
-        setAILoadingState(false);
-
-        const modal = document.getElementById('ai-modal');
-        const box = document.getElementById('ai-modal-box');
-        modal.style.opacity = '0'; box.classList.add('scale-95');
-        setTimeout(() => { modal.style.display = 'none'; }, 300);
-    }
-
-    function setAILoadingState(loading) {
-        const loadingEl = document.getElementById('ai-loading');
-        const actionsEl = document.getElementById('ai-actions');
-        if (loading) {
-            actionsEl.style.display = 'none';
-            loadingEl.style.display = 'flex';
-        } else {
-            loadingEl.style.display = 'none';
-            actionsEl.style.display = 'flex';
-        }
-    }
-
-    async function generateAIImage() {
-        const prompt = document.getElementById('ai-prompt').value.trim();
-        if (!prompt) { showToast("Describe the concept"); return; }
-        if (!appGlobalSettings.apiKey) { showToast("Please setup API key"); return; }
-
-        setAILoadingState(true);
-        try {
-            const parts = [{ text: prompt }];
-            if (currentRefBase64) parts.push({ inlineData: { mimeType: currentRefMime, data: currentRefBase64 } });
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${appGlobalSettings.modelName}:generateContent?key=${appGlobalSettings.apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ["TEXT", "IMAGE"] } })
-            });
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData?.error?.message || `HTTP ${response.status}`);
-            }
-            const result = await response.json();
-            const imgBase = result.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-            if (imgBase) {
-                const blob = await (await fetch(`data:image/jpeg;base64,${imgBase}`)).blob();
-                await saveImageToDB(blob, true);
-                closeAIModal();
-                await loadDashboard();
-                showToast("Generation complete");
-            } else {
-                showToast("Generation failed");
-            }
-        } catch (e) {
-            showToast(`Error: ${e.message || 'Unknown error'}`);
-        } finally {
-            setAILoadingState(false);
-        }
-    }
-
-    loadDashboard();
+initApp();
 </script>
 </body>
 </html>
