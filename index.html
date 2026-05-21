@@ -26,9 +26,8 @@ html, body {
 }
 
 canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: fixed;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -37,10 +36,7 @@ canvas {
 
 #home-screen {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100dvh;
+  inset: 0;
   background: #09090b;
   display: flex;
   flex-direction: column;
@@ -60,7 +56,7 @@ canvas {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 60px;
+  gap: 50px;
 }
 
 .brand {
@@ -72,32 +68,25 @@ canvas {
 
 .title {
   color: #ffffff;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-.subtitle {
-  color: #71717a;
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 1px;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 4px;
 }
 
 .home-buttons {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  width: 200px;
+  gap: 12px;
+  width: 220px;
 }
 
 .btn-primary {
   background: #ffffff;
   color: #09090b;
   border: none;
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.1s, background 0.2s;
@@ -112,9 +101,9 @@ canvas {
   background: transparent;
   color: #a1a1aa;
   border: 1px solid #27272a;
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: transform 0.1s, background 0.2s, color 0.2s;
@@ -128,10 +117,7 @@ canvas {
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100dvh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -152,12 +138,12 @@ canvas {
 .modal-box {
   background: #18181b;
   padding: 32px 28px;
-  border-radius: 24px;
-  border: 2px solid #ffffff;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: 290px;
+  width: 280px;
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
   transform: translateY(20px) scale(0.95);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -168,11 +154,11 @@ canvas {
 }
 
 .modal-header {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #ffffff;
   text-align: center;
-  margin-bottom: -4px;
+  letter-spacing: 1px;
 }
 
 .setting-row {
@@ -183,7 +169,7 @@ canvas {
 }
 
 .setting-label {
-  font-size: 15px;
+  font-size: 14px;
   color: #e4e4e7;
   font-weight: 500;
 }
@@ -221,7 +207,7 @@ canvas {
 .segment-control {
   display: flex;
   background: #27272a;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 4px;
   gap: 4px;
 }
@@ -232,8 +218,8 @@ canvas {
   color: #a1a1aa;
   border: none;
   padding: 10px;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -261,7 +247,7 @@ canvas {
 }
 
 label.input-label {
-  font-size: 13px;
+  font-size: 12px;
   color: #a1a1aa;
   font-weight: 500;
 }
@@ -270,9 +256,9 @@ input.config-input, select.config-select {
   background: #27272a;
   border: 1px solid rgba(255, 255, 255, 0.05);
   color: #ffffff;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
   outline: none;
   transition: all 0.2s;
   appearance: none;
@@ -287,9 +273,9 @@ input.config-input:focus, select.config-select:focus {
   background: #27272a;
   color: #ffffff;
   border: none;
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   margin-top: 8px;
@@ -308,18 +294,17 @@ input.config-input:focus, select.config-select:focus {
   <div class="home-content">
     <div class="brand">
       <div class="title">2D DICE</div>
-      <div class="subtitle">INFINITE GRID</div>
     </div>
     <div class="home-buttons">
-      <button class="btn-primary" id="btn-start">Start</button>
-      <button class="btn-secondary" id="btn-fake-settings">Settings</button>
+      <button class="btn-primary" id="btn-start">Begin</button>
+      <button class="btn-secondary" id="btn-fake-settings">Preferences</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="fake-settings-modal">
   <div class="modal-box">
-    <div class="modal-header">Settings</div>
+    <div class="modal-header">Preferences</div>
     <div class="setting-row">
       <div class="setting-label">Sound Effects</div>
       <div class="toggle active" onclick="this.classList.toggle('active')">
@@ -445,14 +430,12 @@ let height = window.innerHeight;
 const CELL_SIZE = 100;
 
 function resizeCanvas() {
-  width = window.innerWidth;
-  height = window.innerHeight;
+  width = canvas.clientWidth || window.innerWidth;
+  height = canvas.clientHeight || window.innerHeight;
   canvas.width = width * window.devicePixelRatio;
   canvas.height = height * window.devicePixelRatio;
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 }
-
-resizeCanvas();
 
 let camX = width / 2;
 let camY = height / 2;
@@ -652,10 +635,10 @@ function startIntroAnimation() {
   isAnimatingIntro = true;
   introCells.clear();
   
-  const startCol = Math.floor(-camX / CELL_SIZE) - 1;
-  const endCol = Math.floor((width - camX) / CELL_SIZE) + 1;
-  const startRow = Math.floor(-camY / CELL_SIZE) - 1;
-  const endRow = Math.floor((height - camY) / CELL_SIZE) + 1;
+  const startCol = Math.floor(-camX / CELL_SIZE) - 2;
+  const endCol = Math.floor((width - camX) / CELL_SIZE) + 2;
+  const startRow = Math.floor(-camY / CELL_SIZE) - 2;
+  const endRow = Math.floor((height - camY) / CELL_SIZE) + 2;
   
   let tempCells = [];
   
@@ -703,10 +686,10 @@ function render() {
     }
   }
 
-  const startCol = Math.floor(-camX / CELL_SIZE) - 1;
-  const endCol = Math.floor((width - camX) / CELL_SIZE) + 1;
-  const startRow = Math.floor(-camY / CELL_SIZE) - 1;
-  const endRow = Math.floor((height - camY) / CELL_SIZE) + 1;
+  const startCol = Math.floor(-camX / CELL_SIZE) - 2;
+  const endCol = Math.floor((width - camX) / CELL_SIZE) + 2;
+  const startRow = Math.floor(-camY / CELL_SIZE) - 2;
+  const endRow = Math.floor((height - camY) / CELL_SIZE) + 2;
 
   const centerCol = Math.floor((width / 2 - camX) / CELL_SIZE);
   const centerRow = Math.floor((height / 2 - camY) / CELL_SIZE);
@@ -936,6 +919,7 @@ window.addEventListener('pointerup', () => {
 
 window.addEventListener('resize', resizeCanvas);
 
+setTimeout(resizeCanvas, 100);
 loadSettings();
 render();
 </script>
