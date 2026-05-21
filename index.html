@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#09090b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>2D Dice</title>
 <style>
 body, html {
@@ -19,18 +22,21 @@ body, html {
 }
 
 canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   cursor: default;
 }
 
 #home-screen {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background: #09090b;
   display: flex;
   flex-direction: column;
@@ -117,11 +123,11 @@ canvas {
 }
 
 .modal-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -400,7 +406,7 @@ const btnCloseFake = document.getElementById('btn-close-fake');
 
 let isStarted = false;
 let isAnimatingIntro = false;
-let introCells = [];
+let introCells = new Map();
 
 btnStart.addEventListener('click', () => {
   isStarted = true;
@@ -459,6 +465,7 @@ let forceOverrides = {};
 
 let timerTimeoutId = null;
 let forceArmed = false;
+let isForceActive = false;
 
 const normalFont = '500 24px ui-sans-serif, system-ui, sans-serif';
 const centerFont = 'bold 34px ui-sans-serif, system-ui, sans-serif';
@@ -488,7 +495,7 @@ function loadSettings() {
       const config = JSON.parse(savedSettings);
       currentMode = config.currentMode || 'number';
       triggerMode = config.triggerMode || 'swipes';
-      maxNum = config.maxNum || 6;
+      maxNum = Math.min(100, Math.max(2, config.maxNum || 6));
       targetNum = config.targetNum || '6';
       targetSwipe = config.targetSwipe || 3;
       targetTimer = config.targetTimer || 5;
@@ -510,9 +517,7 @@ function loadSettings() {
 
       setContentMode(currentMode);
       setTriggerMode(triggerMode);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) {}
   }
 }
 
@@ -596,6 +601,7 @@ saveSecretBtn.addEventListener('click', () => {
     timerTimeoutId = null;
   }
   forceArmed = false;
+  isForceActive = false;
   forceOverrides = {};
   
   closeSecretMenu();
@@ -633,7 +639,7 @@ function getRandomContent() {
 
 function startIntroAnimation() {
   isAnimatingIntro = true;
-  introCells = [];
+  introCells.clear();
   
   const startCol = Math.floor(-camX / CELL_SIZE) - 1;
   const endCol = Math.floor((width - camX) / CELL_SIZE) + 1;
@@ -652,8 +658,7 @@ function startIntroAnimation() {
   
   const now = performance.now();
   tempCells.forEach((cell, index) => {
-    introCells.push({
-      ...cell,
+    introCells.set(`${cell.col},${cell.row}`, {
       revealTime: now + (index * 25) + Math.random() * 50,
       settleTime: now + 500 + (index * 25) + Math.random() * 200,
       currentRandom: getRandomContent(),
@@ -681,6 +686,10 @@ function render() {
     velY *= 0.96;
     if (Math.abs(velX) < 0.05) velX = 0;
     if (Math.abs(velY) < 0.05) velY = 0;
+    
+    if (velX === 0 && velY === 0 && isForceActive) {
+      isForceActive = false;
+    }
   }
 
   const startCol = Math.floor(-camX / CELL_SIZE) - 1;
@@ -705,7 +714,7 @@ function render() {
       let isVisible = true;
       
       if (isAnimatingIntro) {
-        const introData = introCells.find(c => c.col === col && c.row === row);
+        const introData = introCells.get(`${col},${row}`);
         if (introData) {
           if (now < introData.revealTime) {
             isVisible = false;
@@ -811,6 +820,7 @@ window.addEventListener('pointerdown', e => {
       timerTimeoutId = null;
     }
     forceArmed = false;
+    isForceActive = false;
     
     return;
   }
@@ -859,49 +869,65 @@ window.addEventListener('pointerup', () => {
   }
   
   pointerHistory = [];
+  let didTriggerNow = false;
 
-  if (swipeDetected) {
-    let shouldTriggerForce = false;
-
+  if (swipeDetected && !isForceActive) {
     if (triggerMode === 'swipes') {
       currentSwipe++;
       if (currentSwipe >= targetSwipe) {
-        shouldTriggerForce = true;
+        isForceActive = true;
+        didTriggerNow = true;
       }
     } else if (triggerMode === 'timer') {
       if (forceArmed) {
-        shouldTriggerForce = true;
+        isForceActive = true;
+        didTriggerNow = true;
       }
     }
+  }
 
-    if (shouldTriggerForce) {
-      forceOverrides = {};
-      let predCamX = camX + velX * 25;
-      let predCamY = camY + velY * 25;
-      let predCol = Math.floor((width / 2 - predCamX) / CELL_SIZE);
-      let predRow = Math.floor((height / 2 - predCamY) / CELL_SIZE);
-      forceOverrides[`${predCol},${predRow}`] = targetNum;
-      
-      if (triggerMode === 'timer') {
-         if (timerTimeoutId) {
-            clearTimeout(timerTimeoutId);
-            timerTimeoutId = null;
-         }
-         forceArmed = false;
-      }
-    } else {
-      if (triggerMode === 'timer') {
-        startOrResetTimer();
+  if (isForceActive) {
+    forceOverrides = {};
+    
+    let simX = camX;
+    let simY = camY;
+    let sVelX = velX;
+    let sVelY = velY;
+    
+    while (Math.abs(sVelX) >= 0.05 || Math.abs(sVelY) >= 0.05) {
+      simX += sVelX;
+      simY += sVelY;
+      sVelX *= 0.96;
+      sVelY *= 0.96;
+      if (Math.abs(sVelX) < 0.05) sVelX = 0;
+      if (Math.abs(sVelY) < 0.05) sVelY = 0;
+    }
+    
+    let predCol = Math.floor((width / 2 - simX) / CELL_SIZE);
+    let predRow = Math.floor((height / 2 - simY) / CELL_SIZE);
+    forceOverrides[`${predCol},${predRow}`] = targetNum;
+    
+    if (didTriggerNow) {
+      if (triggerMode === 'swipes') {
+        currentSwipe = 0;
+      } else if (triggerMode === 'timer') {
+        forceArmed = false;
       }
     }
-  } 
+  }
+
+  if (triggerMode === 'timer') {
+    if (swipeDetected || isForceActive || timerTimeoutId) {
+      startOrResetTimer();
+    }
+  }
 });
 
 window.addEventListener('resize', () => {
   width = window.innerWidth;
   height = window.innerHeight;
-  canvas.width = width * window.devicePixelRatio;
-  canvas.height = height * window.devicePixelRatio;
+  canvas.width = window.devicePixelRatio > 1 ? window.innerWidth * window.devicePixelRatio : window.innerWidth;
+  canvas.height = window.devicePixelRatio > 1 ? window.innerHeight * window.devicePixelRatio : window.innerHeight;
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 });
 
