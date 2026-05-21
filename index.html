@@ -1,293 +1,912 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#000000">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Bulan & Tarot</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='black'/%3E%3Cpolygon fill='white' points='256,76 317,200 456,220 355,320 379,456 256,390 133,456 157,320 56,220 195,200'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='black'/%3E%3Cpolygon fill='white' points='256,76 317,200 456,220 355,320 379,456 256,390 133,456 157,320 56,220 195,200'/%3E%3C/svg%3E">
-<script src="https://cdn.tailwindcss.com"></script>
+<title>2D Dice</title>
 <style>
-  .hide-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .hide-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  body {
-    margin: 0;
-    padding: 0;
-    background-color: #000;
-    overflow: hidden;
-    overscroll-behavior-y: none;
-  }
-  .perspective-1000 { perspective: 1000px; }
-  .preserve-3d { transform-style: preserve-3d; }
-  .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-  .rotate-y-180 { transform: rotateY(180deg); }
-  .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
-  .safe-pt { padding-top: max(env(safe-area-inset-top), 2rem); }
-  .safe-pb { padding-bottom: max(env(safe-area-inset-bottom), 2rem); }
-  .safe-top { top: max(env(safe-area-inset-top), 2rem); }
-  .safe-bottom { bottom: max(env(safe-area-inset-bottom), 2rem); }
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #09090b;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
+#home-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #09090b;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+#home-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(1.05);
+}
+
+.home-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 60px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  color: #ffffff;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  color: #71717a;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.home-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 200px;
+}
+
+.btn-primary {
+  background: #ffffff;
+  color: #09090b;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+  background: #e4e4e7;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #a1a1aa;
+  border: 1px solid #27272a;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s, color 0.2s;
+}
+
+.btn-secondary:active {
+  transform: scale(0.96);
+  background: #18181b;
+  color: #ffffff;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-box {
+  background: #18181b;
+  padding: 32px 28px;
+  border-radius: 24px;
+  border: 2px solid #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 290px;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-overlay.active .modal-box {
+  transform: translateY(0) scale(1);
+}
+
+.modal-header {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  margin-bottom: -4px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.setting-label {
+  font-size: 15px;
+  color: #e4e4e7;
+  font-weight: 500;
+}
+
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #3f3f46;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle.active {
+  background: #ffffff;
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.toggle.active .toggle-knob {
+  transform: translateX(20px);
+  background: #09090b;
+}
+
+.segment-control {
+  display: flex;
+  background: #27272a;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.segment-btn {
+  flex: 1;
+  background: transparent;
+  color: #a1a1aa;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.segment-btn.active {
+  background: #3f3f46;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row-group {
+  display: flex;
+  gap: 12px;
+}
+
+.row-group > select {
+  flex: 1;
+}
+
+label.input-label {
+  font-size: 13px;
+  color: #a1a1aa;
+  font-weight: 500;
+}
+
+input.config-input, select.config-select {
+  background: #27272a;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.2s;
+  appearance: none;
+}
+
+input.config-input:focus, select.config-select:focus {
+  border-color: #52525b;
+  background: #3f3f46;
+}
+
+.btn-close {
+  background: #27272a;
+  color: #ffffff;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: transform 0.1s, background 0.2s;
+}
+
+.btn-close:active {
+  transform: scale(0.97);
+  background: #3f3f46;
+}
 </style>
 </head>
-<body class="text-white font-sans selection:bg-white/20">
+<body>
 
-<div class="fixed left-1/2 -translate-x-1/2 z-50 flex items-center p-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl safe-top">
-  <button id="tab-btn-bulan" onclick="switchTab('bulan')" class="px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase font-bold transition-all duration-300 bg-white text-black">
-    Bulan
-  </button>
-  <button id="tab-btn-tarot" onclick="switchTab('tarot')" class="px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase font-bold transition-all duration-300 text-white/40 hover:text-white">
-    Tarot
-  </button>
+<div id="home-screen">
+  <div class="home-content">
+    <div class="brand">
+      <div class="title">2D DICE</div>
+      <div class="subtitle">INFINITE GRID</div>
+    </div>
+    <div class="home-buttons">
+      <button class="btn-primary" id="btn-start">Start</button>
+      <button class="btn-secondary" id="btn-fake-settings">Settings</button>
+    </div>
+  </div>
 </div>
 
-<div class="relative w-screen h-[100dvh] overflow-hidden m-0 p-0">
-  
-  <div id="view-bulan" class="absolute inset-0 w-full h-full z-20 transition-opacity duration-500 opacity-100">
-    <div id="carousel" class="flex w-full h-full overflow-x-auto snap-x snap-mandatory hide-scrollbar overscroll-x-contain"></div>
-    <div id="dots" class="absolute left-1/2 -translate-x-1/2 z-30 flex justify-center items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-md border border-white/5 shadow-2xl pointer-events-none safe-bottom"></div>
+<div class="modal-overlay" id="fake-settings-modal">
+  <div class="modal-box">
+    <div class="modal-header">Settings</div>
+    <div class="setting-row">
+      <div class="setting-label">Sound Effects</div>
+      <div class="toggle active" onclick="this.classList.toggle('active')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-label">Haptic Feedback</div>
+      <div class="toggle active" onclick="this.classList.toggle('active')">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+    <button class="btn-close" id="btn-close-fake">Close</button>
   </div>
+</div>
 
-  <div id="view-tarot" class="absolute inset-0 w-full h-full z-10 opacity-0 pointer-events-none transition-opacity duration-500 flex flex-col items-center justify-center bg-black safe-pt safe-pb">
+<div class="modal-overlay" id="secret-config-menu">
+  <div class="modal-box">
+    <div class="modal-header">Configuration</div>
     
-    <div id="cards-container" class="flex gap-8 overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full px-12 items-center justify-start md:justify-center opacity-0 transition-opacity duration-700"></div>
+    <div class="segment-control">
+      <button class="segment-btn active" id="btn-mode-number">Number</button>
+      <button class="segment-btn" id="btn-mode-card">Card</button>
+    </div>
 
-    <button id="btn-draw" onclick="drawTarotCard()" class="mt-10 px-10 py-3.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all duration-500 text-[10px] tracking-[0.3em] uppercase font-bold shrink-0">
-      Tarik Kartu
-    </button>
+    <div class="segment-control">
+      <button class="segment-btn active" id="btn-trigger-swipes">Swipes</button>
+      <button class="segment-btn" id="btn-trigger-timer">Timer</button>
+    </div>
 
+    <div class="input-group" id="group-max-val">
+      <label class="input-label">Max Value</label>
+      <input type="number" class="config-input" id="max-val" value="6" min="2" max="100">
+    </div>
+
+    <div class="input-group" id="group-target-number">
+      <label class="input-label">Target Value</label>
+      <input type="number" class="config-input" id="target-val" value="6" min="1" max="100">
+    </div>
+
+    <div class="input-group" id="group-target-card" style="display: none;">
+      <label class="input-label">Target Card</label>
+      <div class="row-group">
+        <select class="config-select" id="target-card-val">
+          <option value="A">A</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="J">J</option>
+          <option value="Q">Q</option>
+          <option value="K">K</option>
+        </select>
+        <select class="config-select" id="target-card-suit">
+          <option value="♠">♠</option>
+          <option value="♥">♥</option>
+          <option value="♣">♣</option>
+          <option value="♦">♦</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="input-group" id="group-target-swipe">
+      <label class="input-label">Trigger at Swipe</label>
+      <input type="number" class="config-input" id="target-swipe" value="3" min="1">
+    </div>
+
+    <div class="input-group" id="group-target-timer" style="display: none;">
+      <label class="input-label">Idle Time (s)</label>
+      <input type="number" class="config-input" id="target-timer" value="5" min="1">
+    </div>
+
+    <button class="btn-primary" id="save-secret-btn" style="margin-top: 8px;">Apply</button>
   </div>
-
 </div>
 
 <script>
-const majorArcana = [
-  { name: "The Fool", keyword: "Bebas, Spontan" },
-  { name: "The Magician", keyword: "Fokus, Terampil" },
-  { name: "The High Priestess", keyword: "Intuitif, Tenang" },
-  { name: "The Empress", keyword: "Subur, Harmonis" },
-  { name: "The Emperor", keyword: "Tegas, Terstruktur" },
-  { name: "The Hierophant", keyword: "Bijak, Taat" },
-  { name: "The Lovers", keyword: "Selaras, Intim" },
-  { name: "The Chariot", keyword: "Berani, Ambisius" },
-  { name: "Strength", keyword: "Tangguh, Sabar" },
-  { name: "The Hermit", keyword: "Tenang, Introspektif" },
-  { name: "Wheel of Fortune", keyword: "Dinamis, Adaptif" },
-  { name: "Justice", keyword: "Adil, Objektif" },
-  { name: "The Hanged Man", keyword: "Pasrah, Mengamati" },
-  { name: "Death", keyword: "Transisi, Tegas" },
-  { name: "Temperance", keyword: "Seimbang, Sabar" },
-  { name: "The Devil", keyword: "Terikat, Menggoda" },
-  { name: "The Tower", keyword: "Mengejutkan, Rombak" },
-  { name: "The Star", keyword: "Optimis, Tenang" },
-  { name: "The Moon", keyword: "Misterius, Intuitif" },
-  { name: "The Sun", keyword: "Ceria, Sukses" },
-  { name: "Judgement", keyword: "Bangkit, Sadar" },
-  { name: "The World", keyword: "Utuh, Selesai" }
-];
+const homeScreen = document.getElementById('home-screen');
+const btnStart = document.getElementById('btn-start');
+const btnFakeSettings = document.getElementById('btn-fake-settings');
+const fakeSettingsModal = document.getElementById('fake-settings-modal');
+const btnCloseFake = document.getElementById('btn-close-fake');
 
-const minorArcana = {
-  "ace": ["Ace of Wands", "Ace of Cups", "Ace of Swords", "Ace of Pentacles"],
-  "2": ["Two of Wands", "Two of Cups", "Two of Swords", "Two of Pentacles"],
-  "3": ["Three of Wands", "Three of Cups", "Three of Swords", "Three of Pentacles"],
-  "4": ["Four of Wands", "Four of Cups", "Four of Swords", "Four of Pentacles"],
-  "5": ["Five of Wands", "Five of Cups", "Five of Swords", "Five of Pentacles"],
-  "6": ["Six of Wands", "Six of Cups", "Six of Swords", "Six of Pentacles"],
-  "7": ["Seven of Wands", "Seven of Cups", "Seven of Swords", "Seven of Pentacles"],
-  "8": ["Eight of Wands", "Eight of Cups", "Eight of Swords", "Eight of Pentacles"],
-  "9": ["Nine of Wands", "Nine of Cups", "Nine of Swords", "Nine of Pentacles"],
-  "10": ["Ten of Wands", "Ten of Cups", "Ten of Swords", "Ten of Pentacles"],
-  "knight": ["Knight of Wands", "Knight of Cups", "Knight of Swords", "Knight of Pentacles"],
-  "queen": ["Queen of Wands", "Queen of Cups", "Queen of Swords", "Queen of Pentacles"]
-};
+let isStarted = false;
+let isAnimatingIntro = false;
+let introCells = [];
 
-const monthData = [
-  { id: 'januari', name: 'Januari', icon: 'snowflake', traits: 'Mandiri, Pemikir', tarotRank: 'ace', tarotCharacter: 'Cermat, Antusias', color: 'from-blue-900/20 to-black', prediction: 'Kamu sering menjadi tempat bersandar bagi orang lain, padahal kamu sendiri kadang butuh didengarkan. Ada banyak ide di kepalamu yang belum sempat direalisasikan karena kamu terlalu sibuk membantu orang di sekitarmu.' },
-  { id: 'februari', name: 'Februari', icon: 'cloud-rain', traits: 'Intuitif, Kreatif', tarotRank: '2', tarotCharacter: 'Antusias, Positif', color: 'from-indigo-900/20 to-black', prediction: 'Banyak yang mengira kamu sosok yang santai, tapi sebenarnya kamu sangat memikirkan detail kecil dari setiap perkataan orang. Kamu punya kemampuan alami untuk membaca situasi yang sering kali tidak disadari orang lain.' },
-  { id: 'maret', name: 'Maret', icon: 'seedling', traits: 'Empatis, Observan', tarotRank: '3', tarotCharacter: 'Positif, Ambisius', color: 'from-teal-900/20 to-black', prediction: 'Kamu punya dinding pertahanan tersendiri untuk melindungi perasaanmu. Orang melihatmu ramah, tapi hanya sedikit yang benar benar tahu apa yang kamu rasakan di balik senyumanmu sehari hari.' },
-  { id: 'april', name: 'April', icon: 'flower', traits: 'Berani, Dinamis', tarotRank: '4', tarotCharacter: 'Ambisius, Tangguh', color: 'from-rose-900/20 to-black', prediction: 'Kamu tidak suka terjebak dalam rutinitas yang membosankan. Meski dari luar terlihat selalu penuh energi, ada kalanya kamu merasa kelelahan dan hanya ingin diam di tempat yang tenang tanpa gangguan siapa pun.' },
-  { id: 'mei', name: 'Mei', icon: 'sun-low', traits: 'Stabil, Fokus', tarotRank: '5', tarotCharacter: 'Tangguh, Gesit', color: 'from-emerald-900/20 to-black', prediction: 'Kamu sangat menghargai keamanan dan kenyamanan dalam hidup. Terkadang kamu ragu melangkah keluar dari zona nyaman karena takut mengecewakan diri sendiri, padahal potensimu jauh lebih besar dari yang kamu bayangkan.' },
-  { id: 'juni', name: 'Juni', icon: 'sun', traits: 'Adaptif, Ekspresif', tarotRank: '6', tarotCharacter: 'Gesit, Caring', color: 'from-sky-900/20 to-black', prediction: 'Kamu pintar menyembunyikan kesedihan di balik candaan. Orang suka berada di dekatmu karena energimu, tapi kamu sering merasa kesepian justru saat sedang berada di tengah keramaian.' },
-  { id: 'juli', name: 'Juli', icon: 'wave-sine', traits: 'Peduli, Sensitif', tarotRank: '7', tarotCharacter: 'Caring, Loyal', color: 'from-cyan-900/20 to-black', prediction: 'Kamu sering menempatkan kebahagiaan orang lain di atas kebahagiaanmu sendiri. Kamu mungkin terlihat tegar, tapi kata kata kasar dari orang terdekat bisa sangat membekas di pikiranmu.' },
-  { id: 'agustus', name: 'Agustus', icon: 'flame', traits: 'Percaya Diri, Pemimpin', tarotRank: '8', tarotCharacter: 'Loyal, Visioner', color: 'from-orange-900/20 to-black', prediction: 'Kamu punya standar yang sangat tinggi untuk dirimu sendiri. Walau sering terlihat kuat dan tahu arah, di dalam hati kamu kadang khawatir apakah kamu sudah mengambil keputusan yang tepat untuk masa depanmu.' },
-  { id: 'september', name: 'September', icon: 'leaf', traits: 'Analitis, Teliti', tarotRank: '9', tarotCharacter: 'Visioner, Lincah', color: 'from-amber-900/20 to-black', prediction: 'Kamu adalah pengamat yang ulung dan menyukai segala sesuatu yang teratur. Terkadang kamu terlalu keras mengkritik dirimu sendiri atas kesalahan kecil yang bahkan tidak disadari oleh orang lain.' },
-  { id: 'oktober', name: 'Oktober', icon: 'wind', traits: 'Harmonis, Diplomatis', tarotRank: '10', tarotCharacter: 'Lincah, Serius', color: 'from-pink-900/20 to-black', prediction: 'Kamu selalu menghindari konflik sebisa mungkin demi kedamaian. Dalam usahamu untuk membuat semua orang senang, kamu sering lupa menanyakan pada dirimu sendiri apa yang sebenarnya membuatmu bahagia.' },
-  { id: 'november', name: 'November', icon: 'moon', traits: 'Misterius, Mendalam', tarotRank: 'knight', tarotCharacter: 'Serius, Saksama', color: 'from-purple-900/20 to-black', prediction: 'Kamu tidak mudah percaya pada orang yang baru dikenal. Intuisimu sangat tajam dalam menilai karakter seseorang, tapi kamu memilih untuk diam dan mengamati dari jauh sebelum benar benar membuka diri.' },
-  { id: 'desember', name: 'Desember', icon: 'stars', traits: 'Optimis, Petualang', tarotRank: 'queen', tarotCharacter: 'Saksama, Cermat', color: 'from-zinc-900/20 to-black', prediction: 'Kamu selalu mencari makna lebih dalam dari setiap kejadian di hidupmu. Walau sering terlihat santai, pikiranmu tidak pernah berhenti memikirkan rencana rencana besar yang ingin kamu capai suatu hari nanti.' }
-];
+btnStart.addEventListener('click', () => {
+  isStarted = true;
+  homeScreen.classList.add('hidden');
+  
+  setTimeout(() => {
+    homeScreen.style.display = 'none';
+    startIntroAnimation();
+  }, 400);
+});
 
-const carousel = document.getElementById('carousel');
-const dotsContainer = document.getElementById('dots');
-let activeIndex = 0;
+btnFakeSettings.addEventListener('click', () => {
+  fakeSettingsModal.classList.add('active');
+});
 
-function initApp() {
-  carousel.innerHTML = monthData.map(month => {
-    let fullText = month.prediction;
-    const limit = 70;
-    let shortText = fullText;
-    let remainText = "";
+btnCloseFake.addEventListener('click', () => {
+  fakeSettingsModal.classList.remove('active');
+});
+
+fakeSettingsModal.addEventListener('pointerdown', (e) => {
+  if (e.target === fakeSettingsModal) {
+    fakeSettingsModal.classList.remove('active');
+  }
+});
+
+const canvas = document.createElement('canvas');
+document.body.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+
+let width = window.innerWidth;
+let height = window.innerHeight;
+canvas.width = width * window.devicePixelRatio;
+canvas.height = height * window.devicePixelRatio;
+ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+let camX = width / 2;
+let camY = height / 2;
+let velX = 0;
+let velY = 0;
+let isDragging = false;
+let lastX = 0;
+let lastY = 0;
+let pointerHistory = [];
+const CELL_SIZE = 100;
+
+let taps = [];
+let isMenuOpen = false;
+let currentMode = 'number';
+let triggerMode = 'swipes';
+let maxNum = 6;
+let targetNum = '6';
+let targetSwipe = 3;
+let targetTimer = 5;
+let currentSwipe = 0;
+let forceOverrides = {};
+
+let timerTimeoutId = null;
+let forceArmed = false;
+
+const normalFont = '500 24px ui-sans-serif, system-ui, sans-serif';
+const centerFont = 'bold 34px ui-sans-serif, system-ui, sans-serif';
+
+const secretMenuEl = document.getElementById('secret-config-menu');
+const saveSecretBtn = document.getElementById('save-secret-btn');
+const btnModeNumber = document.getElementById('btn-mode-number');
+const btnModeCard = document.getElementById('btn-mode-card');
+const btnTriggerSwipes = document.getElementById('btn-trigger-swipes');
+const btnTriggerTimer = document.getElementById('btn-trigger-timer');
+const groupMaxVal = document.getElementById('group-max-val');
+const groupTargetNumber = document.getElementById('group-target-number');
+const groupTargetCard = document.getElementById('group-target-card');
+const groupTargetSwipe = document.getElementById('group-target-swipe');
+const groupTargetTimer = document.getElementById('group-target-timer');
+const maxValInput = document.getElementById('max-val');
+const targetValInput = document.getElementById('target-val');
+const targetCardValInput = document.getElementById('target-card-val');
+const targetCardSuitInput = document.getElementById('target-card-suit');
+const targetSwipeInput = document.getElementById('target-swipe');
+const targetTimerInput = document.getElementById('target-timer');
+
+function loadSettings() {
+  const savedSettings = localStorage.getItem('diceConfig');
+  if (savedSettings) {
+    try {
+      const config = JSON.parse(savedSettings);
+      currentMode = config.currentMode || 'number';
+      triggerMode = config.triggerMode || 'swipes';
+      maxNum = config.maxNum || 6;
+      targetNum = config.targetNum || '6';
+      targetSwipe = config.targetSwipe || 3;
+      targetTimer = config.targetTimer || 5;
+
+      maxValInput.value = maxNum;
+      
+      if (currentMode === 'number') {
+        targetValInput.value = targetNum;
+      } else {
+        const parts = targetNum.split(' ');
+        if (parts.length === 2) {
+          targetCardValInput.value = parts[0];
+          targetCardSuitInput.value = parts[1];
+        }
+      }
+      
+      targetSwipeInput.value = targetSwipe;
+      targetTimerInput.value = targetTimer;
+
+      setContentMode(currentMode);
+      setTriggerMode(triggerMode);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+function saveSettings() {
+  const config = {
+    currentMode,
+    triggerMode,
+    maxNum,
+    targetNum,
+    targetSwipe,
+    targetTimer
+  };
+  localStorage.setItem('diceConfig', JSON.stringify(config));
+}
+
+function setContentMode(mode) {
+  currentMode = mode;
+  if (mode === 'card') {
+    btnModeCard.classList.add('active');
+    btnModeNumber.classList.remove('active');
+    groupMaxVal.style.display = 'none';
+    groupTargetNumber.style.display = 'none';
+    groupTargetCard.style.display = 'flex';
+  } else {
+    btnModeNumber.classList.add('active');
+    btnModeCard.classList.remove('active');
+    groupMaxVal.style.display = 'flex';
+    groupTargetNumber.style.display = 'flex';
+    groupTargetCard.style.display = 'none';
+  }
+}
+
+function setTriggerMode(mode) {
+  triggerMode = mode;
+  if (mode === 'timer') {
+    btnTriggerTimer.classList.add('active');
+    btnTriggerSwipes.classList.remove('active');
+    groupTargetSwipe.style.display = 'none';
+    groupTargetTimer.style.display = 'flex';
+  } else {
+    btnTriggerSwipes.classList.add('active');
+    btnTriggerTimer.classList.remove('active');
+    groupTargetSwipe.style.display = 'flex';
+    groupTargetTimer.style.display = 'none';
+  }
+}
+
+btnModeNumber.addEventListener('click', () => setContentMode('number'));
+btnModeCard.addEventListener('click', () => setContentMode('card'));
+btnTriggerSwipes.addEventListener('click', () => setTriggerMode('swipes'));
+btnTriggerTimer.addEventListener('click', () => setTriggerMode('timer'));
+
+function closeSecretMenu() {
+  secretMenuEl.classList.remove('active');
+  setTimeout(() => {
+    isMenuOpen = false;
+  }, 300);
+}
+
+secretMenuEl.addEventListener('pointerdown', (e) => {
+  if (e.target === secretMenuEl) closeSecretMenu();
+});
+
+saveSecretBtn.addEventListener('click', () => {
+  if (currentMode === 'number') {
+    maxNum = Math.min(100, Math.max(2, parseInt(maxValInput.value) || 6));
+    targetNum = parseInt(targetValInput.value) || 6;
+  } else {
+    targetNum = `${targetCardValInput.value} ${targetCardSuitInput.value}`;
+  }
+  
+  targetSwipe = parseInt(targetSwipeInput.value) || 3;
+  targetTimer = parseInt(targetTimerInput.value) || 5;
+  
+  saveSettings();
+  
+  currentSwipe = 0;
+  
+  if (timerTimeoutId) {
+    clearTimeout(timerTimeoutId);
+    timerTimeoutId = null;
+  }
+  forceArmed = false;
+  forceOverrides = {};
+  
+  closeSecretMenu();
+});
+
+function getCellContent(col, row) {
+  const key = `${col},${row}`;
+  if (forceOverrides[key] !== undefined) {
+    return forceOverrides[key];
+  }
+  let h = (Math.imul(col, 0x9e3779b1) + Math.imul(row, 0x85ebca6b)) | 0;
+  h = Math.imul(h ^ (h >>> 16), 0xc2b2ae35);
+  
+  if (currentMode === 'number') {
+    return (Math.abs(h) % maxNum) + 1;
+  } else {
+    const idx = Math.abs(h) % 52;
+    const suits = ['♠', '♥', '♣', '♦'];
+    const vals = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    const suit = suits[idx % 4];
+    const val = vals[Math.floor(idx / 4)];
+    return `${val} ${suit}`;
+  }
+}
+
+function getRandomContent() {
+  if (currentMode === 'number') {
+    return Math.floor(Math.random() * maxNum) + 1;
+  } else {
+    const suits = ['♠', '♥', '♣', '♦'];
+    const vals = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    return `${vals[Math.floor(Math.random() * vals.length)]} ${suits[Math.floor(Math.random() * suits.length)]}`;
+  }
+}
+
+function startIntroAnimation() {
+  isAnimatingIntro = true;
+  introCells = [];
+  
+  const startCol = Math.floor(-camX / CELL_SIZE) - 1;
+  const endCol = Math.floor((width - camX) / CELL_SIZE) + 1;
+  const startRow = Math.floor(-camY / CELL_SIZE) - 1;
+  const endRow = Math.floor((height - camY) / CELL_SIZE) + 1;
+  
+  let tempCells = [];
+  
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startCol; col <= endCol; col++) {
+      tempCells.push({ col, row });
+    }
+  }
+  
+  tempCells.sort(() => Math.random() - 0.5);
+  
+  const now = performance.now();
+  tempCells.forEach((cell, index) => {
+    introCells.push({
+      ...cell,
+      revealTime: now + (index * 25) + Math.random() * 50,
+      settleTime: now + 500 + (index * 25) + Math.random() * 200,
+      currentRandom: getRandomContent(),
+      lastUpdate: now
+    });
+  });
+  
+  setTimeout(() => {
+    isAnimatingIntro = false;
+  }, 2000);
+}
+
+function render() {
+  ctx.clearRect(0, 0, width, height);
+
+  if (!isStarted) {
+    requestAnimationFrame(render);
+    return;
+  }
+
+  if (!isDragging && !isMenuOpen && !isAnimatingIntro) {
+    camX += velX;
+    camY += velY;
+    velX *= 0.96;
+    velY *= 0.96;
+    if (Math.abs(velX) < 0.05) velX = 0;
+    if (Math.abs(velY) < 0.05) velY = 0;
+  }
+
+  const startCol = Math.floor(-camX / CELL_SIZE) - 1;
+  const endCol = Math.floor((width - camX) / CELL_SIZE) + 1;
+  const startRow = Math.floor(-camY / CELL_SIZE) - 1;
+  const endRow = Math.floor((height - camY) / CELL_SIZE) + 1;
+
+  const centerCol = Math.floor((width / 2 - camX) / CELL_SIZE);
+  const centerRow = Math.floor((height / 2 - camY) / CELL_SIZE);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  let activeCell = null;
+  const now = performance.now();
+
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startCol; col <= endCol; col++) {
+      const cx = camX + col * CELL_SIZE + CELL_SIZE / 2;
+      const cy = camY + row * CELL_SIZE + CELL_SIZE / 2;
+      let content = '';
+      let isVisible = true;
+      
+      if (isAnimatingIntro) {
+        const introData = introCells.find(c => c.col === col && c.row === row);
+        if (introData) {
+          if (now < introData.revealTime) {
+            isVisible = false;
+          } else if (now < introData.settleTime) {
+            if (now - introData.lastUpdate > 50) {
+              introData.currentRandom = getRandomContent();
+              introData.lastUpdate = now;
+            }
+            content = String(introData.currentRandom);
+          } else {
+            content = String(getCellContent(col, row));
+          }
+        } else {
+           isVisible = false;
+        }
+      } else {
+        content = String(getCellContent(col, row));
+      }
+
+      if (!isVisible) continue;
+
+      const isCenter = (!isDragging && velX === 0 && velY === 0 && col === centerCol && row === centerRow && !isAnimatingIntro);
+      
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(cx - CELL_SIZE / 2 + 6, cy - CELL_SIZE / 2 + 6, CELL_SIZE - 12, CELL_SIZE - 12, 16);
+      } else {
+        ctx.rect(cx - CELL_SIZE / 2 + 6, cy - CELL_SIZE / 2 + 6, CELL_SIZE - 12, CELL_SIZE - 12);
+      }
+
+      if (isCenter && !isMenuOpen) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = 2;
+        activeCell = { content, cx, cy };
+      } else {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
+      }
+      ctx.stroke();
+
+      if (!isCenter || isMenuOpen) {
+        ctx.font = normalFont;
+        if (content.includes('♥') || content.includes('♦')) {
+          ctx.fillStyle = '#991b1b';
+        } else {
+          ctx.fillStyle = '#3f3f46';
+        }
+        ctx.fillText(content, cx, cy);
+      }
+    }
+  }
+
+  if (activeCell) {
+    ctx.font = centerFont;
+    if (activeCell.content.includes('♥') || activeCell.content.includes('♦')) {
+      ctx.fillStyle = '#ef4444';
+    } else {
+      ctx.fillStyle = '#ffffff';
+    }
+    ctx.fillText(activeCell.content, activeCell.cx, activeCell.cy);
+  }
+
+  if (!isAnimatingIntro) {
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(width / 2 - 12, height / 2);
+    ctx.lineTo(width / 2 + 12, height / 2);
+    ctx.moveTo(width / 2, height / 2 - 12);
+    ctx.lineTo(width / 2, height / 2 + 12);
+    ctx.stroke();
+  }
+
+  requestAnimationFrame(render);
+}
+
+function startOrResetTimer() {
+  if (timerTimeoutId) {
+    clearTimeout(timerTimeoutId);
+  }
+  forceArmed = false; 
+  timerTimeoutId = setTimeout(() => {
+    forceArmed = true;
+  }, targetTimer * 1000);
+}
+
+window.addEventListener('pointerdown', e => {
+  if (!isStarted || isMenuOpen || isAnimatingIntro || e.target.closest('.modal-overlay') || e.target.closest('.home-buttons')) return;
+  
+  const now = performance.now();
+  taps.push(now);
+  taps = taps.filter(t => now - t < 500);
+  
+  if (taps.length === 3) {
+    isMenuOpen = true;
+    secretMenuEl.classList.add('active');
+    taps = [];
+    velX = 0;
+    velY = 0;
     
-    if (fullText.length > limit) {
-      let cutIndex = fullText.lastIndexOf(' ', limit);
-      if (cutIndex === -1) cutIndex = limit;
-      shortText = fullText.substring(0, cutIndex);
-      remainText = fullText.substring(cutIndex);
+    if (timerTimeoutId) {
+      clearTimeout(timerTimeoutId);
+      timerTimeoutId = null;
+    }
+    forceArmed = false;
+    
+    return;
+  }
+
+  isDragging = true;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  velX = 0;
+  velY = 0;
+  pointerHistory = [{ x: e.clientX, y: e.clientY, t: now }];
+});
+
+window.addEventListener('pointermove', e => {
+  if (!isStarted || !isDragging || isMenuOpen || isAnimatingIntro) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  
+  camX += dx;
+  camY += dy;
+  
+  lastX = e.clientX;
+  lastY = e.clientY;
+  
+  const now = performance.now();
+  pointerHistory.push({ x: e.clientX, y: e.clientY, t: now });
+  pointerHistory = pointerHistory.filter(p => now - p.t < 100);
+});
+
+window.addEventListener('pointerup', () => {
+  if (!isStarted || !isDragging || isMenuOpen || isAnimatingIntro) return;
+  isDragging = false;
+  
+  let swipeDetected = false;
+
+  if (pointerHistory.length > 1) {
+    const oldest = pointerHistory[0];
+    const newest = pointerHistory[pointerHistory.length - 1];
+    const dt = newest.t - oldest.t;
+    if (dt > 0) {
+      velX = ((newest.x - oldest.x) / dt) * 25;
+      velY = ((newest.y - oldest.y) / dt) * 25;
+      if (Math.abs(velX) > 5 || Math.abs(velY) > 5) {
+        swipeDetected = true;
+      }
+    }
+  }
+  
+  pointerHistory = [];
+
+  if (swipeDetected) {
+    let shouldTriggerForce = false;
+
+    if (triggerMode === 'swipes') {
+      currentSwipe++;
+      if (currentSwipe >= targetSwipe) {
+        shouldTriggerForce = true;
+      }
+    } else if (triggerMode === 'timer') {
+      if (forceArmed) {
+        shouldTriggerForce = true;
+      }
     }
 
-    return `
-    <div id="slide-${month.id}" class="flex-none w-full h-full snap-center relative bg-gradient-to-b ${month.color} overflow-y-auto hide-scrollbar">
-      <div class="absolute inset-0 bg-black/40 fixed pointer-events-none"></div>
-      <div class="relative w-full min-h-full flex flex-col justify-center items-center px-10 max-w-4xl mx-auto safe-pt safe-pb">
-        
-        <div class="flex flex-col items-center justify-center w-full max-w-md mx-auto text-center">
-          <img src="https://api.iconify.design/tabler/${month.icon}.svg?color=white" alt="${month.name}" class="w-20 h-20 md:w-28 md:h-28 opacity-90 drop-shadow-xl mb-10" loading="lazy">
-          <h1 class="text-5xl md:text-7xl font-extralight tracking-tight mb-4 uppercase">${month.name}</h1>
-        </div>
-        
-        <div class="w-16 h-px bg-white/10 mb-12 mx-auto mt-6"></div>
-        
-        <div class="relative w-full max-w-2xl text-center mx-auto text-lg md:text-2xl leading-relaxed font-light text-white/80">
-          <p class="inline">
-            <span>${shortText}</span><span id="dots-${month.id}" class="${remainText ? 'inline' : 'hidden'}">...</span><span id="remain-${month.id}" class="hidden">${remainText}</span>
-            ${remainText ? `<button id="btn-${month.id}" onclick="toggleCard('${month.id}')" class="inline text-white/40 hover:text-white transition-colors cursor-pointer bg-transparent border-none p-0 ml-1 font-medium underline underline-offset-4 decoration-white/20 decoration-dotted">Selengkapnya</button>` : ''}
-          </p>
-        </div>
-        
-      </div>
-    </div>
-  `}).join('');
+    if (shouldTriggerForce) {
+      forceOverrides = {};
+      let predCamX = camX + velX * 25;
+      let predCamY = camY + velY * 25;
+      let predCol = Math.floor((width / 2 - predCamX) / CELL_SIZE);
+      let predRow = Math.floor((height / 2 - predCamY) / CELL_SIZE);
+      forceOverrides[`${predCol},${predRow}`] = targetNum;
+      
+      if (triggerMode === 'timer') {
+         if (timerTimeoutId) {
+            clearTimeout(timerTimeoutId);
+            timerTimeoutId = null;
+         }
+         forceArmed = false;
+      }
+    } else {
+      if (triggerMode === 'timer') {
+        startOrResetTimer();
+      }
+    }
+  } 
+});
 
-  dotsContainer.innerHTML = monthData.map((_, index) => `
-    <div class="dot h-1.5 rounded-full transition-all duration-300 ${index === 0 ? 'w-8 bg-white' : 'w-1.5 bg-white/30'}"></div>
-  `).join('');
+window.addEventListener('resize', () => {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width * window.devicePixelRatio;
+  canvas.height = height * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+});
 
-  carousel.addEventListener('scroll', handleScroll);
-}
-
-function toggleCard(id) {
-  const dots = document.getElementById(`dots-${id}`);
-  const remain = document.getElementById(`remain-${id}`);
-  const btn = document.getElementById(`btn-${id}`);
-  
-  if (remain.classList.contains('hidden')) {
-    remain.classList.replace('hidden', 'inline');
-    dots.classList.replace('inline', 'hidden');
-    btn.innerText = 'Tutup';
-  } else {
-    remain.classList.replace('inline', 'hidden');
-    dots.classList.replace('hidden', 'inline');
-    btn.innerText = 'Selengkapnya';
-  }
-}
-
-function handleScroll() {
-  const scrollPosition = carousel.scrollLeft;
-  const itemWidth = carousel.clientWidth;
-  if (itemWidth === 0) return;
-  const newIndex = Math.round(scrollPosition / itemWidth);
-  const dots = document.querySelectorAll('.dot');
-  
-  if (newIndex !== activeIndex) {
-    activeIndex = newIndex;
-    dots.forEach((dot, index) => {
-      dot.className = `dot h-1.5 rounded-full transition-all duration-300 ${index === activeIndex ? 'w-8 bg-white' : 'w-1.5 bg-white/30'}`;
-    });
-  }
-}
-
-function switchTab(tab) {
-  const bulanView = document.getElementById('view-bulan');
-  const tarotView = document.getElementById('view-tarot');
-  const btnBulan = document.getElementById('tab-btn-bulan');
-  const btnTarot = document.getElementById('tab-btn-tarot');
-  const btnDraw = document.getElementById('btn-draw');
-  const container = document.getElementById('cards-container');
-
-  if (tab === 'bulan') {
-    bulanView.classList.replace('opacity-0', 'opacity-100');
-    bulanView.style.zIndex = '20';
-    bulanView.classList.remove('pointer-events-none');
-    tarotView.classList.replace('opacity-100', 'opacity-0');
-    tarotView.style.zIndex = '10';
-    tarotView.classList.add('pointer-events-none');
-    btnBulan.className = 'px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase font-bold transition-all duration-300 bg-white text-black';
-    btnTarot.className = 'px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase font-bold transition-all duration-300 text-white/40 hover:text-white';
-    
-    container.innerHTML = '';
-    container.style.opacity = '0';
-    btnDraw.classList.remove('hidden');
-    btnDraw.innerText = 'Tarik Kartu';
-    btnDraw.disabled = false;
-  } else {
-    bulanView.classList.replace('opacity-100', 'opacity-0');
-    bulanView.style.zIndex = '10';
-    bulanView.classList.add('pointer-events-none');
-    tarotView.classList.replace('opacity-0', 'opacity-100');
-    tarotView.style.zIndex = '20';
-    tarotView.classList.remove('pointer-events-none');
-    btnTarot.className = 'px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase font-bold transition-all duration-300 bg-white text-black';
-    btnBulan.className = 'px-6 py-2 rounded-full text-[10px] tracking-[0.2em] uppercase font-bold transition-all duration-300 text-white/40 hover:text-white';
-  }
-}
-
-function drawTarotCard() {
-  const btn = document.getElementById('btn-draw');
-  const container = document.getElementById('cards-container');
-  btn.disabled = true;
-  btn.innerText = 'Mengocok...';
-  
-  setTimeout(() => performDraw(btn, container), 600);
-}
-
-function performDraw(btn, container) {
-  const monthInfo = monthData[activeIndex];
-  
-  const minorPool = minorArcana[monthInfo.tarotRank];
-  const minorName = minorPool[Math.floor(Math.random() * minorPool.length)];
-  const minorCard = { name: minorName, type: "Arcana Minor", keyword: monthInfo.tarotCharacter };
-
-  const shuffledMajors = [...majorArcana].sort(() => 0.5 - Math.random());
-  const major1 = { name: shuffledMajors[0].name, type: "Arcana Mayor", keyword: shuffledMajors[0].keyword };
-  const major2 = { name: shuffledMajors[1].name, type: "Arcana Mayor", keyword: shuffledMajors[1].keyword };
-
-  const drawnCards = [major1, minorCard, major2].sort(() => 0.5 - Math.random());
-
-  container.innerHTML = drawnCards.map((card, i) => `
-    <div class="flip-card flex-none w-64 h-[26rem] md:w-72 md:h-[30rem] snap-center shrink-0 perspective-1000">
-      <div class="flip-card-inner relative w-full h-full transition-transform duration-700 preserve-3d" style="transition-delay: ${i * 200}ms">
-        <div class="flip-face absolute inset-0 rounded-3xl border border-white/40 bg-[#0a0a0f] flex items-center justify-center shadow-2xl backface-hidden">
-          <div class="w-[85%] h-[90%] border border-white/20 rounded-2xl flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/5 to-transparent">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="opacity-30"><path d="M12 2l3 6 6 1-4 4 1 6-6-3-6 3 1-6-4-4 6-1 3-6z"></path></svg>
-          </div>
-        </div>
-        <div class="flip-face absolute inset-0 rounded-3xl border border-white/50 bg-gradient-to-br from-zinc-900 to-black overflow-hidden shadow-2xl flex flex-col items-center justify-center p-8 text-center text-white backface-hidden rotate-y-180">
-          <h3 class="text-3xl md:text-4xl font-extralight tracking-tight mb-4">${card.name}</h3>
-          <span class="text-[9px] tracking-[0.4em] uppercase opacity-50 mb-10 font-bold">${card.type}</span>
-          <div class="w-10 h-px bg-white/40 mb-10"></div>
-          <p class="text-sm tracking-[0.2em] uppercase font-light text-white/90">${card.keyword}</p>
-        </div>
-      </div>
-    </div>
-  `).join('');
-
-  void container.offsetWidth;
-  container.style.opacity = '1';
-
-  setTimeout(() => {
-    const cards = container.querySelectorAll('.flip-card');
-    cards.forEach(c => c.classList.add('flipped'));
-    container.scrollTo({ left: 0, behavior: 'smooth' });
-    btn.classList.add('hidden');
-  }, 100);
-}
-
-initApp();
+loadSettings();
+render();
 </script>
 </body>
 </html>
