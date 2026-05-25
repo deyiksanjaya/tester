@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Voice Notes</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Voice Memo">
+<meta name="application-name" content="Voice Memo">
+<meta name="theme-color" content="#ffffff">
+<link rel="apple-touch-icon" href="icon-512.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<title>Voice Memo</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body {
@@ -45,7 +52,7 @@
     <div class="py-3 border-b border-gray-200">
       <div class="flex justify-between items-start">
         <div class="flex flex-col gap-0.5">
-          <span id="activeTitle" class="font-semibold text-[17px] text-black">Singaraja Rumah Kedua</span>
+          <span id="activeTitle" class="font-semibold text-[17px] text-black">New Recording</span>
           <div class="flex items-center gap-1.5 text-[#8E8E93]">
             <span id="activeDate" class="text-[13px]">29 Sep 2026</span>
           </div>
@@ -93,7 +100,7 @@
     <div id="item2Container" class="py-3 border-b border-gray-200">
       <div class="flex justify-between items-center">
         <div class="flex flex-col gap-0.5">
-          <span id="dummy1TitleText" class="font-semibold text-[17px] text-black">Terlanjur Dalam (ft ricky)</span>
+          <span id="dummy1TitleText" class="font-semibold text-[17px] text-black">New Recording 2</span>
           <div class="flex items-center gap-1.5 text-[#8E8E93]">
             <span id="dummy1DateText" class="text-[13px]">13 Sep 2026</span>
           </div>
@@ -105,7 +112,7 @@
     <div id="item3Container" class="py-3 border-b border-gray-200">
       <div class="flex justify-between items-center">
         <div class="flex flex-col gap-0.5">
-          <span id="dummy2TitleText" class="font-semibold text-[17px] text-black">Arjuna lain</span>
+          <span id="dummy2TitleText" class="font-semibold text-[17px] text-black">New Recording 3</span>
           <div class="flex items-center gap-1.5 text-[#8E8E93]">
             <span id="dummy2DateText" class="text-[13px]">13 Jun 2026</span>
           </div>
@@ -117,7 +124,7 @@
     <div id="item4Container" class="py-3 border-b border-gray-200">
       <div class="flex justify-between items-center">
         <div class="flex flex-col gap-0.5">
-          <span id="dummy3TitleText" class="font-semibold text-[17px] text-black">Pak permadi</span>
+          <span id="dummy3TitleText" class="font-semibold text-[17px] text-black">New Recording 4</span>
           <div class="flex items-center gap-1.5 text-[#8E8E93]">
             <span id="dummy3DateText" class="text-[13px]">22 Feb 2026</span>
           </div>
@@ -143,19 +150,39 @@
       
       <div class="flex bg-[#F2F2F7] rounded-lg p-1 mb-6">
         <button id="tabAudioBtn" class="flex-1 py-1.5 text-[14px] font-semibold bg-white rounded shadow-sm text-black transition-all">Audio</button>
-        <button id="tabUiBtn" class="flex-1 py-1.5 text-[14px] font-semibold text-gray-500 transition-all">Edit UI</button>
+        <button id="tabConfigBtn" class="flex-1 py-1.5 text-[14px] font-semibold text-gray-500 transition-all">Config</button>
+        <button id="tabUiBtn" class="flex-1 py-1.5 text-[14px] font-semibold text-gray-500 transition-all">UI</button>
       </div>
       
       <div id="tabAudioContent" class="flex flex-col gap-4 overflow-y-auto">
         <input type="text" id="titleInput" class="w-full bg-[#F2F2F7] rounded-xl p-4 outline-none text-[15px] focus:ring-2 ring-gray-300 font-semibold" placeholder="Recording Title">
         <textarea id="textInput" class="w-full bg-[#F2F2F7] rounded-xl p-4 outline-none resize-none text-[15px] h-32 focus:ring-2 ring-gray-300" placeholder="Type text here..."></textarea>
-        <button id="generateBtn" class="bg-black text-white font-semibold py-4 rounded-xl w-full active:bg-gray-800 transition-colors mt-2">
+        <button id="generateBtn" class="bg-black text-white font-semibold py-4 rounded-xl w-full active:bg-gray-800 transition-colors mt-2 flex-shrink-0">
           Generate Audio
         </button>
       </div>
 
-      <div id="tabUiContent" style="display: none;" class="flex-col gap-4 overflow-y-auto pb-4">
+      <div id="tabConfigContent" style="display: none;" class="flex-col gap-4 overflow-y-auto pb-4">
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-semibold text-gray-500 uppercase px-1">API Key</label>
+          <input type="password" id="apiKeyInput" class="w-full bg-[#F2F2F7] rounded-xl p-4 outline-none text-[15px] focus:ring-2 ring-gray-300" placeholder="ElevenLabs API Key">
+        </div>
         
+        <div class="flex flex-col gap-2 mt-4">
+          <label class="text-xs font-semibold text-gray-500 uppercase px-1">Voices</label>
+          <div id="voiceListContainer" class="flex flex-col gap-2 max-h-40 overflow-y-auto"></div>
+          
+          <div class="flex gap-2 mt-2">
+            <input type="text" id="newVoiceName" class="w-1/3 bg-[#F2F2F7] rounded-xl p-3 outline-none text-[14px] focus:ring-2 ring-gray-300" placeholder="Name">
+            <input type="text" id="newVoiceId" class="w-2/3 bg-[#F2F2F7] rounded-xl p-3 outline-none text-[14px] focus:ring-2 ring-gray-300" placeholder="Voice ID">
+          </div>
+          <button id="addVoiceBtn" class="bg-gray-200 text-black font-semibold py-3 rounded-xl w-full active:bg-gray-300 transition-colors mt-1 text-[14px]">
+            Add Voice
+          </button>
+        </div>
+      </div>
+
+      <div id="tabUiContent" style="display: none;" class="flex-col gap-4 overflow-y-auto pb-4">
         <div class="flex flex-col gap-2">
           <label class="text-xs font-semibold text-gray-500 uppercase px-1">Display</label>
           <div class="relative w-full">
@@ -216,15 +243,12 @@
       <span class="text-xs font-semibold text-red-600 uppercase">Error</span>
       <button id="closeConsoleBtn" class="text-red-400 font-bold text-sm">✕</button>
     </div>
-    <div id="consoleLogs" class="flex flex-col gap-1 text-sm text-red-500"></div>
+    <div id="consoleLogs" class="flex flex-col gap-1 text-sm text-red-500 break-words"></div>
   </div>
 
   <audio id="audioPlayer" class="hidden"></audio>
 
   <script>
-    const API_KEY = 'sk_9f709f7f27784719859ce3d1f239d39bc85f6a76e2777633';
-    const VOICE_ID = '5EcwHcWuVGGxY91hupUf';
-    
     const dotsBtn = document.getElementById('dotsBtn');
     const settingsModal = document.getElementById('settingsModal');
     const settingsSheet = document.getElementById('settingsSheet');
@@ -249,31 +273,118 @@
     const closeConsoleBtn = document.getElementById('closeConsoleBtn');
 
     const tabAudioBtn = document.getElementById('tabAudioBtn');
+    const tabConfigBtn = document.getElementById('tabConfigBtn');
     const tabUiBtn = document.getElementById('tabUiBtn');
     const tabAudioContent = document.getElementById('tabAudioContent');
+    const tabConfigContent = document.getElementById('tabConfigContent');
     const tabUiContent = document.getElementById('tabUiContent');
     const saveUiBtn = document.getElementById('saveUiBtn');
     const uiItemCount = document.getElementById('uiItemCount');
+    
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const voiceListContainer = document.getElementById('voiceListContainer');
+    const newVoiceName = document.getElementById('newVoiceName');
+    const newVoiceId = document.getElementById('newVoiceId');
+    const addVoiceBtn = document.getElementById('addVoiceBtn');
 
     let tapCount = 0;
     let tapTimer;
 
+    let savedVoices = JSON.parse(localStorage.getItem('ev_voices')) || [];
+    let activeVoiceId = localStorage.getItem('ev_active_voice') || '';
+
+    apiKeyInput.value = localStorage.getItem('ev_apikey') || '';
+    
+    apiKeyInput.addEventListener('input', (e) => {
+      localStorage.setItem('ev_apikey', e.target.value.trim());
+    });
+
+    function renderVoices() {
+      voiceListContainer.innerHTML = '';
+      savedVoices.forEach((voice, index) => {
+        const div = document.createElement('div');
+        const isActive = voice.id === activeVoiceId;
+        div.className = `flex justify-between items-center p-3 rounded-xl border cursor-pointer transition-colors ${isActive ? 'border-black bg-gray-50' : 'border-gray-200 bg-white'}`;
+        
+        div.onclick = () => {
+          activeVoiceId = voice.id;
+          localStorage.setItem('ev_active_voice', activeVoiceId);
+          renderVoices();
+        };
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'flex flex-col overflow-hidden pr-2';
+        infoDiv.innerHTML = `
+          <span class="font-semibold text-[15px] text-black truncate">${voice.name}</span>
+          <span class="text-[12px] text-gray-500 truncate">${voice.id}</span>
+        `;
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'text-red-500 p-2 flex-shrink-0';
+        delBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          savedVoices.splice(index, 1);
+          localStorage.setItem('ev_voices', JSON.stringify(savedVoices));
+          if (activeVoiceId === voice.id) {
+            activeVoiceId = savedVoices.length > 0 ? savedVoices[0].id : '';
+            localStorage.setItem('ev_active_voice', activeVoiceId);
+          }
+          renderVoices();
+        };
+
+        div.appendChild(infoDiv);
+        div.appendChild(delBtn);
+        voiceListContainer.appendChild(div);
+      });
+    }
+
+    addVoiceBtn.addEventListener('click', () => {
+      const name = newVoiceName.value.trim();
+      const id = newVoiceId.value.trim();
+      if (name && id) {
+        savedVoices.push({ name, id });
+        localStorage.setItem('ev_voices', JSON.stringify(savedVoices));
+        activeVoiceId = id;
+        localStorage.setItem('ev_active_voice', activeVoiceId);
+        newVoiceName.value = '';
+        newVoiceId.value = '';
+        renderVoices();
+      }
+    });
+
+    renderVoices();
+
+    function resetTabs() {
+      const btns = [tabAudioBtn, tabConfigBtn, tabUiBtn];
+      const contents = [tabAudioContent, tabConfigContent, tabUiContent];
+      
+      btns.forEach(btn => {
+        btn.classList.remove('bg-white', 'shadow-sm', 'text-black');
+        btn.classList.add('text-gray-500');
+      });
+      contents.forEach(content => content.style.display = 'none');
+    }
+
     tabAudioBtn.addEventListener('click', () => {
+      resetTabs();
       tabAudioBtn.classList.add('bg-white', 'shadow-sm', 'text-black');
       tabAudioBtn.classList.remove('text-gray-500');
-      tabUiBtn.classList.remove('bg-white', 'shadow-sm', 'text-black');
-      tabUiBtn.classList.add('text-gray-500');
       tabAudioContent.style.display = 'flex';
-      tabUiContent.style.display = 'none';
+    });
+
+    tabConfigBtn.addEventListener('click', () => {
+      resetTabs();
+      tabConfigBtn.classList.add('bg-white', 'shadow-sm', 'text-black');
+      tabConfigBtn.classList.remove('text-gray-500');
+      tabConfigContent.style.display = 'flex';
     });
 
     tabUiBtn.addEventListener('click', () => {
+      resetTabs();
       tabUiBtn.classList.add('bg-white', 'shadow-sm', 'text-black');
       tabUiBtn.classList.remove('text-gray-500');
-      tabAudioBtn.classList.remove('bg-white', 'shadow-sm', 'text-black');
-      tabAudioBtn.classList.add('text-gray-500');
       tabUiContent.style.display = 'flex';
-      tabAudioContent.style.display = 'none';
     });
 
     uiItemCount.addEventListener('change', () => {
@@ -383,18 +494,32 @@
 
     generateBtn.addEventListener('click', async () => {
       const text = textInput.value.trim();
-      const title = titleInput.value.trim() || "New Recording";
+      const userTitleInput = titleInput.value.trim();
+      const apiKey = apiKeyInput.value.trim();
+      
+      let recCount = parseInt(localStorage.getItem('ev_rec_count')) || 1;
+      const defaultTitle = recCount === 1 ? "New Recording" : `New Recording ${recCount}`;
+      const title = userTitleInput || defaultTitle;
+      
       if (!text) return;
+      if (!apiKey) {
+        showError("API Key is missing. Please add it in the Config tab.");
+        return;
+      }
+      if (!activeVoiceId) {
+        showError("Please select or add a Voice ID in the Config tab.");
+        return;
+      }
 
       generateBtn.disabled = true;
       generateBtn.textContent = 'Generating...';
 
       try {
-        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${activeVoiceId}`, {
           method: 'POST',
           headers: {
             'Accept': 'audio/mpeg',
-            'xi-api-key': API_KEY,
+            'xi-api-key': apiKey,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -419,6 +544,10 @@
         
         activeTitle.textContent = title;
         activeDate.textContent = getFormattedDate();
+
+        if (!userTitleInput) {
+          localStorage.setItem('ev_rec_count', recCount + 1);
+        }
 
         closeSettingsBtn.click();
         textInput.value = '';
