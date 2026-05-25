@@ -77,7 +77,7 @@
             </button>
             
             <button id="playBtn" class="text-black w-8 h-8 flex items-center justify-center transition-transform active:scale-95">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 5.385c0-1.42 1.54-2.313 2.768-1.583l10.45 6.27a1.83 1.83 0 0 1 0 3.14l-10.45 6.27c-1.228.73-2.768-.163-2.768-1.583v-12.54z"/></svg>
             </button>
             
             <button id="forwardBtn" class="text-black">
@@ -443,10 +443,10 @@
       
       if (audioPlayer.paused) {
         audioPlayer.play();
-        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+        playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>';
       } else {
         audioPlayer.pause();
-        playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+        playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 5.385c0-1.42 1.54-2.313 2.768-1.583l10.45 6.27a1.83 1.83 0 0 1 0 3.14l-10.45 6.27c-1.228.73-2.768-.163-2.768-1.583v-12.54z"/></svg>';
       }
     }
 
@@ -467,7 +467,7 @@
     audioPlayer.addEventListener('timeupdate', updateProgress);
 
     audioPlayer.addEventListener('ended', () => {
-      playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+      playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 5.385c0-1.42 1.54-2.313 2.768-1.583l10.45 6.27a1.83 1.83 0 0 1 0 3.14l-10.45 6.27c-1.228.73-2.768-.163-2.768-1.583v-12.54z"/></svg>';
       updateProgress();
     });
 
