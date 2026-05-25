@@ -21,16 +21,16 @@
 </head>
 <body class="flex flex-col h-screen w-screen relative">
   
-  <div class="px-5 pt-4 pb-2 flex justify-between items-center">
-    <button class="w-9 h-9 bg-[#F2F2F7] rounded-full flex items-center justify-center text-black">
+  <div class="px-5 pt-4 pb-2 flex justify-between items-center relative z-20">
+    <button class="w-11 h-11 bg-white/80 backdrop-blur-xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] rounded-full flex items-center justify-center text-black transition-transform active:scale-95">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     </button>
     
     <div class="flex items-center gap-3">
-      <button class="w-9 h-9 bg-[#F2F2F7] rounded-full flex items-center justify-center text-black">
+      <button class="w-11 h-11 bg-white/80 backdrop-blur-xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] rounded-full flex items-center justify-center text-black transition-transform active:scale-95">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       </button>
-      <button class="bg-[#F2F2F7] rounded-full px-4 py-1.5 text-[15px] font-medium text-black" id="selectBtnText">
+      <button class="bg-white/80 backdrop-blur-xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] rounded-full px-5 py-2.5 text-[15px] font-medium text-black transition-transform active:scale-95" id="selectBtnText">
         Select
       </button>
     </div>
@@ -40,7 +40,7 @@
     <h1 id="pageTitleText" class="text-[34px] font-bold text-black tracking-tight leading-none">Favorites</h1>
   </div>
 
-  <div class="flex-1 overflow-y-auto px-5 pb-36">
+  <div class="flex-1 overflow-y-auto px-5 pb-40">
     
     <div class="h-[1px] bg-gray-200 w-full"></div>
     
@@ -76,7 +76,7 @@
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><text x="12" y="15.5" text-anchor="middle" font-size="7" font-weight="bold" font-family="sans-serif" stroke-width="0">15</text></svg>
             </button>
             
-            <button id="playBtn" class="text-black w-8 h-8 flex items-center justify-center">
+            <button id="playBtn" class="text-black w-8 h-8 flex items-center justify-center transition-transform active:scale-95">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             
@@ -130,8 +130,8 @@
     
   </div>
 
-  <div class="absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-none">
-    <div class="w-[68px] h-[68px] rounded-full border-4 border-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] flex items-center justify-center bg-transparent pointer-events-auto">
+  <div class="absolute bottom-[100px] left-1/2 -translate-x-1/2 pointer-events-none z-10">
+    <div class="w-[68px] h-[68px] rounded-full border-4 border-white shadow-[0_4px_16px_rgba(0,0,0,0.12)] flex items-center justify-center bg-transparent pointer-events-auto">
       <div class="w-[54px] h-[54px] bg-[#FF3B30] rounded-full"></div>
     </div>
   </div>
