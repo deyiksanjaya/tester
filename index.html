@@ -21,7 +21,7 @@
 </head>
 <body class="flex flex-col h-screen w-screen relative">
   
-  <div class="px-5 pt-12 pb-2 flex justify-between items-center relative z-20">
+  <div class="px-5 pt-4 pb-2 flex justify-between items-center relative z-20">
     <button class="w-11 h-11 bg-white/80 backdrop-blur-xl border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.04)] rounded-full flex items-center justify-center text-black transition-transform active:scale-95">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     </button>
@@ -77,7 +77,7 @@
             </button>
             
             <button id="playBtn" class="text-black w-8 h-8 flex items-center justify-center transition-transform active:scale-95">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 5.385c0-1.42 1.54-2.313 2.768-1.583l10.45 6.27a1.83 1.83 0 0 1 0 3.14l-10.45 6.27c-1.228.73-2.768-.163-2.768-1.583v-12.54z"/></svg>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             
             <button id="forwardBtn" class="text-black">
@@ -443,10 +443,10 @@
       
       if (audioPlayer.paused) {
         audioPlayer.play();
-        playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>';
+        playBtn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
       } else {
         audioPlayer.pause();
-        playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 5.385c0-1.42 1.54-2.313 2.768-1.583l10.45 6.27a1.83 1.83 0 0 1 0 3.14l-10.45 6.27c-1.228.73-2.768-.163-2.768-1.583v-12.54z"/></svg>';
+        playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
       }
     }
 
@@ -467,7 +467,7 @@
     audioPlayer.addEventListener('timeupdate', updateProgress);
 
     audioPlayer.addEventListener('ended', () => {
-      playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6.5 5.385c0-1.42 1.54-2.313 2.768-1.583l10.45 6.27a1.83 1.83 0 0 1 0 3.14l-10.45 6.27c-1.228.73-2.768-.163-2.768-1.583v-12.54z"/></svg>';
+      playBtn.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
       updateProgress();
     });
 
