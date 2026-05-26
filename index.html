@@ -6,8 +6,9 @@
 <meta name="theme-color" content="#18181b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>2D Dice</title>
+<title>2D Dice Pro</title>
 <style>
+/* --- BASE STYLES --- */
 html, body {
   margin: 0;
   padding: 0;
@@ -57,6 +58,80 @@ canvas {
   left: 0;
 }
 
+/* --- T9 KEYBOARD STYLES --- */
+#t9-keyboard {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
+  background: rgba(39, 39, 42, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+#t9-keyboard.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+#t9-keyboard.pos-left { left: calc(env(safe-area-inset-left, 0px) + 40px); }
+#t9-keyboard.pos-right { right: calc(env(safe-area-inset-right, 0px) + 40px); }
+
+.t9-display {
+  background: #18181b;
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-align: right;
+  padding: 12px;
+  border-radius: 8px;
+  min-height: 28px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.t9-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.t9-btn {
+  background: #3f3f46;
+  color: #ffffff;
+  border: none;
+  padding: 16px 20px;
+  border-radius: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.t9-btn:active {
+  background: #52525b;
+}
+
+.t9-btn.btn-action {
+  background: #f87171;
+  color: #18181b;
+}
+
+.t9-btn.btn-action:active {
+  background: #fca5a5;
+}
+
+/* --- HOME & MENU STYLES --- */
 #home-screen {
   position: fixed;
   inset: 0;
@@ -159,13 +234,15 @@ canvas {
 
 .modal-box {
   background: #27272a;
-  padding: 32px 28px;
+  padding: 24px;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  width: 280px;
+  gap: 16px;
+  width: 300px;
+  max-height: 85vh;
+  overflow-y: auto;
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
   transform: translateY(20px) scale(0.95);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -176,18 +253,38 @@ canvas {
 }
 
 .modal-header {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #ffffff;
   text-align: center;
   letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+/* SETTING SECTION (RAPI & USER FRIENDLY) */
+.settings-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #a1a1aa;
+  font-weight: 700;
+  margin-bottom: 2px;
 }
 
 .setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
 }
 
 .setting-label {
@@ -228,10 +325,11 @@ canvas {
 
 .segment-control {
   display: flex;
-  background: #3f3f46;
-  border-radius: 10px;
+  background: #18181b;
+  border-radius: 8px;
   padding: 4px;
   gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .segment-btn {
@@ -239,7 +337,7 @@ canvas {
   background: transparent;
   color: #a1a1aa;
   border: none;
-  padding: 10px;
+  padding: 10px 4px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
@@ -256,12 +354,12 @@ canvas {
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .row-group {
   display: flex;
-  gap: 12px;
+  gap: 8px;
 }
 
 .row-group > select {
@@ -275,12 +373,12 @@ label.input-label {
 }
 
 input.config-input, select.config-select {
-  background: #3f3f46;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: #ffffff;
   padding: 12px;
   border-radius: 8px;
-  font-size: 15px;
+  font-size: 14px;
   outline: none;
   appearance: none;
   transition: all 0.2s;
@@ -288,25 +386,15 @@ input.config-input, select.config-select {
 
 input.config-input:focus, select.config-select:focus {
   border-color: #a1a1aa;
-  background: #52525b;
+  background: #27272a;
 }
 
-.btn-close {
-  background: #3f3f46;
-  color: #ffffff;
-  border: none;
-  padding: 14px;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: transform 0.1s, background 0.2s;
-}
-
-.btn-close:active {
-  transform: scale(0.97);
-  background: #52525b;
+.info-text {
+  text-align: center;
+  color: #a1a1aa;
+  font-size: 12px;
+  margin-top: 4px;
+  line-height: 1.5;
 }
 </style>
 </head>
@@ -316,10 +404,30 @@ input.config-input:focus, select.config-select:focus {
   <canvas id="game-canvas"></canvas>
 </div>
 
+<!-- T9 KEYBOARD -->
+<div id="t9-keyboard" class="pos-left">
+  <div class="t9-display" id="t9-display-text"></div>
+  <div class="t9-grid">
+    <button class="t9-btn" onclick="t9Input('1')">1</button>
+    <button class="t9-btn" onclick="t9Input('2')">2</button>
+    <button class="t9-btn" onclick="t9Input('3')">3</button>
+    <button class="t9-btn" onclick="t9Input('4')">4</button>
+    <button class="t9-btn" onclick="t9Input('5')">5</button>
+    <button class="t9-btn" onclick="t9Input('6')">6</button>
+    <button class="t9-btn" onclick="t9Input('7')">7</button>
+    <button class="t9-btn" onclick="t9Input('8')">8</button>
+    <button class="t9-btn" onclick="t9Input('9')">9</button>
+    <button class="t9-btn btn-action" onclick="t9Clear()">C</button>
+    <button class="t9-btn" onclick="t9Input('0')">0</button>
+    <button class="t9-btn btn-action" onclick="t9Submit()">OK</button>
+  </div>
+</div>
+
+<!-- HOME SCREEN -->
 <div id="home-screen">
   <div class="home-content">
     <div class="brand">
-      <div class="title">2D DICE</div>
+      <div class="title">2D DICE PRO</div>
     </div>
     <div class="home-buttons">
       <button class="btn-primary" id="btn-start">Begin</button>
@@ -328,6 +436,7 @@ input.config-input:focus, select.config-select:focus {
   </div>
 </div>
 
+<!-- FAKE PREFERENCES -->
 <div class="modal-overlay" id="fake-settings-modal">
   <div class="modal-box">
     <div class="modal-header">Preferences</div>
@@ -343,69 +452,99 @@ input.config-input:focus, select.config-select:focus {
         <div class="toggle-knob"></div>
       </div>
     </div>
-    <button class="btn-close" id="btn-close-fake">Close</button>
+    <button class="btn-primary" id="btn-close-fake" style="margin-top: 10px;">Close</button>
   </div>
 </div>
 
+<!-- SECRET CONFIGURATION MENU -->
 <div class="modal-overlay" id="secret-config-menu">
   <div class="modal-box">
     <div class="modal-header">Configuration</div>
     
-    <div class="segment-control">
-      <button class="segment-btn active" id="btn-mode-number">Number</button>
-      <button class="segment-btn" id="btn-mode-card">Card</button>
-    </div>
-
-    <div class="segment-control">
-      <button class="segment-btn active" id="btn-trigger-swipes">Swipes</button>
-      <button class="segment-btn" id="btn-trigger-timer">Timer</button>
-    </div>
-
-    <div class="input-group" id="group-max-val">
-      <label class="input-label">Max Value</label>
-      <input type="number" class="config-input" id="max-val" value="6" min="2" max="100">
-    </div>
-
-    <div class="input-group" id="group-target-number">
-      <label class="input-label">Target Value</label>
-      <input type="number" class="config-input" id="target-val" value="6" min="1" max="100">
-    </div>
-
-    <div class="input-group" id="group-target-card" style="display: none;">
-      <label class="input-label">Target Card</label>
-      <div class="row-group">
-        <select class="config-select" id="target-card-val">
-          <option value="A">A</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-          <option value="7">7</option>
-          <option value="8">8</option>
-          <option value="9">9</option>
-          <option value="10">10</option>
-          <option value="J">J</option>
-          <option value="Q">Q</option>
-          <option value="K">K</option>
-        </select>
-        <select class="config-select" id="target-card-suit">
-          <option value="♠">♠</option>
-          <option value="♥">♥</option>
-          <option value="♣">♣</option>
-          <option value="♦">♦</option>
-        </select>
+    <!-- SECTION 1: GAMEPLAY MODE -->
+    <div class="settings-section">
+      <div class="section-title">Mode Selection</div>
+      <div class="segment-control">
+        <button class="segment-btn active" id="btn-mode-number">Number</button>
+        <button class="segment-btn" id="btn-mode-card">Card</button>
+        <button class="segment-btn" id="btn-mode-ms">Magic Sq</button>
       </div>
     </div>
 
-    <div class="input-group" id="group-target-swipe">
-      <label class="input-label">Trigger at Swipe</label>
-      <input type="number" class="config-input" id="target-swipe" value="3" min="1">
+    <!-- SECTION 2: TARGET & INPUT SETTINGS (DYNAMIC) -->
+    <div class="settings-section" id="section-target">
+      <div class="section-title">Target Setup</div>
+      
+      <!-- SUB-MODE MAGIC SQUARE -->
+      <div class="segment-control" id="group-ms-input-mode" style="display: none; margin-bottom: 8px;">
+        <button class="segment-btn active" id="btn-ms-preset">Preset</button>
+        <button class="segment-btn" id="btn-ms-realtime">Real-time</button>
+      </div>
+
+      <!-- POSISI KEYBOARD T9 -->
+      <div class="segment-control" id="group-ms-kb-pos" style="display: none; margin-bottom: 8px;">
+        <button class="segment-btn active" id="btn-kb-left">Bottom Left</button>
+        <button class="segment-btn" id="btn-kb-right">Bottom Right</button>
+      </div>
+
+      <!-- INPUT NUMBER MODE -->
+      <div class="input-group" id="group-max-val">
+        <label class="input-label">Max Value</label>
+        <input type="number" class="config-input" id="max-val" value="6" min="2" max="100">
+      </div>
+      <div class="input-group" id="group-target-number">
+        <label class="input-label">Target Value</label>
+        <input type="number" class="config-input" id="target-val" value="6" min="1" max="100">
+      </div>
+
+      <!-- INPUT CARD MODE -->
+      <div class="input-group" id="group-target-card" style="display: none;">
+        <label class="input-label">Target Card</label>
+        <div class="row-group">
+          <select class="config-select" id="target-card-val">
+            <option value="A">A</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+            <option value="10">10</option><option value="J">J</option><option value="Q">Q</option>
+            <option value="K">K</option>
+          </select>
+          <select class="config-select" id="target-card-suit">
+            <option value="♠">♠</option><option value="♥">♥</option>
+            <option value="♣">♣</option><option value="♦">♦</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- INPUT MAGIC SQUARE PRESET -->
+      <div class="input-group" id="group-ms-preset-target" style="display: none;">
+        <label class="input-label">Target Total</label>
+        <input type="number" class="config-input" id="ms-target-val" value="34" min="15" max="999">
+      </div>
+
+      <!-- INFO MAGIC SQUARE REALTIME -->
+      <div class="input-group" id="group-ms-realtime-info" style="display: none;">
+        <div class="info-text">
+          Long press on the screen during gameplay to open the T9 Numpad and secretly enter the target.
+        </div>
+      </div>
     </div>
 
-    <div class="input-group" id="group-target-timer" style="display: none;">
-      <label class="input-label">Idle Time (s)</label>
-      <input type="number" class="config-input" id="target-timer" value="5" min="1">
+    <!-- SECTION 3: TRIGGER SETTINGS -->
+    <div class="settings-section">
+      <div class="section-title">Trigger Mechanics</div>
+      <div class="segment-control" style="margin-bottom: 8px;">
+        <button class="segment-btn active" id="btn-trigger-swipes">Swipes</button>
+        <button class="segment-btn" id="btn-trigger-timer">Timer</button>
+      </div>
+
+      <div class="input-group" id="group-target-swipe">
+        <label class="input-label">Trigger at Swipe #</label>
+        <input type="number" class="config-input" id="target-swipe" value="3" min="1">
+      </div>
+      <div class="input-group" id="group-target-timer" style="display: none;">
+        <label class="input-label">Idle Time (s)</label>
+        <input type="number" class="config-input" id="target-timer" value="5" min="1">
+      </div>
     </div>
 
     <button class="btn-primary" id="save-secret-btn" style="margin-top: 8px;">Apply</button>
@@ -413,6 +552,7 @@ input.config-input:focus, select.config-select:focus {
 </div>
 
 <script>
+// --- INITIALIZATION & UI ---
 const homeScreen = document.getElementById('home-screen');
 const btnStart = document.getElementById('btn-start');
 const btnFakeSettings = document.getElementById('btn-fake-settings');
@@ -426,27 +566,19 @@ let introCells = new Map();
 btnStart.addEventListener('click', () => {
   isStarted = true;
   homeScreen.classList.add('hidden');
-  
   setTimeout(() => {
     homeScreen.style.display = 'none';
     startIntroAnimation();
   }, 400);
 });
 
-btnFakeSettings.addEventListener('click', () => {
-  fakeSettingsModal.classList.add('active');
-});
-
-btnCloseFake.addEventListener('click', () => {
-  fakeSettingsModal.classList.remove('active');
-});
-
+btnFakeSettings.addEventListener('click', () => fakeSettingsModal.classList.add('active'));
+btnCloseFake.addEventListener('click', () => fakeSettingsModal.classList.remove('active'));
 fakeSettingsModal.addEventListener('pointerdown', (e) => {
-  if (e.target === fakeSettingsModal) {
-    fakeSettingsModal.classList.remove('active');
-  }
+  if (e.target === fakeSettingsModal) fakeSettingsModal.classList.remove('active');
 });
 
+// --- CANVAS & GAME VARIABLES ---
 const container = document.getElementById('game-container');
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -471,130 +603,191 @@ let isDragging = false;
 let lastX = 0;
 let lastY = 0;
 let pointerHistory = [];
-
 let taps = [];
 let isMenuOpen = false;
-let currentMode = 'number';
+
+// --- STATE MAGIC & LOGIC ---
+let currentMode = 'number'; 
+let msInputMode = 'preset'; 
+let kbPosition = 'left'; 
 let triggerMode = 'swipes';
+
 let maxNum = 6;
 let targetNum = '6';
+let msPresetTarget = 34;
+
 let targetSwipe = 3;
 let targetTimer = 5;
+
+// Forcing & Trigger Variables (Refined Logic)
+let sequenceQueue = [];
+let isForcingComplete = false; 
+
 let currentSwipe = 0;
 let forceOverrides = {};
-
 let timerTimeoutId = null;
 let forceArmed = false;
-let isForceActive = false;
 
-const normalFont = '600 26px ui-sans-serif, system-ui, sans-serif';
-const centerFont = 'bold 36px ui-sans-serif, system-ui, sans-serif';
+let isTriggerUnlocked = false; // Kunci pemicu (hanya perlu dipenuhi sekali)
+let isForceActive = false; // Menandakan sedang override destinasi saat pointerup
 
+// --- NUMPAD T9 VARIABLES ---
+const t9Keyboard = document.getElementById('t9-keyboard');
+const t9DisplayText = document.getElementById('t9-display-text');
+let isKeyboardOpen = false;
+let currentT9Value = '';
+let longPressTimer = null;
+
+// --- SECRET MENU ELEMENTS ---
 const secretMenuEl = document.getElementById('secret-config-menu');
 const saveSecretBtn = document.getElementById('save-secret-btn');
+
 const btnModeNumber = document.getElementById('btn-mode-number');
 const btnModeCard = document.getElementById('btn-mode-card');
+const btnModeMs = document.getElementById('btn-mode-ms');
+
+const groupMsInputMode = document.getElementById('group-ms-input-mode');
+const btnMsPreset = document.getElementById('btn-ms-preset');
+const btnMsRealtime = document.getElementById('btn-ms-realtime');
+
+const groupMsKbPos = document.getElementById('group-ms-kb-pos');
+const btnKbLeft = document.getElementById('btn-kb-left');
+const btnKbRight = document.getElementById('btn-kb-right');
+
 const btnTriggerSwipes = document.getElementById('btn-trigger-swipes');
 const btnTriggerTimer = document.getElementById('btn-trigger-timer');
+
 const groupMaxVal = document.getElementById('group-max-val');
 const groupTargetNumber = document.getElementById('group-target-number');
 const groupTargetCard = document.getElementById('group-target-card');
+const groupMsPresetTarget = document.getElementById('group-ms-preset-target');
+const groupMsRealtimeInfo = document.getElementById('group-ms-realtime-info');
 const groupTargetSwipe = document.getElementById('group-target-swipe');
 const groupTargetTimer = document.getElementById('group-target-timer');
+
 const maxValInput = document.getElementById('max-val');
 const targetValInput = document.getElementById('target-val');
 const targetCardValInput = document.getElementById('target-card-val');
 const targetCardSuitInput = document.getElementById('target-card-suit');
+const msTargetValInput = document.getElementById('ms-target-val');
 const targetSwipeInput = document.getElementById('target-swipe');
 const targetTimerInput = document.getElementById('target-timer');
 
+// --- MENU FUNCTIONS ---
 function loadSettings() {
-  const savedSettings = localStorage.getItem('diceConfig');
+  const savedSettings = localStorage.getItem('diceConfigProV3');
   if (savedSettings) {
     try {
       const config = JSON.parse(savedSettings);
       currentMode = config.currentMode || 'number';
+      msInputMode = config.msInputMode || 'preset';
+      kbPosition = config.kbPosition || 'left';
       triggerMode = config.triggerMode || 'swipes';
       maxNum = Math.min(100, Math.max(2, config.maxNum || 6));
       targetNum = config.targetNum || '6';
+      msPresetTarget = config.msPresetTarget || 34;
       targetSwipe = config.targetSwipe || 3;
       targetTimer = config.targetTimer || 5;
 
       maxValInput.value = maxNum;
+      msTargetValInput.value = msPresetTarget;
       
-      if (currentMode === 'number') {
-        targetValInput.value = targetNum;
-      } else {
+      if (currentMode === 'card') {
         const parts = targetNum.split(' ');
         if (parts.length === 2) {
           targetCardValInput.value = parts[0];
           targetCardSuitInput.value = parts[1];
         }
+      } else {
+        targetValInput.value = targetNum;
       }
       
       targetSwipeInput.value = targetSwipe;
       targetTimerInput.value = targetTimer;
-
-      setContentMode(currentMode);
-      setTriggerMode(triggerMode);
     } catch (e) {}
   }
+  setContentMode(currentMode);
+  setMsInputMode(msInputMode);
+  setKbPosition(kbPosition);
+  setTriggerMode(triggerMode);
 }
 
 function saveSettings() {
   const config = {
-    currentMode,
-    triggerMode,
-    maxNum,
-    targetNum,
-    targetSwipe,
-    targetTimer
+    currentMode, msInputMode, kbPosition, triggerMode, maxNum,
+    targetNum, msPresetTarget, targetSwipe, targetTimer
   };
-  localStorage.setItem('diceConfig', JSON.stringify(config));
+  localStorage.setItem('diceConfigProV3', JSON.stringify(config));
 }
 
 function setContentMode(mode) {
   currentMode = mode;
-  if (mode === 'card') {
-    btnModeCard.classList.add('active');
-    btnModeNumber.classList.remove('active');
-    groupMaxVal.style.display = 'none';
-    groupTargetNumber.style.display = 'none';
-    groupTargetCard.style.display = 'flex';
+  btnModeNumber.classList.toggle('active', mode === 'number');
+  btnModeCard.classList.toggle('active', mode === 'card');
+  btnModeMs.classList.toggle('active', mode === 'magicSquare');
+
+  groupMaxVal.style.display = (mode === 'number') ? 'flex' : 'none';
+  groupTargetNumber.style.display = (mode === 'number') ? 'flex' : 'none';
+  groupTargetCard.style.display = (mode === 'card') ? 'flex' : 'none';
+  groupMsInputMode.style.display = (mode === 'magicSquare') ? 'flex' : 'none';
+  
+  setMsInputMode(msInputMode); 
+}
+
+function setMsInputMode(mode) {
+  msInputMode = mode;
+  btnMsPreset.classList.toggle('active', mode === 'preset');
+  btnMsRealtime.classList.toggle('active', mode === 'realtime');
+  
+  if (currentMode === 'magicSquare') {
+    groupMsPresetTarget.style.display = (mode === 'preset') ? 'flex' : 'none';
+    groupMsRealtimeInfo.style.display = (mode === 'realtime') ? 'flex' : 'none';
+    groupMsKbPos.style.display = (mode === 'realtime') ? 'flex' : 'none';
   } else {
-    btnModeNumber.classList.add('active');
-    btnModeCard.classList.remove('active');
-    groupMaxVal.style.display = 'flex';
-    groupTargetNumber.style.display = 'flex';
-    groupTargetCard.style.display = 'none';
+    groupMsPresetTarget.style.display = 'none';
+    groupMsRealtimeInfo.style.display = 'none';
+    groupMsKbPos.style.display = 'none';
+  }
+}
+
+function setKbPosition(pos) {
+  kbPosition = pos;
+  btnKbLeft.classList.toggle('active', pos === 'left');
+  btnKbRight.classList.toggle('active', pos === 'right');
+  
+  if (pos === 'left') {
+    t9Keyboard.classList.add('pos-left');
+    t9Keyboard.classList.remove('pos-right');
+  } else {
+    t9Keyboard.classList.add('pos-right');
+    t9Keyboard.classList.remove('pos-left');
   }
 }
 
 function setTriggerMode(mode) {
   triggerMode = mode;
-  if (mode === 'timer') {
-    btnTriggerTimer.classList.add('active');
-    btnTriggerSwipes.classList.remove('active');
-    groupTargetSwipe.style.display = 'none';
-    groupTargetTimer.style.display = 'flex';
-  } else {
-    btnTriggerSwipes.classList.add('active');
-    btnTriggerTimer.classList.remove('active');
-    groupTargetSwipe.style.display = 'flex';
-    groupTargetTimer.style.display = 'none';
-  }
+  btnTriggerSwipes.classList.toggle('active', mode === 'swipes');
+  btnTriggerTimer.classList.toggle('active', mode === 'timer');
+  groupTargetSwipe.style.display = (mode === 'swipes') ? 'flex' : 'none';
+  groupTargetTimer.style.display = (mode === 'timer') ? 'flex' : 'none';
 }
 
 btnModeNumber.addEventListener('click', () => setContentMode('number'));
 btnModeCard.addEventListener('click', () => setContentMode('card'));
+btnModeMs.addEventListener('click', () => setContentMode('magicSquare'));
+
+btnMsPreset.addEventListener('click', () => setMsInputMode('preset'));
+btnMsRealtime.addEventListener('click', () => setMsInputMode('realtime'));
+
+btnKbLeft.addEventListener('click', () => setKbPosition('left'));
+btnKbRight.addEventListener('click', () => setKbPosition('right'));
+
 btnTriggerSwipes.addEventListener('click', () => setTriggerMode('swipes'));
 btnTriggerTimer.addEventListener('click', () => setTriggerMode('timer'));
 
 function closeSecretMenu() {
   secretMenuEl.classList.remove('active');
-  setTimeout(() => {
-    isMenuOpen = false;
-  }, 300);
+  setTimeout(() => { isMenuOpen = false; }, 300);
 }
 
 secretMenuEl.addEventListener('pointerdown', (e) => {
@@ -602,31 +795,103 @@ secretMenuEl.addEventListener('pointerdown', (e) => {
 });
 
 saveSecretBtn.addEventListener('click', () => {
-  if (currentMode === 'number') {
-    maxNum = Math.min(100, Math.max(2, parseInt(maxValInput.value) || 6));
-    targetNum = parseInt(targetValInput.value) || 6;
-  } else {
-    targetNum = `${targetCardValInput.value} ${targetCardSuitInput.value}`;
-  }
-  
+  maxNum = Math.min(100, Math.max(2, parseInt(maxValInput.value) || 6));
   targetSwipe = parseInt(targetSwipeInput.value) || 3;
   targetTimer = parseInt(targetTimerInput.value) || 5;
+
+  if (currentMode === 'number') {
+    targetNum = parseInt(targetValInput.value) || 6;
+    sequenceQueue = [targetNum];
+  } else if (currentMode === 'card') {
+    targetNum = `${targetCardValInput.value} ${targetCardSuitInput.value}`;
+    sequenceQueue = [targetNum];
+  } else if (currentMode === 'magicSquare') {
+    msPresetTarget = parseInt(msTargetValInput.value) || 34;
+    if (msInputMode === 'preset') {
+      sequenceQueue = calculateMagicSquare(msPresetTarget);
+    } else {
+      sequenceQueue = [];
+    }
+  }
   
   saveSettings();
   
+  // RESET LOGIKA TRIGGER
+  isTriggerUnlocked = false;
   currentSwipe = 0;
+  isForcingComplete = false;
+  isForceActive = false;
+  forceOverrides = {};
   
   if (timerTimeoutId) {
     clearTimeout(timerTimeoutId);
     timerTimeoutId = null;
   }
   forceArmed = false;
-  isForceActive = false;
-  forceOverrides = {};
   
   closeSecretMenu();
 });
 
+// --- NUMPAD T9 FUNCTIONS ---
+function openKeyboard() {
+  if (isKeyboardOpen) return;
+  isKeyboardOpen = true;
+  currentT9Value = '';
+  t9DisplayText.innerText = '';
+  t9Keyboard.classList.add('active');
+}
+
+function closeKeyboard() {
+  isKeyboardOpen = false;
+  t9Keyboard.classList.remove('active');
+}
+
+window.t9Input = function(num) {
+  if (currentT9Value.length < 4) { 
+    currentT9Value += num;
+    t9DisplayText.innerText = currentT9Value;
+  }
+};
+
+window.t9Clear = function() {
+  currentT9Value = '';
+  t9DisplayText.innerText = '';
+};
+
+window.t9Submit = function() {
+  const target = parseInt(currentT9Value);
+  if (!isNaN(target) && target > 0) {
+    sequenceQueue = calculateMagicSquare(target);
+    
+    // RESET LOGIKA TRIGGER AGAR MULAI DARI AWAL
+    isTriggerUnlocked = false;
+    currentSwipe = 0;
+    isForcingComplete = false;
+    isForceActive = false;
+    forceOverrides = {}; 
+  }
+  closeKeyboard();
+};
+
+// --- MAGIC SQUARE ALGORITHM ---
+function calculateMagicSquare(target) {
+  const base = [
+    [8,1,6],
+    [3,5,7],
+    [4,9,2]
+  ];
+  const factor = target / 15;
+  let seq = [];
+  // Kiri-Kanan, Atas-Bawah
+  for(let r = 0; r < 3; r++) {
+    for(let c = 0; c < 3; c++) {
+      seq.push(Math.round(base[r][c] * factor));
+    }
+  }
+  return seq; 
+}
+
+// --- CANVAS RENDERING ---
 function getCellContent(col, row) {
   const key = `${col},${row}`;
   if (forceOverrides[key] !== undefined) {
@@ -637,23 +902,24 @@ function getCellContent(col, row) {
   
   if (currentMode === 'number') {
     return (Math.abs(h) % maxNum) + 1;
-  } else {
+  } else if (currentMode === 'card') {
     const idx = Math.abs(h) % 52;
     const suits = ['♠', '♥', '♣', '♦'];
     const vals = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    const suit = suits[idx % 4];
-    const val = vals[Math.floor(idx / 4)];
-    return `${val} ${suit}`;
+    return `${vals[Math.floor(idx / 4)]} ${suits[idx % 4]}`;
+  } else if (currentMode === 'magicSquare') {
+    return (Math.abs(h) % 99) + 1; 
   }
 }
 
 function getRandomContent() {
-  if (currentMode === 'number') {
-    return Math.floor(Math.random() * maxNum) + 1;
-  } else {
+  if (currentMode === 'card') {
     const suits = ['♠', '♥', '♣', '♦'];
     const vals = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     return `${vals[Math.floor(Math.random() * vals.length)]} ${suits[Math.floor(Math.random() * suits.length)]}`;
+  } else {
+    let limit = (currentMode === 'magicSquare') ? 99 : maxNum;
+    return Math.floor(Math.random() * limit) + 1;
   }
 }
 
@@ -667,13 +933,11 @@ function startIntroAnimation() {
   const endRow = Math.floor((height - camY) / CELL_SIZE) + 2;
   
   let tempCells = [];
-  
   for (let row = startRow; row <= endRow; row++) {
     for (let col = startCol; col <= endCol; col++) {
       tempCells.push({ col, row });
     }
   }
-  
   tempCells.sort(() => Math.random() - 0.5);
   
   const now = performance.now();
@@ -686,10 +950,11 @@ function startIntroAnimation() {
     });
   });
   
-  setTimeout(() => {
-    isAnimatingIntro = false;
-  }, 2000);
+  setTimeout(() => { isAnimatingIntro = false; }, 2000);
 }
+
+const normalFont = '600 24px ui-sans-serif, system-ui, sans-serif';
+const centerFont = 'bold 34px ui-sans-serif, system-ui, sans-serif';
 
 function render() {
   ctx.clearRect(0, 0, width, height);
@@ -706,10 +971,7 @@ function render() {
     velY *= 0.96;
     if (Math.abs(velX) < 0.05) velX = 0;
     if (Math.abs(velY) < 0.05) velY = 0;
-    
-    if (velX === 0 && velY === 0 && isForceActive) {
-      isForceActive = false;
-    }
+    if (velX === 0 && velY === 0 && isForceActive) isForceActive = false;
   }
 
   const startCol = Math.floor(-camX / CELL_SIZE) - 2;
@@ -736,20 +998,15 @@ function render() {
       if (isAnimatingIntro) {
         const introData = introCells.get(`${col},${row}`);
         if (introData) {
-          if (now < introData.revealTime) {
-            isVisible = false;
-          } else if (now < introData.settleTime) {
+          if (now < introData.revealTime) isVisible = false;
+          else if (now < introData.settleTime) {
             if (now - introData.lastUpdate > 50) {
               introData.currentRandom = getRandomContent();
               introData.lastUpdate = now;
             }
             content = String(introData.currentRandom);
-          } else {
-            content = String(getCellContent(col, row));
-          }
-        } else {
-           isVisible = false;
-        }
+          } else content = String(getCellContent(col, row));
+        } else isVisible = false;
       } else {
         content = String(getCellContent(col, row));
       }
@@ -761,42 +1018,30 @@ function render() {
       const margin = 8;
       const size = CELL_SIZE - (margin * 2);
 
-      // --- EFEK GLOW TAMBAHAN UNTUK KOTAK TENGAH ---
       if (isCenter) {
-        // Jika angka merah (Hati/Wajik) glow merah muda, sebaliknya putih
         ctx.shadowColor = isRedContent ? 'rgba(248, 113, 113, 0.7)' : 'rgba(255, 255, 255, 0.6)';
-        ctx.shadowBlur = 25; // Sebaran cahaya
+        ctx.shadowBlur = 25; 
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 0;
         
         ctx.beginPath();
-        if (ctx.roundRect) {
-          ctx.roundRect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size, 16);
-        } else {
-          ctx.rect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size);
-        }
-        // Isi dengan transparan (hanya memancing bayangan di sekelilingnya)
+        if (ctx.roundRect) ctx.roundRect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size, 16);
+        else ctx.rect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size);
         ctx.fillStyle = '#52525b'; 
         ctx.fill();
       }
 
-      // --- EFEK 3D KOTAK ---
       ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
       ctx.shadowBlur = 10;
       ctx.shadowOffsetX = 4;
       ctx.shadowOffsetY = 4;
       
       ctx.beginPath();
-      if (ctx.roundRect) {
-        ctx.roundRect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size, 16);
-      } else {
-        ctx.rect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size);
-      }
-
+      if (ctx.roundRect) ctx.roundRect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size, 16);
+      else ctx.rect(cx - CELL_SIZE / 2 + margin, cy - CELL_SIZE / 2 + margin, size, size);
       ctx.fillStyle = isCenter ? '#52525b' : '#3f3f46';
       ctx.fill();
 
-      // Reset shadow setelah menggambar bayangan kotak
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
       ctx.shadowOffsetX = 0;
@@ -813,44 +1058,30 @@ function render() {
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      if (isCenter && !isMenuOpen) {
-        activeCell = { content, cx, cy, isRed: isRedContent };
-      }
+      if (isCenter && !isMenuOpen) activeCell = { content, cx, cy, isRed: isRedContent };
 
       if (!isCenter || isMenuOpen) {
         ctx.font = normalFont;
-        if (isRedContent) {
-          ctx.fillStyle = '#ef4444'; 
-        } else {
-          ctx.fillStyle = '#f4f4f5'; 
-        }
+        ctx.fillStyle = isRedContent ? '#ef4444' : '#f4f4f5';
         ctx.fillText(content, cx, cy);
       }
     }
   }
 
-  // --- RENDER TEKS CENTER ---
   if (activeCell) {
     ctx.font = centerFont;
-    if (activeCell.isRed) {
-      ctx.fillStyle = '#f87171'; 
-    } else {
-      ctx.fillStyle = '#ffffff'; 
-    }
-    
+    ctx.fillStyle = activeCell.isRed ? '#f87171' : '#ffffff';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     ctx.shadowBlur = 6;
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
     ctx.fillText(activeCell.content, activeCell.cx, activeCell.cy);
-    
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
   }
 
-  // --- RENDER CROSSHAIR TENGAH ---
   if (!isAnimatingIntro) {
     ctx.strokeStyle = '#f87171';
     ctx.lineWidth = 2;
@@ -862,7 +1093,6 @@ function render() {
     ctx.moveTo(width / 2, height / 2 - 12);
     ctx.lineTo(width / 2, height / 2 + 12);
     ctx.stroke();
-    
     ctx.shadowColor = 'transparent';
     ctx.shadowBlur = 0;
   }
@@ -871,17 +1101,20 @@ function render() {
 }
 
 function startOrResetTimer() {
-  if (timerTimeoutId) {
-    clearTimeout(timerTimeoutId);
-  }
+  if (timerTimeoutId) clearTimeout(timerTimeoutId);
   forceArmed = false; 
-  timerTimeoutId = setTimeout(() => {
-    forceArmed = true;
-  }, targetTimer * 1000);
+  timerTimeoutId = setTimeout(() => { forceArmed = true; }, targetTimer * 1000);
 }
 
+// --- GESTURE & FORCING LOGIC ---
 window.addEventListener('pointerdown', e => {
   if (!isStarted || isMenuOpen || isAnimatingIntro || e.target.closest('.modal-overlay') || e.target.closest('.home-buttons')) return;
+  
+  if (e.target.closest('#t9-keyboard')) return;
+  if (isKeyboardOpen) {
+    closeKeyboard();
+    return;
+  }
   
   if (!e.target.closest('#game-container')) return;
   
@@ -892,38 +1125,38 @@ window.addEventListener('pointerdown', e => {
   if (taps.length === 3) {
     isMenuOpen = true;
     secretMenuEl.classList.add('active');
-    taps = [];
-    velX = 0;
-    velY = 0;
-    
-    if (timerTimeoutId) {
-      clearTimeout(timerTimeoutId);
-      timerTimeoutId = null;
-    }
-    forceArmed = false;
-    isForceActive = false;
-    
+    taps = []; velX = 0; velY = 0;
+    if (timerTimeoutId) { clearTimeout(timerTimeoutId); timerTimeoutId = null; }
+    forceArmed = false; isForceActive = false;
     return;
   }
 
+  if (currentMode === 'magicSquare' && msInputMode === 'realtime' && !isKeyboardOpen) {
+    longPressTimer = setTimeout(() => {
+      openKeyboard();
+      velX = 0; velY = 0; isDragging = false;
+    }, 800); 
+  }
+
   isDragging = true;
-  lastX = e.clientX;
-  lastY = e.clientY;
-  velX = 0;
-  velY = 0;
+  lastX = e.clientX; lastY = e.clientY;
+  velX = 0; velY = 0;
   pointerHistory = [{ x: e.clientX, y: e.clientY, t: now }];
 });
 
 window.addEventListener('pointermove', e => {
-  if (!isStarted || !isDragging || isMenuOpen || isAnimatingIntro) return;
+  if (!isStarted || !isDragging || isMenuOpen || isAnimatingIntro || isKeyboardOpen) return;
+  
   const dx = e.clientX - lastX;
   const dy = e.clientY - lastY;
   
+  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+    if (longPressTimer) clearTimeout(longPressTimer);
+  }
+
   camX += dx;
   camY += dy;
-  
-  lastX = e.clientX;
-  lastY = e.clientY;
+  lastX = e.clientX; lastY = e.clientY;
   
   const now = performance.now();
   pointerHistory.push({ x: e.clientX, y: e.clientY, t: now });
@@ -931,9 +1164,13 @@ window.addEventListener('pointermove', e => {
 });
 
 window.addEventListener('pointerup', () => {
-  if (!isStarted || !isDragging || isMenuOpen || isAnimatingIntro) return;
+  if (longPressTimer) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+
+  if (!isStarted || !isDragging || isMenuOpen || isAnimatingIntro || isKeyboardOpen) return;
   isDragging = false;
-  
   let swipeDetected = false;
 
   if (pointerHistory.length > 1) {
@@ -943,71 +1180,84 @@ window.addEventListener('pointerup', () => {
     if (dt > 0) {
       velX = ((newest.x - oldest.x) / dt) * 25;
       velY = ((newest.y - oldest.y) / dt) * 25;
-      if (Math.abs(velX) > 5 || Math.abs(velY) > 5) {
-        swipeDetected = true;
-      }
+      if (Math.abs(velX) > 5 || Math.abs(velY) > 5) swipeDetected = true;
     }
   }
-  
   pointerHistory = [];
-  let didTriggerNow = false;
 
-  if (swipeDetected && !isForceActive) {
-    if (triggerMode === 'swipes') {
-      currentSwipe++;
-      if (currentSwipe >= targetSwipe) {
-        isForceActive = true;
-        didTriggerNow = true;
-      }
-    } else if (triggerMode === 'timer') {
-      if (forceArmed) {
-        isForceActive = true;
-        didTriggerNow = true;
-      }
-    }
-  }
-
-  if (isForceActive) {
-    forceOverrides = {};
+  // LOGIKA TRIGGER BARU: Hanya perlu dipenuhi sekali
+  if (swipeDetected && !isForcingComplete && sequenceQueue.length > 0) {
     
-    let simX = camX;
-    let simY = camY;
-    let sVelX = velX;
-    let sVelY = velY;
-    
-    while (Math.abs(sVelX) >= 0.05 || Math.abs(sVelY) >= 0.05) {
-      simX += sVelX;
-      simY += sVelY;
-      sVelX *= 0.96;
-      sVelY *= 0.96;
-      if (Math.abs(sVelX) < 0.05) sVelX = 0;
-      if (Math.abs(sVelY) < 0.05) sVelY = 0;
-    }
-    
-    let predCol = Math.floor((width / 2 - simX) / CELL_SIZE);
-    let predRow = Math.floor((height / 2 - simY) / CELL_SIZE);
-    forceOverrides[`${predCol},${predRow}`] = targetNum;
-    
-    if (didTriggerNow) {
+    // Jika belum di-unlock, periksa apakah syarat trigger sudah tercapai
+    if (!isTriggerUnlocked) {
       if (triggerMode === 'swipes') {
-        currentSwipe = 0;
+        currentSwipe++;
+        if (currentSwipe >= targetSwipe) {
+          isTriggerUnlocked = true;
+        }
       } else if (triggerMode === 'timer') {
-        forceArmed = false;
+        if (forceArmed) {
+          isTriggerUnlocked = true;
+        }
       }
+    }
+
+    // Jika kunci sudah terbuka, langsung aktifkan *force* pada setiap swipe
+    if (isTriggerUnlocked) {
+      isForceActive = true;
     }
   }
 
-  if (triggerMode === 'timer') {
-    if (swipeDetected || isForceActive || timerTimeoutId) {
-      startOrResetTimer();
+  // EKSEKUSI FORCING
+  if (isForceActive) {
+    if (sequenceQueue.length > 0) {
+      forceOverrides = {}; 
+      
+      let simX = camX, simY = camY, sVelX = velX, sVelY = velY;
+      while (Math.abs(sVelX) >= 0.05 || Math.abs(sVelY) >= 0.05) {
+        simX += sVelX; simY += sVelY;
+        sVelX *= 0.96; sVelY *= 0.96;
+        if (Math.abs(sVelX) < 0.05) sVelX = 0;
+        if (Math.abs(sVelY) < 0.05) sVelY = 0;
+      }
+      
+      let predCol = Math.floor((width / 2 - simX) / CELL_SIZE);
+      let predRow = Math.floor((height / 2 - simY) / CELL_SIZE);
+      
+      let nextTarget = sequenceQueue.shift(); 
+      forceOverrides[`${predCol},${predRow}`] = nextTarget;
+      
+      if (sequenceQueue.length === 0) {
+        isForcingComplete = true; 
+      }
+      
+      // isForceActive dimatikan agar iterasi physics selesai pada destinasi ini, 
+      // tetapi isTriggerUnlocked TETAP HIDUP untuk swipe selanjutnya.
+      isForceActive = false;
     }
+  }
+
+  // Timer reset (Untuk jaga-jaga saja, meski isTriggerUnlocked mengabaikan timer setelah tembus)
+  if (triggerMode === 'timer') {
+    if (swipeDetected || timerTimeoutId) startOrResetTimer();
   }
 });
 
 window.addEventListener('resize', resizeCanvas);
-
 setTimeout(resizeCanvas, 100);
-loadSettings();
+
+loadSettings(); 
+
+if (currentMode === 'number' || currentMode === 'card') {
+    sequenceQueue = [targetNum];
+} else if (currentMode === 'magicSquare' && msInputMode === 'preset') {
+    sequenceQueue = calculateMagicSquare(msPresetTarget);
+}
+
+// Set awal agar menunggu trigger
+isTriggerUnlocked = false;
+isForcingComplete = false;
+
 render();
 </script>
 </body>
