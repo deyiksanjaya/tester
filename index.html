@@ -25,26 +25,40 @@ html, body {
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* --- BORDER PUTIH HIASAN DENGAN POJOK MEMBULAT --- */
+/* --- MENGATUR POSISI BINGKAI & WADAH KANVAS --- */
+/* Menggunakan jarak 20px dari tepi layar (termasuk safe-area untuk HP berponi) */
+#game-container, body::after {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 20px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  left: calc(env(safe-area-inset-left, 0px) + 20px);
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  border-radius: 24px;
+}
+
+/* Wadah kanvas akan memotong elemen yang melewati batas area */
+#game-container {
+  overflow: hidden;
+  z-index: 10;
+  background-color: #09090b;
+}
+
+/* Bingkai putih hiasan berada pada lapisan paling atas */
 body::after {
   content: '';
-  position: fixed;
-  inset: 0;
-  border: 6px solid #ffffff; /* Ketebalan border putih */
-  border-radius: 24px; /* Membuat pojok menjadi membulat */
-  pointer-events: none; /* Penting: agar usapan/klik tembus ke layar */
-  z-index: 999; /* Agar border selalu ada di lapisan paling atas */
+  border: 6px solid #ffffff;
+  pointer-events: none;
+  z-index: 999;
   box-sizing: border-box;
 }
 
 canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 #home-screen {
@@ -303,6 +317,11 @@ input.config-input:focus, select.config-select:focus {
 </head>
 <body>
 
+<!-- KITA TAMBAHKAN WADAH GAME-CONTAINER DI SINI -->
+<div id="game-container">
+  <canvas id="game-canvas"></canvas>
+</div>
+
 <div id="home-screen">
   <div class="home-content">
     <div class="brand">
@@ -434,17 +453,18 @@ fakeSettingsModal.addEventListener('pointerdown', (e) => {
   }
 });
 
-const canvas = document.createElement('canvas');
-document.body.appendChild(canvas);
+// Menggunakan elemen kanvas dan wadah yang baru
+const container = document.getElementById('game-container');
+const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-let width = window.innerWidth;
-let height = window.innerHeight;
+let width = container.clientWidth;
+let height = container.clientHeight;
 const CELL_SIZE = 100;
 
 function resizeCanvas() {
-  width = window.innerWidth;
-  height = window.innerHeight;
+  width = container.clientWidth;
+  height = container.clientHeight;
   canvas.width = width * window.devicePixelRatio;
   canvas.height = height * window.devicePixelRatio;
   ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
@@ -810,6 +830,9 @@ function startOrResetTimer() {
 
 window.addEventListener('pointerdown', e => {
   if (!isStarted || isMenuOpen || isAnimatingIntro || e.target.closest('.modal-overlay') || e.target.closest('.home-buttons')) return;
+  
+  // Pastikan klik/tap terjadi di dalam area kanvas saja
+  if (!e.target.closest('#game-container')) return;
   
   const now = performance.now();
   taps.push(now);
