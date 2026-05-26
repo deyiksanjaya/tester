@@ -25,12 +25,13 @@ html, body {
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
-/* --- BORDER PUTIH HIASAN --- */
+/* --- BORDER PUTIH HIASAN DENGAN POJOK MEMBULAT --- */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   border: 6px solid #ffffff; /* Ketebalan border putih */
+  border-radius: 24px; /* Membuat pojok menjadi membulat */
   pointer-events: none; /* Penting: agar usapan/klik tembus ke layar */
   z-index: 999; /* Agar border selalu ada di lapisan paling atas */
   box-sizing: border-box;
