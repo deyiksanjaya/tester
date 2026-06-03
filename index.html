@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Scanner</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -29,7 +28,7 @@
             opacity: 0;
             pointer-events: none;
         }
-        #canvas {
+        #canvas, #motion-canvas {
             display: none;
         }
         #display-area {
@@ -93,7 +92,7 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 120px;
+            height: 140px;
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(10px);
             border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -208,6 +207,7 @@
 
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
+    <canvas id="motion-canvas"></canvas>
     <img id="peek-img" src="" alt="">
 
     <div id="stealth-dot"></div>
@@ -240,10 +240,10 @@
                 </select>
             </div>
             <div class="input-group">
-                <span class="input-label">Sensitivitas Deteksi (Skor Minimal)</span>
+                <span class="input-label">Sensitivitas Deteksi Gerak</span>
                 <div class="slider-container">
                     <input type="range" id="sensitivity-slider" min="10" max="90" step="5">
-                    <span id="slider-value">55%</span>
+                    <span id="slider-value">60%</span>
                 </div>
             </div>
             <div class="btn-group">
@@ -256,6 +256,7 @@
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
+        const motionCanvas = document.getElementById('motion-canvas');
         const resultText = document.getElementById('result-text');
         const peekImg = document.getElementById('peek-img');
         const stealthDot = document.getElementById('stealth-dot');
@@ -272,10 +273,9 @@
         let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
         let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
         let currentMode = localStorage.getItem('stealthScannerMode') || 'ocr';
-        let currentSensitivity = parseInt(localStorage.getItem('stealthScannerSensitivity')) || 55;
+        let currentSensitivity = parseInt(localStorage.getItem('stealthScannerSensitivity')) || 60;
         
         let scanIntervalId = null;
-        let ocrWorker = null;
         let isProcessing = false;
         let peekImageSrc = '';
         let extractedText = '';
@@ -284,6 +284,11 @@
         let tapTimeout;
         let holdTimeout;
         let isHolding = false;
+
+        let prevFrameData = null;
+        let motionDetected = false;
+        let stableFramesCount = 0;
+        const requiredStableFrames = 5;
 
         sensitivitySlider.value = currentSensitivity;
         sliderValue.innerText = currentSensitivity + '%';
@@ -304,16 +309,6 @@
         });
 
         log('Sistem siap. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
-
-        (async function preheatOcr() {
-            log('Mempersiapkan sistem OCR lokal...');
-            try {
-                ocrWorker = await Tesseract.createWorker('eng');
-                log('Sistem OCR lokal siap digunakan.', 'success');
-            } catch (err) {
-                log('Gagal mempersiapkan OCR lokal: ' + err.message, 'error');
-            }
-        })();
 
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
@@ -418,27 +413,28 @@
                 scanIntervalId = null;
             }
             isProcessing = false;
+            prevFrameData = null;
+            motionDetected = false;
+            stableFramesCount = 0;
             log('Kamera nonaktif.');
         }
 
         async function startSystem() {
             if (scanIntervalId) return;
             stealthDot.className = '';
+            prevFrameData = null;
+            motionDetected = false;
+            stableFramesCount = 0;
             
             try {
-                if (!ocrWorker) {
-                    log('OCR lokal belum siap, mencoba memuat ulang...');
-                    ocrWorker = await Tesseract.createWorker('eng');
-                }
-                
                 log(`Mengaktifkan kamera (${currentFacingMode})...`);
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: currentFacingMode } 
                 });
                 video.srcObject = stream;
                 
-                scanIntervalId = setInterval(processFrame, 4000);
-                log('Kamera aktif. Memulai scanning.');
+                scanIntervalId = setInterval(analyzeMotion, 200);
+                log('Sistem analisis gerakan aktif.');
             } catch (err) {
                 log('Gagal mengakses kamera: ' + err.message, 'error');
                 if (currentMode === 'ocr') {
@@ -447,90 +443,135 @@
             }
         }
 
-        async function processFrame() {
+        function analyzeMotion() {
             if (!video.videoWidth || isProcessing) return;
+
+            const mWidth = 40;
+            const mHeight = 30;
+            motionCanvas.width = mWidth;
+            motionCanvas.height = mHeight;
+
+            const mCtx = motionCanvas.getContext('2d');
+            mCtx.drawImage(video, 0, 0, mWidth, mHeight);
+
+            const frameData = mCtx.getImageData(0, 0, mWidth, mHeight);
+            
+            if (!prevFrameData) {
+                prevFrameData = frameData;
+                return;
+            }
+
+            let diffSum = 0;
+            const len = frameData.data.length;
+
+            for (let i = 0; i < len; i += 4) {
+                const rDiff = Math.abs(frameData.data[i] - prevFrameData.data[i]);
+                const gDiff = Math.abs(frameData.data[i+1] - prevFrameData.data[i+1]);
+                const bDiff = Math.abs(frameData.data[i+2] - prevFrameData.data[i+2]);
+                diffSum += (rDiff + gDiff + bDiff);
+            }
+
+            const diffNormalized = diffSum / (mWidth * mHeight * 3 * 255);
+            prevFrameData = frameData;
+
+            const motionThreshold = (100 - currentSensitivity) / 500;
+            const stabilityThreshold = motionThreshold * 0.4;
+
+            if (diffNormalized > motionThreshold) {
+                if (!motionDetected) {
+                    motionDetected = true;
+                    log('Lapis 1: Perubahan objek terdeteksi.');
+                }
+                stableFramesCount = 0;
+            } else if (motionDetected && diffNormalized < stabilityThreshold) {
+                stableFramesCount++;
+                if (stableFramesCount >= requiredStableFrames) {
+                    log('Lapis 2: Posisi objek stabil. Mengambil snapshot tunggal.');
+                    executeCoreCapture();
+                }
+            }
+        }
+
+        async function executeCoreCapture() {
             isProcessing = true;
+            stopCamera();
 
             const scale = 480 / video.videoWidth;
             canvas.width = 480;
             canvas.height = video.videoHeight * scale;
-            
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            log('Menganalisis frame...');
-            try {
-                const { data } = await ocrWorker.recognize(canvas);
+
+            if (currentMode === 'ocr') {
+                const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                await sendToCloudVision(base64Image);
+            } else if (currentMode === 'peek') {
+                log('Memotong gambar berdasarkan analisis kontras lokal...');
                 
-                const rawText = data.text ? data.text.trim() : '';
-                const cleanText = rawText.replace(/[^a-zA-Z0-9]/g, '').trim();
-                const confidence = data.confidence || 0;
-                
-                if (rawText) {
-                    log(`Tesseract mendeteksi: "${rawText}"`);
-                }
-                log(`Akurasi deteksi: ${confidence}% / Minimal: ${currentSensitivity}%`);
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+                let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+                let found = false;
 
-                if (cleanText.length >= 3 && confidence >= currentSensitivity) {
-                    log(`Teks valid terdeteksi (${confidence}%). Mematikan kamera.`);
-                    stopCamera();
-                    
-                    if (currentMode === 'ocr') {
-                        const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-                        await sendToCloudVision(base64Image);
-                    } else if (currentMode === 'peek') {
-                        let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
-                        let found = false;
-                        
-                        data.lines.forEach(line => {
-                            const lineClean = line.text.replace(/[^a-zA-Z0-9]/g, '').trim();
-                            if (lineClean.length > 0) {
-                                found = true;
-                                if (line.bbox.x0 < minX) minX = line.bbox.x0;
-                                if (line.bbox.y0 < minY) minY = line.bbox.y0;
-                                if (line.bbox.x1 > maxX) maxX = line.bbox.x1;
-                                if (line.bbox.y1 > maxY) maxY = line.bbox.y1;
-                            }
-                        });
+                for (let y = 4; y < canvas.height - 4; y += 4) {
+                    for (let x = 4; x < canvas.width - 4; x += 4) {
+                        const idx = (y * canvas.width + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx+1];
+                        const b = data[idx+2];
+                        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
 
-                        if (found) {
-                            const pad = 15;
-                            minX = Math.max(0, minX - pad);
-                            minY = Math.max(0, minY - pad);
-                            maxX = Math.min(canvas.width, maxX + pad);
-                            maxY = Math.min(canvas.height, maxY + pad);
+                        const rightIdx = (y * canvas.width + (x + 4)) * 4;
+                        const rightGray = 0.299 * data[rightIdx] + 0.587 * data[rightIdx+1] + 0.114 * data[rightIdx+2];
 
-                            const w = maxX - minX;
-                            const h = maxY - minY;
+                        const bottomIdx = ((y + 4) * canvas.width + x) * 4;
+                        const bottomGray = 0.299 * data[bottomIdx] + 0.587 * data[bottomIdx+1] + 0.114 * data[bottomIdx+2];
 
-                            if (w > 0 && h > 0) {
-                                const cropCanvas = document.createElement('canvas');
-                                cropCanvas.width = w;
-                                cropCanvas.height = h;
-                                const cropCtx = cropCanvas.getContext('2d');
-                                cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
-                                peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
-                                log('Pemotongan gambar tulisan selesai.', 'success');
-                            }
+                        const contrast = Math.abs(gray - rightGray) + Math.abs(gray - bottomGray);
+
+                        if (contrast > 40) {
+                            found = true;
+                            if (x < minX) minX = x;
+                            if (y < minY) minY = y;
+                            if (x > maxX) maxX = x;
+                            if (y > maxY) maxY = y;
                         }
                     }
+                }
+
+                if (found) {
+                    const pad = 20;
+                    minX = Math.max(0, minX - pad);
+                    minY = Math.max(0, minY - pad);
+                    maxX = Math.min(canvas.width, maxX + pad);
+                    maxY = Math.min(canvas.height, maxY + pad);
+
+                    const w = maxX - minX;
+                    const h = maxY - minY;
+
+                    if (w > 10 && h > 10) {
+                        const cropCanvas = document.createElement('canvas');
+                        cropCanvas.width = w;
+                        cropCanvas.height = h;
+                        const cropCtx = cropCanvas.getContext('2d');
+                        cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
+                        peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
+                        log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
+                    } else {
+                        log('Area kontras terdeteksi terlalu kecil.');
+                    }
                 } else {
-                    log('Akurasi di bawah batas minimal sensitivitas atau teks tidak memenuhi syarat.');
+                    log('Tidak menemukan tulisan/kontur yang jelas.');
                 }
-            } catch (err) {
-                log('Gagal memproses frame: ' + err.message, 'error');
-                if (currentMode === 'ocr') {
-                    stealthDot.className = 'dot-error';
-                }
+                isProcessing = false;
             }
-            
-            isProcessing = false;
         }
 
         async function sendToCloudVision(base64String) {
             if (!visionApiKey) {
                 log('Kunci API tidak ditemukan.', 'error');
                 stealthDot.className = 'dot-error';
+                isProcessing = false;
                 return;
             }
 
@@ -558,12 +599,13 @@
                     log('Ekstraksi Cloud OCR berhasil.', 'success');
                 } else {
                     stealthDot.className = 'dot-error';
-                    log('Cloud OCR gagal mengenali teks: ' + JSON.stringify(data), 'error');
+                    log('Cloud OCR gagal mengenali teks.', 'error');
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
                 log('Koneksi Cloud OCR gagal: ' + err.message, 'error');
             }
+            isProcessing = false;
         }
     </script>
 </body>
