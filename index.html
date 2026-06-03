@@ -28,7 +28,7 @@
             opacity: 0;
             pointer-events: none;
         }
-        #canvas {
+        #canvas, #motion-canvas {
             display: none;
         }
         #display-area {
@@ -147,6 +147,21 @@
             color: #666;
             margin-bottom: 8px;
         }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: #fff;
+        }
+        #slider-value {
+            font-size: 14px;
+            color: #fff;
+            min-width: 30px;
+            text-align: right;
+        }
         input[type="text"], select {
             width: 100%;
             padding: 12px;
@@ -192,6 +207,7 @@
 
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
+    <canvas id="motion-canvas"></canvas>
     <img id="peek-img" src="" alt="">
 
     <div id="stealth-dot"></div>
@@ -225,12 +241,11 @@
                 </select>
             </div>
             <div class="input-group">
-                <span class="input-label">Batas Analisis</span>
-                <select id="interval-select">
-                    <option value="500">0.5 Detik</option>
-                    <option value="1000">1 Detik</option>
-                    <option value="2000">2 Detik</option>
-                </select>
+                <span class="input-label">Sensitivitas Gerakan</span>
+                <div class="slider-container">
+                    <input type="range" id="sensitivity-slider" min="10" max="90" step="5">
+                    <span id="slider-value">60%</span>
+                </div>
             </div>
             <div class="btn-group">
                 <button class="btn-secondary" id="close-btn">Tutup</button>
@@ -239,11 +254,10 @@
         </div>
     </div>
 
-    <script type="module">
-        import { ObjectDetector, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8";
-
+    <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
+        const motionCanvas = document.getElementById('motion-canvas');
         const resultText = document.getElementById('result-text');
         const peekImg = document.getElementById('peek-img');
         const stealthDot = document.getElementById('stealth-dot');
@@ -251,7 +265,8 @@
         const apiKeyInput = document.getElementById('api-key-input');
         const cameraSelect = document.getElementById('camera-select');
         const modeSelect = document.getElementById('mode-select');
-        const intervalSelect = document.getElementById('interval-select');
+        const sensitivitySlider = document.getElementById('sensitivity-slider');
+        const sliderValue = document.getElementById('slider-value');
         const saveBtn = document.getElementById('save-btn');
         const closeBtn = document.getElementById('close-btn');
         const mainConsole = document.getElementById('main-console');
@@ -259,7 +274,7 @@
         let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
         let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
         let currentMode = localStorage.getItem('stealthScannerMode') || 'ocr';
-        let currentInterval = parseInt(localStorage.getItem('stealthScannerInterval')) || 2000;
+        let currentSensitivity = parseInt(localStorage.getItem('stealthScannerSensitivity')) || 60;
         
         let scanIntervalId = null;
         let isProcessing = false;
@@ -271,10 +286,13 @@
         let holdTimeout;
         let isHolding = false;
 
-        let detectorInstance = null;
-        let detectionInterval = null;
+        let prevFrameData = null;
+        let motionDetected = false;
         let stableFramesCount = 0;
-        let prevBbox = null;
+        const requiredStableFrames = 5;
+
+        sensitivitySlider.value = currentSensitivity;
+        sliderValue.innerText = currentSensitivity + '%';
 
         document.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -287,28 +305,11 @@
             mainConsole.scrollTop = mainConsole.scrollHeight;
         }
 
-        log('Sistem aktif. Mempersiapkan MediaPipe lokal...');
+        sensitivitySlider.addEventListener('input', (e) => {
+            sliderValue.innerText = e.target.value + '%';
+        });
 
-        async function initMediaPipe() {
-            try {
-                const vision = await FilesetResolver.forVisionTasks(
-                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
-                );
-                detectorInstance = await ObjectDetector.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite",
-                        delegate: "GPU"
-                    },
-                    scoreThreshold: 0.35,
-                    runningMode: "VIDEO"
-                });
-                log('MediaPipe Object Detector siap digunakan secara lokal.', 'success');
-            } catch (err) {
-                log('Gagal memuat MediaPipe lokal: ' + err.message, 'error');
-            }
-        }
-
-        initMediaPipe();
+        log('Sistem aktif. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
 
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
@@ -348,13 +349,14 @@
                         apiKeyInput.value = visionApiKey;
                         cameraSelect.value = currentFacingMode;
                         modeSelect.value = currentMode;
-                        intervalSelect.value = currentInterval.toString();
+                        sensitivitySlider.value = currentSensitivity;
+                        sliderValue.innerText = currentSensitivity + '%';
                         tapCount = 0;
                         log('Menu konfigurasi dibuka.');
                     } else {
                         tapTimeout = setTimeout(() => {
                             if (tapCount === 2) {
-                                if (detectionInterval || video.srcObject) {
+                                if (scanIntervalId || video.srcObject) {
                                     log('Mematikan kamera...');
                                     stopCamera();
                                 } else {
@@ -382,12 +384,12 @@
             visionApiKey = apiKeyInput.value.trim();
             currentFacingMode = cameraSelect.value;
             currentMode = modeSelect.value;
-            currentInterval = parseInt(intervalSelect.value);
+            currentSensitivity = parseInt(sensitivitySlider.value);
 
             localStorage.setItem('stealthScannerKey', visionApiKey);
             localStorage.setItem('stealthScannerCamera', currentFacingMode);
             localStorage.setItem('stealthScannerMode', currentMode);
-            localStorage.setItem('stealthScannerInterval', currentInterval);
+            localStorage.setItem('stealthScannerSensitivity', currentSensitivity);
 
             settingsModal.style.display = 'none';
             
@@ -398,7 +400,7 @@
             peekImg.src = '';
             stealthDot.className = '';
             
-            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}, Interval: ${currentInterval}ms`);
+            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}, Sensitivitas: ${currentSensitivity}%`);
             stopCamera();
         });
 
@@ -407,21 +409,23 @@
                 video.srcObject.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
             }
-            if (detectionInterval) {
-                clearInterval(detectionInterval);
-                detectionInterval = null;
+            if (scanIntervalId) {
+                clearInterval(scanIntervalId);
+                scanIntervalId = null;
             }
             isProcessing = false;
+            prevFrameData = null;
+            motionDetected = false;
             stableFramesCount = 0;
-            prevBbox = null;
             log('Kamera nonaktif.');
         }
 
         async function startSystem() {
-            if (detectionInterval) return;
+            if (scanIntervalId) return;
             stealthDot.className = '';
+            prevFrameData = null;
+            motionDetected = false;
             stableFramesCount = 0;
-            prevBbox = null;
             
             try {
                 log(`Mengaktifkan kamera video (${currentFacingMode})...`);
@@ -430,47 +434,60 @@
                 });
                 video.srcObject = stream;
                 
-                detectionInterval = setInterval(runLocalAnalysis, 250);
-                log('Pemindaian MediaPipe lokal dimulai.');
+                scanIntervalId = setInterval(analyzeMotion, 200);
+                log('Sistem analisis gerakan aktif.');
             } catch (err) {
                 log('Gagal mengakses kamera: ' + err.message, 'error');
                 stealthDot.className = 'dot-error';
             }
         }
 
-        async function runLocalAnalysis() {
-            if (!video.videoWidth || isProcessing || !detectorInstance) return;
+        function analyzeMotion() {
+            if (!video.videoWidth || isProcessing) return;
 
-            const detections = detectorInstance.detectForVideo(video, performance.now()).detections;
+            const mWidth = 40;
+            const mHeight = 30;
+            motionCanvas.width = mWidth;
+            motionCanvas.height = mHeight;
+
+            const mCtx = motionCanvas.getContext('2d');
+            mCtx.drawImage(video, 0, 0, mWidth, mHeight);
+
+            const frameData = mCtx.getImageData(0, 0, mWidth, mHeight);
             
-            const targetLabels = ['pen', 'pencil', 'book', 'paper', 'cell phone', 'laptop', 'hand'];
-            const matched = detections.find(d => {
-                const label = d.categories[0].categoryName.toLowerCase();
-                return targetLabels.some(t => label.includes(t)) && d.categories[0].score >= 0.4;
-            });
+            if (!prevFrameData) {
+                prevFrameData = frameData;
+                return;
+            }
 
-            if (matched) {
-                const bbox = matched.boundingBox;
-                log(`Lapis 1: Mendeteksi ${matched.categories[0].categoryName} (${Math.round(matched.categories[0].score * 100)}%)`);
+            let diffSum = 0;
+            const len = frameData.data.length;
 
-                if (prevBbox) {
-                    const shiftX = Math.abs(bbox.originX - prevBbox.originX);
-                    const shiftY = Math.abs(bbox.originY - prevBbox.originY);
-                    
-                    if (shiftX < 15 && shiftY < 15) {
-                        stableFramesCount++;
-                        if (stableFramesCount >= 4) {
-                            log('Lapis 2: Objek telah stabil selama 1 detik. Melakukan snapshot.');
-                            executeSnapshot();
-                        }
-                    } else {
-                        stableFramesCount = 0;
-                    }
+            for (let i = 0; i < len; i += 4) {
+                const rDiff = Math.abs(frameData.data[i] - prevFrameData.data[i]);
+                const gDiff = Math.abs(frameData.data[i+1] - prevFrameData.data[i+1]);
+                const bDiff = Math.abs(frameData.data[i+2] - prevFrameData.data[i+2]);
+                diffSum += (rDiff + gDiff + bDiff);
+            }
+
+            const diffNormalized = diffSum / (mWidth * mHeight * 3 * 255);
+            prevFrameData = frameData;
+
+            const motionThreshold = (100 - currentSensitivity) / 500;
+            const stabilityThreshold = motionThreshold * 0.4;
+
+            if (diffNormalized > motionThreshold) {
+                if (!motionDetected) {
+                    motionDetected = true;
+                    log('Lapis 1: Perubahan objek terdeteksi.');
                 }
-                prevBbox = bbox;
-            } else {
                 stableFramesCount = 0;
-                prevBbox = null;
+            } else if (motionDetected && diffNormalized < stabilityThreshold) {
+                stableFramesCount++;
+                if (stableFramesCount >= requiredStableFrames) {
+                    log('Lapis 2: Posisi objek stabil. Mengambil snapshot tunggal.');
+                    executeSnapshot();
+                }
             }
         }
 
@@ -486,7 +503,7 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
             log('Mengirim snapshot terkompresi ke Cloud Vision API...');
             await sendToCloudVision(base64Image);
         }
