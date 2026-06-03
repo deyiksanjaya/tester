@@ -225,7 +225,7 @@
                 </select>
             </div>
             <div class="input-group">
-                <span class="input-label">Interval Snapshot (Otomatis)</span>
+                <span class="input-label">Batas Analisis</span>
                 <select id="interval-select">
                     <option value="500">0.5 Detik</option>
                     <option value="1000">1 Detik</option>
@@ -239,7 +239,9 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { ObjectDetector, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8";
+
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const resultText = document.getElementById('result-text');
@@ -269,6 +271,11 @@
         let holdTimeout;
         let isHolding = false;
 
+        let detectorInstance = null;
+        let detectionInterval = null;
+        let stableFramesCount = 0;
+        let prevBbox = null;
+
         document.addEventListener('contextmenu', e => e.preventDefault());
 
         function log(msg, type = 'info') {
@@ -280,7 +287,28 @@
             mainConsole.scrollTop = mainConsole.scrollHeight;
         }
 
-        log('Sistem aktif. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
+        log('Sistem aktif. Mempersiapkan MediaPipe lokal...');
+
+        async function initMediaPipe() {
+            try {
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
+                );
+                detectorInstance = await ObjectDetector.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite",
+                        delegate: "GPU"
+                    },
+                    scoreThreshold: 0.35,
+                    runningMode: "VIDEO"
+                });
+                log('MediaPipe Object Detector siap digunakan secara lokal.', 'success');
+            } catch (err) {
+                log('Gagal memuat MediaPipe lokal: ' + err.message, 'error');
+            }
+        }
+
+        initMediaPipe();
 
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
@@ -326,7 +354,7 @@
                     } else {
                         tapTimeout = setTimeout(() => {
                             if (tapCount === 2) {
-                                if (scanIntervalId || video.srcObject) {
+                                if (detectionInterval || video.srcObject) {
                                     log('Mematikan kamera...');
                                     stopCamera();
                                 } else {
@@ -379,17 +407,21 @@
                 video.srcObject.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
             }
-            if (scanIntervalId) {
-                clearInterval(scanIntervalId);
-                scanIntervalId = null;
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
             }
             isProcessing = false;
+            stableFramesCount = 0;
+            prevBbox = null;
             log('Kamera nonaktif.');
         }
 
         async function startSystem() {
-            if (scanIntervalId) return;
+            if (detectionInterval) return;
             stealthDot.className = '';
+            stableFramesCount = 0;
+            prevBbox = null;
             
             try {
                 log(`Mengaktifkan kamera video (${currentFacingMode})...`);
@@ -398,17 +430,53 @@
                 });
                 video.srcObject = stream;
                 
-                scanIntervalId = setInterval(processSnapshot, currentInterval);
-                log(`Mulai pemindaian otomatis setiap ${currentInterval / 1000} detik.`);
+                detectionInterval = setInterval(runLocalAnalysis, 250);
+                log('Pemindaian MediaPipe lokal dimulai.');
             } catch (err) {
                 log('Gagal mengakses kamera: ' + err.message, 'error');
                 stealthDot.className = 'dot-error';
             }
         }
 
-        async function processSnapshot() {
-            if (!video.videoWidth || isProcessing) return;
+        async function runLocalAnalysis() {
+            if (!video.videoWidth || isProcessing || !detectorInstance) return;
+
+            const detections = detectorInstance.detectForVideo(video, performance.now()).detections;
+            
+            const targetLabels = ['pen', 'pencil', 'book', 'paper', 'cell phone', 'laptop', 'hand'];
+            const matched = detections.find(d => {
+                const label = d.categories[0].categoryName.toLowerCase();
+                return targetLabels.some(t => label.includes(t)) && d.categories[0].score >= 0.4;
+            });
+
+            if (matched) {
+                const bbox = matched.boundingBox;
+                log(`Lapis 1: Mendeteksi ${matched.categories[0].categoryName} (${Math.round(matched.categories[0].score * 100)}%)`);
+
+                if (prevBbox) {
+                    const shiftX = Math.abs(bbox.originX - prevBbox.originX);
+                    const shiftY = Math.abs(bbox.originY - prevBbox.originY);
+                    
+                    if (shiftX < 15 && shiftY < 15) {
+                        stableFramesCount++;
+                        if (stableFramesCount >= 4) {
+                            log('Lapis 2: Objek telah stabil selama 1 detik. Melakukan snapshot.');
+                            executeSnapshot();
+                        }
+                    } else {
+                        stableFramesCount = 0;
+                    }
+                }
+                prevBbox = bbox;
+            } else {
+                stableFramesCount = 0;
+                prevBbox = null;
+            }
+        }
+
+        async function executeSnapshot() {
             isProcessing = true;
+            stopCamera();
 
             const targetWidth = 400;
             const scale = targetWidth / video.videoWidth;
@@ -418,8 +486,8 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-            log('Mengambil snapshot otomatis...');
+            const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            log('Mengirim snapshot terkompresi ke Cloud Vision API...');
             await sendToCloudVision(base64Image);
         }
 
@@ -427,7 +495,6 @@
             if (!visionApiKey) {
                 log('Kunci API tidak ditemukan.', 'error');
                 stealthDot.className = 'dot-error';
-                stopCamera();
                 isProcessing = false;
                 return;
             }
@@ -464,10 +531,9 @@
                         if (detectedSketches.length > 0) {
                             extractedText = detectedSketches.map(obj => `${obj.description} (${Math.round(obj.score * 100)}%)`).join('\n');
                             stealthDot.className = 'dot-success';
-                            log('Deteksi gambar spidol/alat tulis berhasil.', 'success');
-                            stopCamera();
+                            log('Deteksi coretan/spidol berhasil.', 'success');
                         } else {
-                            log('Tidak mendeteksi coretan gambar/spidol yang jelas. Lanjut mencari...');
+                            log('Cloud tidak mendeteksi coretan yang valid.');
                         }
                     } else {
                         log('Analisis gambar kosong.');
@@ -481,7 +547,6 @@
                             extractedText = textResult;
                             stealthDot.className = 'dot-success';
                             log('Teks berhasil disimpan. Siap di-peeking.', 'success');
-                            stopCamera();
                         } else if (currentMode === 'peek') {
                             const annotations = data.responses[0].textAnnotations;
                             if (annotations && annotations.length > 0) {
@@ -515,12 +580,11 @@
                                     peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
                                     stealthDot.className = 'dot-success';
                                     log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
-                                    stopCamera();
                                 }
                             }
                         }
                     } else {
-                        log('Pemindaian kosong. Lanjut mencari...');
+                        log('Cloud OCR tidak mendeteksi teks apa pun.');
                     }
                 }
             } catch (err) {
