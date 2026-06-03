@@ -140,10 +140,25 @@
             outline: none;
             border-color: #666;
         }
+        #console-box {
+            height: 110px;
+            background: #000;
+            border: 1px solid #222;
+            border-radius: 6px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 10px;
+            overflow-y: auto;
+            color: #38bdf8;
+            user-select: text;
+            -webkit-user-select: text;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
         .btn-group {
             display: flex;
             gap: 12px;
-            margin-top: 24px;
+            margin-top: 20px;
         }
         button {
             flex: 1;
@@ -197,6 +212,10 @@
                     <option value="peek">Peek Picture</option>
                 </select>
             </div>
+            <div class="input-group">
+                <span class="input-label">Konsol Sistem</span>
+                <div id="console-box"></div>
+            </div>
             <div class="btn-group">
                 <button class="btn-secondary" id="close-btn">Tutup</button>
                 <button class="btn-primary" id="save-btn">Simpan</button>
@@ -216,6 +235,7 @@
         const modeSelect = document.getElementById('mode-select');
         const saveBtn = document.getElementById('save-btn');
         const closeBtn = document.getElementById('close-btn');
+        const consoleBox = document.getElementById('console-box');
 
         let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
         let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
@@ -233,6 +253,17 @@
 
         document.addEventListener('contextmenu', e => e.preventDefault());
 
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let color = '#38bdf8';
+            if (type === 'error') color = '#f87171';
+            if (type === 'success') color = '#4ade80';
+            consoleBox.innerHTML += `<div style="color: ${color}; margin-bottom: 4px;">[${time}] ${msg}</div>`;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        log('Sistem siap. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
+
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal')) return;
             
@@ -241,9 +272,11 @@
                 if (currentMode === 'peek' && peekImageSrc) {
                     peekImg.src = peekImageSrc;
                     peekImg.style.display = 'block';
+                    log('Menampilkan peeking gambar.');
                 } else if (currentMode === 'ocr' && extractedText) {
                     resultText.innerText = extractedText;
                     resultText.style.display = 'block';
+                    log('Menampilkan peeking teks.');
                 }
             }, 200);
         };
@@ -257,6 +290,7 @@
                 peekImg.style.display = 'none';
                 peekImg.src = '';
                 resultText.style.display = 'none';
+                log('Selesai peeking. Tampilan disembunyikan kembali.');
                 e.preventDefault();
             } else {
                 if (e.type === 'pointerup') {
@@ -269,12 +303,15 @@
                         cameraSelect.value = currentFacingMode;
                         modeSelect.value = currentMode;
                         tapCount = 0;
+                        log('Membuka menu konfigurasi.');
                     } else {
                         tapTimeout = setTimeout(() => {
                             if (tapCount === 2) {
                                 if (scanIntervalId || video.srcObject) {
+                                    log('Mematikan sistem kamera...');
                                     stopCamera();
                                 } else {
+                                    log('Menyalakan sistem kamera...');
                                     startSystem();
                                 }
                             }
@@ -312,6 +349,7 @@
             peekImg.src = '';
             stealthDot.className = '';
             
+            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}`);
             stopCamera();
         });
 
@@ -325,6 +363,7 @@
                 scanIntervalId = null;
             }
             isProcessing = false;
+            log('Kamera dinonaktifkan.');
         }
 
         async function startSystem() {
@@ -333,16 +372,21 @@
             
             try {
                 if (!ocrWorker) {
+                    log('Menginisialisasi Tesseract lokal...');
                     ocrWorker = await Tesseract.createWorker('eng');
+                    log('Tesseract siap.');
                 }
                 
+                log(`Mengakses kamera (${currentFacingMode})...`);
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: currentFacingMode } 
                 });
                 video.srcObject = stream;
                 
                 scanIntervalId = setInterval(processFrame, 4000);
+                log('Scanning aktif (interval 4 detik).');
             } catch (err) {
+                log('Gagal menyalakan kamera: ' + err.message, 'error');
                 if (currentMode === 'ocr') {
                     stealthDot.className = 'dot-error';
                 }
@@ -360,10 +404,12 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
+            log('Menganalisis frame kamera secara lokal...');
             try {
                 const { data } = await ocrWorker.recognize(canvas);
                 
                 if (data.text.trim().length > 3) {
+                    log(`Karakter terdeteksi lokal: "${data.text.trim().substring(0, 20)}...". Menghentikan kamera.`);
                     stopCamera();
                     
                     if (currentMode === 'ocr') {
@@ -400,11 +446,15 @@
                                 const cropCtx = cropCanvas.getContext('2d');
                                 cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
                                 peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
+                                log('Crop gambar tulisan berhasil disimpan.', 'success');
                             }
                         }
                     }
+                } else {
+                    log('Frame kosong, lanjut mencari...');
                 }
             } catch (err) {
+                log('Gagal menganalisis lokal: ' + err.message, 'error');
                 if (currentMode === 'ocr') {
                     stealthDot.className = 'dot-error';
                 }
@@ -415,10 +465,12 @@
 
         async function sendToCloudVision(base64String) {
             if (!visionApiKey) {
+                log('Kunci API kosong. Silakan atur lewat menu konfigurasi.', 'error');
                 stealthDot.className = 'dot-error';
                 return;
             }
 
+            log('Mengirim gambar ke Google Cloud Vision...');
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
             const payload = {
                 requests: [{
@@ -435,15 +487,19 @@
                 });
 
                 const data = await response.json();
+                log('Menerima respon API Google Cloud Vision.');
                 
                 if (data.responses && data.responses[0].fullTextAnnotation) {
                     extractedText = data.responses[0].fullTextAnnotation.text;
                     stealthDot.className = 'dot-success';
+                    log(`Selesai mengekstrak teks. Siap di-peeking.`, 'success');
                 } else {
                     stealthDot.className = 'dot-error';
+                    log('API tidak mendeteksi teks di gambar atau ada error: ' + JSON.stringify(data), 'error');
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
+                log('Gagal terhubung ke API Google Cloud Vision: ' + err.message, 'error');
             }
         }
     </script>
