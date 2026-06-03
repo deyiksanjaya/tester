@@ -55,6 +55,7 @@
             width: 100%;
             text-align: left;
             pointer-events: none;
+            display: none;
         }
         #peek-img {
             position: absolute;
@@ -68,6 +69,24 @@
             z-index: 2;
             pointer-events: none;
             border-radius: 4px;
+        }
+        #stealth-dot {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: transparent;
+            z-index: 5;
+            pointer-events: none;
+            transition: background 0.3s;
+        }
+        .dot-success {
+            background: #4ade80 !important;
+        }
+        .dot-error {
+            background: #f87171 !important;
         }
         .modal-overlay {
             display: none;
@@ -151,6 +170,8 @@
     <canvas id="canvas"></canvas>
     <img id="peek-img" src="" alt="">
 
+    <div id="stealth-dot"></div>
+
     <div id="display-area">
         <div id="result-text"></div>
     </div>
@@ -188,6 +209,7 @@
         const canvas = document.getElementById('canvas');
         const resultText = document.getElementById('result-text');
         const peekImg = document.getElementById('peek-img');
+        const stealthDot = document.getElementById('stealth-dot');
         const settingsModal = document.getElementById('settings-modal');
         const apiKeyInput = document.getElementById('api-key-input');
         const cameraSelect = document.getElementById('camera-select');
@@ -202,6 +224,7 @@
         let ocrWorker = null;
         let isProcessing = false;
         let peekImageSrc = '';
+        let extractedText = '';
         
         let tapCount = 0;
         let tapTimeout;
@@ -214,10 +237,13 @@
             if (e.target.closest('.modal')) return;
             
             holdTimeout = setTimeout(() => {
+                isHolding = true;
                 if (currentMode === 'peek' && peekImageSrc) {
-                    isHolding = true;
                     peekImg.src = peekImageSrc;
                     peekImg.style.display = 'block';
+                } else if (currentMode === 'ocr' && extractedText) {
+                    resultText.innerText = extractedText;
+                    resultText.style.display = 'block';
                 }
             }, 200);
         };
@@ -230,6 +256,7 @@
                 isHolding = false;
                 peekImg.style.display = 'none';
                 peekImg.src = '';
+                resultText.style.display = 'none';
                 e.preventDefault();
             } else {
                 if (e.type === 'pointerup') {
@@ -279,9 +306,11 @@
             settingsModal.style.display = 'none';
             
             resultText.innerText = '';
+            extractedText = '';
             peekImageSrc = '';
             peekImg.style.display = 'none';
             peekImg.src = '';
+            stealthDot.className = '';
             
             stopCamera();
         });
@@ -300,6 +329,7 @@
 
         async function startSystem() {
             if (scanIntervalId) return;
+            stealthDot.className = '';
             
             try {
                 if (!ocrWorker) {
@@ -313,7 +343,9 @@
                 
                 scanIntervalId = setInterval(processFrame, 4000);
             } catch (err) {
-                console.error(err);
+                if (currentMode === 'ocr') {
+                    stealthDot.className = 'dot-error';
+                }
             }
         }
 
@@ -373,14 +405,19 @@
                     }
                 }
             } catch (err) {
-                console.error(err);
+                if (currentMode === 'ocr') {
+                    stealthDot.className = 'dot-error';
+                }
             }
             
             isProcessing = false;
         }
 
         async function sendToCloudVision(base64String) {
-            if (!visionApiKey) return;
+            if (!visionApiKey) {
+                stealthDot.className = 'dot-error';
+                return;
+            }
 
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
             const payload = {
@@ -400,10 +437,13 @@
                 const data = await response.json();
                 
                 if (data.responses && data.responses[0].fullTextAnnotation) {
-                    resultText.innerText = data.responses[0].fullTextAnnotation.text;
+                    extractedText = data.responses[0].fullTextAnnotation.text;
+                    stealthDot.className = 'dot-success';
+                } else {
+                    stealthDot.className = 'dot-error';
                 }
             } catch (err) {
-                console.error(err);
+                stealthDot.className = 'dot-error';
             }
         }
     </script>
