@@ -221,6 +221,7 @@
                 <select id="mode-select">
                     <option value="ocr">Cloud OCR</option>
                     <option value="peek">Peek Picture</option>
+                    <option value="sketch">Sketch Detection</option>
                 </select>
             </div>
             <div class="input-group">
@@ -290,10 +291,10 @@
                     peekImg.src = peekImageSrc;
                     peekImg.style.display = 'block';
                     log('Menampilkan gambar hasil crop.');
-                } else if (currentMode === 'ocr' && extractedText) {
+                } else if ((currentMode === 'ocr' || currentMode === 'sketch') && extractedText) {
                     resultText.innerText = extractedText;
                     resultText.style.display = 'block';
-                    log('Menampilkan teks hasil Cloud OCR.');
+                    log('Menampilkan hasil analisis.');
                 }
             }, 200);
         };
@@ -418,7 +419,7 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-            log(`Mengambil snapshot otomatis (di-resize ke ${canvas.width}x${canvas.height})...`);
+            log('Mengambil snapshot otomatis...');
             await sendToCloudVision(base64Image);
         }
 
@@ -432,10 +433,12 @@
             }
 
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
+            const featureType = currentMode === 'sketch' ? "LABEL_DETECTION" : "DOCUMENT_TEXT_DETECTION";
+            
             const payload = {
                 requests: [{
                     image: { content: base64String },
-                    features: [{ type: "DOCUMENT_TEXT_DETECTION" }]
+                    features: [{ type: featureType }]
                 }]
             };
 
@@ -448,58 +451,81 @@
 
                 const data = await response.json();
                 
-                if (data.responses && data.responses[0].fullTextAnnotation) {
-                    const textResult = data.responses[0].fullTextAnnotation.text;
-                    log('Respons Cloud OCR diterima.', 'success');
-                    
-                    if (currentMode === 'ocr') {
-                        extractedText = textResult;
-                        stealthDot.className = 'dot-success';
-                        log('Teks berhasil disimpan. Siap di-peeking.', 'success');
-                        stopCamera();
-                    } else if (currentMode === 'peek') {
-                        const annotations = data.responses[0].textAnnotations;
-                        if (annotations && annotations.length > 0) {
-                            const vertices = annotations[0].boundingPoly.vertices;
-                            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
-                            
-                            vertices.forEach(v => {
-                                const x = v.x || 0;
-                                const y = v.y || 0;
-                                if (x < minX) minX = x;
-                                if (y < minY) minY = y;
-                                if (x > maxX) maxX = x;
-                                if (y > maxY) maxY = y;
-                            });
+                if (currentMode === 'sketch') {
+                    if (data.responses && data.responses[0].labelAnnotations) {
+                        const labels = data.responses[0].labelAnnotations;
+                        const sketchKeywords = ['sketch', 'drawing', 'line art', 'doodle', 'hand-drawn', 'illustration', 'diagram', 'ink', 'marker', 'writing', 'whiteboard', 'handwriting', 'paint'];
+                        
+                        const detectedSketches = labels.filter(label => {
+                            const desc = label.description.toLowerCase();
+                            return sketchKeywords.some(keyword => desc.includes(keyword)) && label.score >= 0.5;
+                        });
 
-                            const pad = 15;
-                            minX = Math.max(0, minX - pad);
-                            minY = Math.max(0, minY - pad);
-                            maxX = Math.min(canvas.width, maxX + pad);
-                            maxY = Math.min(canvas.height, maxY + pad);
-
-                            const w = maxX - minX;
-                            const h = maxY - minY;
-
-                            if (w > 0 && h > 0) {
-                                const cropCanvas = document.createElement('canvas');
-                                cropCanvas.width = w;
-                                cropCanvas.height = h;
-                                const cropCtx = cropCanvas.getContext('2d');
-                                cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
-                                peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
-                                stealthDot.className = 'dot-success';
-                                log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
-                                stopCamera();
-                            }
+                        if (detectedSketches.length > 0) {
+                            extractedText = detectedSketches.map(obj => `${obj.description} (${Math.round(obj.score * 100)}%)`).join('\n');
+                            stealthDot.className = 'dot-success';
+                            log('Deteksi gambar spidol/alat tulis berhasil.', 'success');
+                            stopCamera();
+                        } else {
+                            log('Tidak mendeteksi coretan gambar/spidol yang jelas. Lanjut mencari...');
                         }
+                    } else {
+                        log('Analisis gambar kosong.');
                     }
                 } else {
-                    log('Pemindaian kosong. Lanjut mencari...');
+                    if (data.responses && data.responses[0].fullTextAnnotation) {
+                        const textResult = data.responses[0].fullTextAnnotation.text;
+                        log('Respons Cloud OCR diterima.', 'success');
+                        
+                        if (currentMode === 'ocr') {
+                            extractedText = textResult;
+                            stealthDot.className = 'dot-success';
+                            log('Teks berhasil disimpan. Siap di-peeking.', 'success');
+                            stopCamera();
+                        } else if (currentMode === 'peek') {
+                            const annotations = data.responses[0].textAnnotations;
+                            if (annotations && annotations.length > 0) {
+                                const vertices = annotations[0].boundingPoly.vertices;
+                                let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+                                
+                                vertices.forEach(v => {
+                                    const x = v.x || 0;
+                                    const y = v.y || 0;
+                                    if (x < minX) minX = x;
+                                    if (y < minY) minY = y;
+                                    if (x > maxX) maxX = x;
+                                    if (y > maxY) maxY = y;
+                                });
+
+                                const pad = 15;
+                                minX = Math.max(0, minX - pad);
+                                minY = Math.max(0, minY - pad);
+                                maxX = Math.min(canvas.width, maxX + pad);
+                                maxY = Math.min(canvas.height, maxY + pad);
+
+                                const w = maxX - minX;
+                                const h = maxY - minY;
+
+                                if (w > 0 && h > 0) {
+                                    const cropCanvas = document.createElement('canvas');
+                                    cropCanvas.width = w;
+                                    cropCanvas.height = h;
+                                    const cropCtx = cropCanvas.getContext('2d');
+                                    cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
+                                    peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
+                                    stealthDot.className = 'dot-success';
+                                    log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
+                                    stopCamera();
+                                }
+                            }
+                        }
+                    } else {
+                        log('Pemindaian kosong. Lanjut mencari...');
+                    }
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
-                log('Koneksi Cloud OCR gagal: ' + err.message, 'error');
+                log('Koneksi Cloud Vision gagal: ' + err.message, 'error');
             }
             isProcessing = false;
         }
