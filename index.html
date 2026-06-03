@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Scanner</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -28,7 +29,7 @@
             opacity: 0;
             pointer-events: none;
         }
-        #canvas, #motion-canvas {
+        #canvas {
             display: none;
         }
         #display-area {
@@ -207,7 +208,6 @@
 
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
-    <canvas id="motion-canvas"></canvas>
     <img id="peek-img" src="" alt="">
 
     <div id="stealth-dot"></div>
@@ -237,14 +237,22 @@
                 <select id="mode-select">
                     <option value="ocr">Cloud OCR</option>
                     <option value="peek">Peek Picture</option>
-                    <option value="sketch">Sketch Detection</option>
                 </select>
             </div>
             <div class="input-group">
-                <span class="input-label">Sensitivitas Gerakan</span>
+                <span class="input-label">Interval Snapshot (Otomatis)</span>
+                <select id="interval-select">
+                    <option value="1000">1 Detik</option>
+                    <option value="2000">2 Detik</option>
+                    <option value="3000">3 Detik</option>
+                    <option value="4000">4 Detik</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <span class="input-label">Sensitivitas Tesseract (Akurasi Minimal)</span>
                 <div class="slider-container">
                     <input type="range" id="sensitivity-slider" min="10" max="90" step="5">
-                    <span id="slider-value">60%</span>
+                    <span id="slider-value">55%</span>
                 </div>
             </div>
             <div class="btn-group">
@@ -257,7 +265,6 @@
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const motionCanvas = document.getElementById('motion-canvas');
         const resultText = document.getElementById('result-text');
         const peekImg = document.getElementById('peek-img');
         const stealthDot = document.getElementById('stealth-dot');
@@ -265,6 +272,7 @@
         const apiKeyInput = document.getElementById('api-key-input');
         const cameraSelect = document.getElementById('camera-select');
         const modeSelect = document.getElementById('mode-select');
+        const intervalSelect = document.getElementById('interval-select');
         const sensitivitySlider = document.getElementById('sensitivity-slider');
         const sliderValue = document.getElementById('slider-value');
         const saveBtn = document.getElementById('save-btn');
@@ -274,9 +282,11 @@
         let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
         let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
         let currentMode = localStorage.getItem('stealthScannerMode') || 'ocr';
-        let currentSensitivity = parseInt(localStorage.getItem('stealthScannerSensitivity')) || 60;
+        let currentInterval = parseInt(localStorage.getItem('stealthScannerInterval')) || 2000;
+        let currentSensitivity = parseInt(localStorage.getItem('stealthScannerSensitivity')) || 55;
         
         let scanIntervalId = null;
+        let ocrWorker = null;
         let isProcessing = false;
         let peekImageSrc = '';
         let extractedText = '';
@@ -285,11 +295,6 @@
         let tapTimeout;
         let holdTimeout;
         let isHolding = false;
-
-        let prevFrameData = null;
-        let motionDetected = false;
-        let stableFramesCount = 0;
-        const requiredStableFrames = 5;
 
         sensitivitySlider.value = currentSensitivity;
         sliderValue.innerText = currentSensitivity + '%';
@@ -311,6 +316,16 @@
 
         log('Sistem aktif. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
 
+        (async function preheatOcr() {
+            log('Mempersiapkan sistem Tesseract lokal...');
+            try {
+                ocrWorker = await Tesseract.createWorker('eng');
+                log('Tesseract lokal siap digunakan.', 'success');
+            } catch (err) {
+                log('Gagal memuat Tesseract lokal: ' + err.message, 'error');
+            }
+        })();
+
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
             
@@ -320,10 +335,10 @@
                     peekImg.src = peekImageSrc;
                     peekImg.style.display = 'block';
                     log('Menampilkan gambar hasil crop.');
-                } else if ((currentMode === 'ocr' || currentMode === 'sketch') && extractedText) {
+                } else if (currentMode === 'ocr' && extractedText) {
                     resultText.innerText = extractedText;
                     resultText.style.display = 'block';
-                    log('Menampilkan hasil analisis.');
+                    log('Menampilkan hasil teks.');
                 }
             }, 200);
         };
@@ -349,6 +364,7 @@
                         apiKeyInput.value = visionApiKey;
                         cameraSelect.value = currentFacingMode;
                         modeSelect.value = currentMode;
+                        intervalSelect.value = currentInterval.toString();
                         sensitivitySlider.value = currentSensitivity;
                         sliderValue.innerText = currentSensitivity + '%';
                         tapCount = 0;
@@ -384,11 +400,13 @@
             visionApiKey = apiKeyInput.value.trim();
             currentFacingMode = cameraSelect.value;
             currentMode = modeSelect.value;
+            currentInterval = parseInt(intervalSelect.value);
             currentSensitivity = parseInt(sensitivitySlider.value);
 
             localStorage.setItem('stealthScannerKey', visionApiKey);
             localStorage.setItem('stealthScannerCamera', currentFacingMode);
             localStorage.setItem('stealthScannerMode', currentMode);
+            localStorage.setItem('stealthScannerInterval', currentInterval);
             localStorage.setItem('stealthScannerSensitivity', currentSensitivity);
 
             settingsModal.style.display = 'none';
@@ -400,7 +418,7 @@
             peekImg.src = '';
             stealthDot.className = '';
             
-            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}, Sensitivitas: ${currentSensitivity}%`);
+            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}, Interval: ${currentInterval}ms, Sensitivitas: ${currentSensitivity}%`);
             stopCamera();
         });
 
@@ -414,86 +432,35 @@
                 scanIntervalId = null;
             }
             isProcessing = false;
-            prevFrameData = null;
-            motionDetected = false;
-            stableFramesCount = 0;
             log('Kamera nonaktif.');
         }
 
         async function startSystem() {
             if (scanIntervalId) return;
             stealthDot.className = '';
-            prevFrameData = null;
-            motionDetected = false;
-            stableFramesCount = 0;
             
             try {
+                if (!ocrWorker) {
+                    log('Tesseract belum siap, mencoba memuat ulang...');
+                    ocrWorker = await Tesseract.createWorker('eng');
+                }
                 log(`Mengaktifkan kamera video (${currentFacingMode})...`);
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: currentFacingMode } 
                 });
                 video.srcObject = stream;
                 
-                scanIntervalId = setInterval(analyzeMotion, 200);
-                log('Sistem analisis gerakan aktif.');
+                scanIntervalId = setInterval(processSnapshot, currentInterval);
+                log(`Mulai pemindaian otomatis setiap ${currentInterval / 1000} detik.`);
             } catch (err) {
                 log('Gagal mengakses kamera: ' + err.message, 'error');
                 stealthDot.className = 'dot-error';
             }
         }
 
-        function analyzeMotion() {
+        async function processSnapshot() {
             if (!video.videoWidth || isProcessing) return;
-
-            const mWidth = 40;
-            const mHeight = 30;
-            motionCanvas.width = mWidth;
-            motionCanvas.height = mHeight;
-
-            const mCtx = motionCanvas.getContext('2d');
-            mCtx.drawImage(video, 0, 0, mWidth, mHeight);
-
-            const frameData = mCtx.getImageData(0, 0, mWidth, mHeight);
-            
-            if (!prevFrameData) {
-                prevFrameData = frameData;
-                return;
-            }
-
-            let diffSum = 0;
-            const len = frameData.data.length;
-
-            for (let i = 0; i < len; i += 4) {
-                const rDiff = Math.abs(frameData.data[i] - prevFrameData.data[i]);
-                const gDiff = Math.abs(frameData.data[i+1] - prevFrameData.data[i+1]);
-                const bDiff = Math.abs(frameData.data[i+2] - prevFrameData.data[i+2]);
-                diffSum += (rDiff + gDiff + bDiff);
-            }
-
-            const diffNormalized = diffSum / (mWidth * mHeight * 3 * 255);
-            prevFrameData = frameData;
-
-            const motionThreshold = (100 - currentSensitivity) / 500;
-            const stabilityThreshold = motionThreshold * 0.4;
-
-            if (diffNormalized > motionThreshold) {
-                if (!motionDetected) {
-                    motionDetected = true;
-                    log('Lapis 1: Perubahan objek terdeteksi.');
-                }
-                stableFramesCount = 0;
-            } else if (motionDetected && diffNormalized < stabilityThreshold) {
-                stableFramesCount++;
-                if (stableFramesCount >= requiredStableFrames) {
-                    log('Lapis 2: Posisi objek stabil. Mengambil snapshot tunggal.');
-                    executeSnapshot();
-                }
-            }
-        }
-
-        async function executeSnapshot() {
             isProcessing = true;
-            stopCamera();
 
             const targetWidth = 400;
             const scale = targetWidth / video.videoWidth;
@@ -503,26 +470,46 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-            log('Mengirim snapshot terkompresi ke Cloud Vision API...');
-            await sendToCloudVision(base64Image);
+            log('Mengambil snapshot terkompresi...');
+            try {
+                const { data } = await ocrWorker.recognize(canvas);
+                const rawText = data.text ? data.text.trim() : '';
+                const cleanText = rawText.replace(/[^a-zA-Z0-9]/g, '').trim();
+                const confidence = data.confidence || 0;
+
+                if (rawText) {
+                    log(`Tesseract mendeteksi: "${rawText.replace(/\n/g, ' ')}"`);
+                }
+                log(`Akurasi deteksi: ${confidence}% (Batas minimal: ${currentSensitivity}%)`);
+
+                if (cleanText.length >= 3 && confidence >= currentSensitivity) {
+                    log('Teks tervalidasi. Menghentikan kamera.');
+                    stopCamera();
+
+                    const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+                    await sendToCloudVision(base64Image);
+                } else {
+                    log('Deteksi lokal di bawah batas minimal atau teks kurang dari 3 karakter.');
+                }
+            } catch (err) {
+                log('Gagal menganalisis snapshot: ' + err.message, 'error');
+            }
+            isProcessing = false;
         }
 
         async function sendToCloudVision(base64String) {
             if (!visionApiKey) {
                 log('Kunci API tidak ditemukan.', 'error');
                 stealthDot.className = 'dot-error';
-                isProcessing = false;
                 return;
             }
 
+            log('Menghubungi Cloud Vision API...');
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
-            const featureType = currentMode === 'sketch' ? "LABEL_DETECTION" : "DOCUMENT_TEXT_DETECTION";
-            
             const payload = {
                 requests: [{
                     image: { content: base64String },
-                    features: [{ type: featureType }]
+                    features: [{ type: "DOCUMENT_TEXT_DETECTION" }]
                 }]
             };
 
@@ -535,80 +522,58 @@
 
                 const data = await response.json();
                 
-                if (currentMode === 'sketch') {
-                    if (data.responses && data.responses[0].labelAnnotations) {
-                        const labels = data.responses[0].labelAnnotations;
-                        const sketchKeywords = ['sketch', 'drawing', 'line art', 'doodle', 'hand-drawn', 'illustration', 'diagram', 'ink', 'marker', 'writing', 'whiteboard', 'handwriting', 'paint'];
-                        
-                        const detectedSketches = labels.filter(label => {
-                            const desc = label.description.toLowerCase();
-                            return sketchKeywords.some(keyword => desc.includes(keyword)) && label.score >= 0.5;
-                        });
+                if (data.responses && data.responses[0].fullTextAnnotation) {
+                    const textResult = data.responses[0].fullTextAnnotation.text;
+                    log('Respons Cloud OCR diterima.', 'success');
+                    
+                    if (currentMode === 'ocr') {
+                        extractedText = textResult;
+                        stealthDot.className = 'dot-success';
+                        log('Teks berhasil disimpan. Siap di-peeking.', 'success');
+                    } else if (currentMode === 'peek') {
+                        const annotations = data.responses[0].textAnnotations;
+                        if (annotations && annotations.length > 0) {
+                            const vertices = annotations[0].boundingPoly.vertices;
+                            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+                            
+                            vertices.forEach(v => {
+                                const x = v.x || 0;
+                                const y = v.y || 0;
+                                if (x < minX) minX = x;
+                                if (y < minY) minY = y;
+                                if (x > maxX) maxX = x;
+                                if (y > maxY) maxY = y;
+                            });
 
-                        if (detectedSketches.length > 0) {
-                            extractedText = detectedSketches.map(obj => `${obj.description} (${Math.round(obj.score * 100)}%)`).join('\n');
-                            stealthDot.className = 'dot-success';
-                            log('Deteksi coretan/spidol berhasil.', 'success');
-                        } else {
-                            log('Cloud tidak mendeteksi coretan yang valid.');
-                        }
-                    } else {
-                        log('Analisis gambar kosong.');
-                    }
-                } else {
-                    if (data.responses && data.responses[0].fullTextAnnotation) {
-                        const textResult = data.responses[0].fullTextAnnotation.text;
-                        log('Respons Cloud OCR diterima.', 'success');
-                        
-                        if (currentMode === 'ocr') {
-                            extractedText = textResult;
-                            stealthDot.className = 'dot-success';
-                            log('Teks berhasil disimpan. Siap di-peeking.', 'success');
-                        } else if (currentMode === 'peek') {
-                            const annotations = data.responses[0].textAnnotations;
-                            if (annotations && annotations.length > 0) {
-                                const vertices = annotations[0].boundingPoly.vertices;
-                                let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
-                                
-                                vertices.forEach(v => {
-                                    const x = v.x || 0;
-                                    const y = v.y || 0;
-                                    if (x < minX) minX = x;
-                                    if (y < minY) minY = y;
-                                    if (x > maxX) maxX = x;
-                                    if (y > maxY) maxY = y;
-                                });
+                            const pad = 15;
+                            minX = Math.max(0, minX - pad);
+                            minY = Math.max(0, minY - pad);
+                            maxX = Math.min(canvas.width, maxX + pad);
+                            maxY = Math.min(canvas.height, maxY + pad);
 
-                                const pad = 15;
-                                minX = Math.max(0, minX - pad);
-                                minY = Math.max(0, minY - pad);
-                                maxX = Math.min(canvas.width, maxX + pad);
-                                maxY = Math.min(canvas.height, maxY + pad);
+                            const w = maxX - minX;
+                            const h = maxY - minY;
 
-                                const w = maxX - minX;
-                                const h = maxY - minY;
-
-                                if (w > 0 && h > 0) {
-                                    const cropCanvas = document.createElement('canvas');
-                                    cropCanvas.width = w;
-                                    cropCanvas.height = h;
-                                    const cropCtx = cropCanvas.getContext('2d');
-                                    cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
-                                    peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
-                                    stealthDot.className = 'dot-success';
-                                    log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
-                                }
+                            if (w > 0 && h > 0) {
+                                const cropCanvas = document.createElement('canvas');
+                                cropCanvas.width = w;
+                                cropCanvas.height = h;
+                                const cropCtx = cropCanvas.getContext('2d');
+                                cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
+                                peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
+                                stealthDot.className = 'dot-success';
+                                log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
                             }
                         }
-                    } else {
-                        log('Cloud OCR tidak mendeteksi teks apa pun.');
                     }
+                } else {
+                    stealthDot.className = 'dot-error';
+                    log('Cloud OCR gagal mengenali teks.', 'error');
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
-                log('Koneksi Cloud Vision gagal: ' + err.message, 'error');
+                log('Koneksi Cloud OCR gagal: ' + err.message, 'error');
             }
-            isProcessing = false;
         }
     </script>
 </body>
