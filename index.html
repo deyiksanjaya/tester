@@ -262,7 +262,15 @@
             consoleBox.scrollTop = consoleBox.scrollHeight;
         }
 
-        log('Sistem siap. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
+        (async function preheatOcr() {
+            log('Mempersiapkan sistem OCR lokal...');
+            try {
+                ocrWorker = await Tesseract.createWorker('eng');
+                log('Sistem OCR lokal siap digunakan.', 'success');
+            } catch (err) {
+                log('Gagal mempersiapkan OCR lokal: ' + err.message, 'error');
+            }
+        })();
 
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal')) return;
@@ -272,11 +280,11 @@
                 if (currentMode === 'peek' && peekImageSrc) {
                     peekImg.src = peekImageSrc;
                     peekImg.style.display = 'block';
-                    log('Menampilkan peeking gambar.');
+                    log('Menampilkan gambar hasil crop.');
                 } else if (currentMode === 'ocr' && extractedText) {
                     resultText.innerText = extractedText;
                     resultText.style.display = 'block';
-                    log('Menampilkan peeking teks.');
+                    log('Menampilkan teks hasil Cloud OCR.');
                 }
             }, 200);
         };
@@ -290,7 +298,7 @@
                 peekImg.style.display = 'none';
                 peekImg.src = '';
                 resultText.style.display = 'none';
-                log('Selesai peeking. Tampilan disembunyikan kembali.');
+                log('Tampilan disembunyikan kembali.');
                 e.preventDefault();
             } else {
                 if (e.type === 'pointerup') {
@@ -303,15 +311,15 @@
                         cameraSelect.value = currentFacingMode;
                         modeSelect.value = currentMode;
                         tapCount = 0;
-                        log('Membuka menu konfigurasi.');
+                        log('Menu konfigurasi dibuka.');
                     } else {
                         tapTimeout = setTimeout(() => {
                             if (tapCount === 2) {
                                 if (scanIntervalId || video.srcObject) {
-                                    log('Mematikan sistem kamera...');
+                                    log('Mematikan kamera...');
                                     stopCamera();
                                 } else {
-                                    log('Menyalakan sistem kamera...');
+                                    log('Menghubungkan kamera...');
                                     startSystem();
                                 }
                             }
@@ -363,7 +371,7 @@
                 scanIntervalId = null;
             }
             isProcessing = false;
-            log('Kamera dinonaktifkan.');
+            log('Kamera nonaktif.');
         }
 
         async function startSystem() {
@@ -372,21 +380,20 @@
             
             try {
                 if (!ocrWorker) {
-                    log('Menginisialisasi Tesseract lokal...');
+                    log('OCR lokal belum siap, mencoba memuat ulang...');
                     ocrWorker = await Tesseract.createWorker('eng');
-                    log('Tesseract siap.');
                 }
                 
-                log(`Mengakses kamera (${currentFacingMode})...`);
+                log(`Mengaktifkan kamera (${currentFacingMode})...`);
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: currentFacingMode } 
                 });
                 video.srcObject = stream;
                 
                 scanIntervalId = setInterval(processFrame, 4000);
-                log('Scanning aktif (interval 4 detik).');
+                log('Kamera aktif. Memulai scanning.');
             } catch (err) {
-                log('Gagal menyalakan kamera: ' + err.message, 'error');
+                log('Gagal mengakses kamera: ' + err.message, 'error');
                 if (currentMode === 'ocr') {
                     stealthDot.className = 'dot-error';
                 }
@@ -404,14 +411,17 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            log('Menganalisis frame kamera secara lokal...');
+            log('Menganalisis frame...');
             try {
                 const { data } = await ocrWorker.recognize(canvas);
                 
                 const cleanText = data.text.replace(/[^a-zA-Z0-9]/g, '').trim();
+                const confidence = data.confidence || 0;
                 
-                if (cleanText.length >= 3) {
-                    log(`Karakter valid terdeteksi lokal: "${cleanText.substring(0, 20)}...". Menghentikan kamera.`);
+                log(`Akurasi deteksi: ${confidence}% | Karakter: "${cleanText.substring(0, 15)}"`);
+
+                if (cleanText.length >= 3 && confidence >= 55) {
+                    log(`Teks valid terdeteksi (${confidence}%). Mematikan kamera.`);
                     stopCamera();
                     
                     if (currentMode === 'ocr') {
@@ -449,15 +459,15 @@
                                 const cropCtx = cropCanvas.getContext('2d');
                                 cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
                                 peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
-                                log('Crop gambar tulisan berhasil disimpan.', 'success');
+                                log('Pemotongan gambar tulisan selesai.', 'success');
                             }
                         }
                     }
                 } else {
-                    log('Tidak ada teks valid (hanya simbol/kosong), lanjut mencari...');
+                    log('Belum mendeteksi teks dengan akurasi yang cukup.');
                 }
             } catch (err) {
-                log('Gagal menganalisis lokal: ' + err.message, 'error');
+                log('Gagal memproses frame: ' + err.message, 'error');
                 if (currentMode === 'ocr') {
                     stealthDot.className = 'dot-error';
                 }
@@ -468,12 +478,12 @@
 
         async function sendToCloudVision(base64String) {
             if (!visionApiKey) {
-                log('Kunci API kosong. Silakan atur lewat menu konfigurasi.', 'error');
+                log('Kunci API tidak ditemukan.', 'error');
                 stealthDot.className = 'dot-error';
                 return;
             }
 
-            log('Mengirim gambar ke Google Cloud Vision...');
+            log('Menghubungi Cloud Vision API...');
             const url = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
             const payload = {
                 requests: [{
@@ -490,19 +500,18 @@
                 });
 
                 const data = await response.json();
-                log('Menerima respon API Google Cloud Vision.');
                 
                 if (data.responses && data.responses[0].fullTextAnnotation) {
                     extractedText = data.responses[0].fullTextAnnotation.text;
                     stealthDot.className = 'dot-success';
-                    log(`Selesai mengekstrak teks. Siap di-peeking.`, 'success');
+                    log('Ekstraksi Cloud OCR berhasil.', 'success');
                 } else {
                     stealthDot.className = 'dot-error';
-                    log('API tidak mendeteksi teks di gambar atau ada error: ' + JSON.stringify(data), 'error');
+                    log('Cloud OCR gagal mengenali teks: ' + JSON.stringify(data), 'error');
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
-                log('Gagal terhubung ke API Google Cloud Vision: ' + err.message, 'error');
+                log('Koneksi Cloud OCR gagal: ' + err.message, 'error');
             }
         }
     </script>
