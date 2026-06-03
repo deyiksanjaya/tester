@@ -50,7 +50,7 @@
             line-height: 1.6;
             white-space: pre-wrap;
             opacity: 0.8;
-            max-height: 100%;
+            max-height: calc(100% - 160px);
             overflow-y: auto;
             width: 100%;
             text-align: left;
@@ -63,7 +63,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             max-width: 90%;
-            max-height: 90%;
+            max-height: calc(90% - 140px);
             object-fit: contain;
             display: none;
             z-index: 2;
@@ -87,6 +87,31 @@
         }
         .dot-error {
             background: #f87171 !important;
+        }
+        #main-console {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 11px;
+            overflow-y: auto;
+            color: #38bdf8;
+            z-index: 4;
+            pointer-events: auto;
+            user-select: text;
+            -webkit-user-select: text;
+        }
+        .console-line {
+            margin-bottom: 4px;
+            line-height: 1.4;
+            word-break: break-all;
         }
         .modal-overlay {
             display: none;
@@ -123,6 +148,21 @@
             color: #888;
             margin-bottom: 8px;
         }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: #fff;
+        }
+        #slider-value {
+            font-size: 14px;
+            color: #fff;
+            min-width: 30px;
+            text-align: right;
+        }
         input[type="text"], select {
             width: 100%;
             padding: 12px;
@@ -139,21 +179,6 @@
         input[type="text"]:focus, select:focus {
             outline: none;
             border-color: #666;
-        }
-        #console-box {
-            height: 110px;
-            background: #000;
-            border: 1px solid #222;
-            border-radius: 6px;
-            padding: 8px;
-            font-family: monospace;
-            font-size: 10px;
-            overflow-y: auto;
-            color: #38bdf8;
-            user-select: text;
-            -webkit-user-select: text;
-            white-space: pre-wrap;
-            word-break: break-all;
         }
         .btn-group {
             display: flex;
@@ -191,6 +216,8 @@
         <div id="result-text"></div>
     </div>
 
+    <div id="main-console"></div>
+
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
             <div class="modal-title">Konfigurasi Sistem</div>
@@ -213,8 +240,11 @@
                 </select>
             </div>
             <div class="input-group">
-                <span class="input-label">Konsol Sistem</span>
-                <div id="console-box"></div>
+                <span class="input-label">Sensitivitas Deteksi (Skor Minimal)</span>
+                <div class="slider-container">
+                    <input type="range" id="sensitivity-slider" min="10" max="90" step="5">
+                    <span id="slider-value">55%</span>
+                </div>
             </div>
             <div class="btn-group">
                 <button class="btn-secondary" id="close-btn">Tutup</button>
@@ -233,13 +263,17 @@
         const apiKeyInput = document.getElementById('api-key-input');
         const cameraSelect = document.getElementById('camera-select');
         const modeSelect = document.getElementById('mode-select');
+        const sensitivitySlider = document.getElementById('sensitivity-slider');
+        const sliderValue = document.getElementById('slider-value');
         const saveBtn = document.getElementById('save-btn');
         const closeBtn = document.getElementById('close-btn');
-        const consoleBox = document.getElementById('console-box');
+        const mainConsole = document.getElementById('main-console');
 
         let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
         let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
         let currentMode = localStorage.getItem('stealthScannerMode') || 'ocr';
+        let currentSensitivity = parseInt(localStorage.getItem('stealthScannerSensitivity')) || 55;
+        
         let scanIntervalId = null;
         let ocrWorker = null;
         let isProcessing = false;
@@ -251,6 +285,9 @@
         let holdTimeout;
         let isHolding = false;
 
+        sensitivitySlider.value = currentSensitivity;
+        sliderValue.innerText = currentSensitivity + '%';
+
         document.addEventListener('contextmenu', e => e.preventDefault());
 
         function log(msg, type = 'info') {
@@ -258,9 +295,15 @@
             let color = '#38bdf8';
             if (type === 'error') color = '#f87171';
             if (type === 'success') color = '#4ade80';
-            consoleBox.innerHTML += `<div style="color: ${color}; margin-bottom: 4px;">[${time}] ${msg}</div>`;
-            consoleBox.scrollTop = consoleBox.scrollHeight;
+            mainConsole.innerHTML += `<div class="console-line" style="color: ${color};">[${time}] ${msg}</div>`;
+            mainConsole.scrollTop = mainConsole.scrollHeight;
         }
+
+        sensitivitySlider.addEventListener('input', (e) => {
+            sliderValue.innerText = e.target.value + '%';
+        });
+
+        log('Sistem siap. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
 
         (async function preheatOcr() {
             log('Mempersiapkan sistem OCR lokal...');
@@ -273,7 +316,7 @@
         })();
 
         const handlePointerStart = (e) => {
-            if (e.target.closest('.modal')) return;
+            if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
             
             holdTimeout = setTimeout(() => {
                 isHolding = true;
@@ -290,7 +333,7 @@
         };
 
         const handlePointerEnd = (e) => {
-            if (e.target.closest('.modal')) return;
+            if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
             clearTimeout(holdTimeout);
             
             if (isHolding) {
@@ -310,6 +353,8 @@
                         apiKeyInput.value = visionApiKey;
                         cameraSelect.value = currentFacingMode;
                         modeSelect.value = currentMode;
+                        sensitivitySlider.value = currentSensitivity;
+                        sliderValue.innerText = currentSensitivity + '%';
                         tapCount = 0;
                         log('Menu konfigurasi dibuka.');
                     } else {
@@ -343,10 +388,12 @@
             visionApiKey = apiKeyInput.value.trim();
             currentFacingMode = cameraSelect.value;
             currentMode = modeSelect.value;
+            currentSensitivity = parseInt(sensitivitySlider.value);
 
             localStorage.setItem('stealthScannerKey', visionApiKey);
             localStorage.setItem('stealthScannerCamera', currentFacingMode);
             localStorage.setItem('stealthScannerMode', currentMode);
+            localStorage.setItem('stealthScannerSensitivity', currentSensitivity);
 
             settingsModal.style.display = 'none';
             
@@ -357,7 +404,7 @@
             peekImg.src = '';
             stealthDot.className = '';
             
-            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}`);
+            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}, Sensitivitas: ${currentSensitivity}%`);
             stopCamera();
         });
 
@@ -418,9 +465,9 @@
                 const cleanText = data.text.replace(/[^a-zA-Z0-9]/g, '').trim();
                 const confidence = data.confidence || 0;
                 
-                log(`Akurasi deteksi: ${confidence}% | Karakter: "${cleanText.substring(0, 15)}"`);
+                log(`Akurasi deteksi: ${confidence}% / Minimal: ${currentSensitivity}% | Karakter: "${cleanText.substring(0, 15)}"`);
 
-                if (cleanText.length >= 3 && confidence >= 55) {
+                if (cleanText.length >= 3 && confidence >= currentSensitivity) {
                     log(`Teks valid terdeteksi (${confidence}%). Mematikan kamera.`);
                     stopCamera();
                     
@@ -464,7 +511,7 @@
                         }
                     }
                 } else {
-                    log('Belum mendeteksi teks dengan akurasi yang cukup.');
+                    log('Akurasi di bawah batas minimal sensitivitas.');
                 }
             } catch (err) {
                 log('Gagal memproses frame: ' + err.message, 'error');
