@@ -462,10 +462,14 @@
             try {
                 const { data } = await ocrWorker.recognize(canvas);
                 
-                const cleanText = data.text.replace(/[^a-zA-Z0-9]/g, '').trim();
+                const rawText = data.text ? data.text.trim() : '';
+                const cleanText = rawText.replace(/[^a-zA-Z0-9]/g, '').trim();
                 const confidence = data.confidence || 0;
                 
-                log(`Akurasi deteksi: ${confidence}% / Minimal: ${currentSensitivity}% | Karakter: "${cleanText.substring(0, 15)}"`);
+                if (rawText) {
+                    log(`Tesseract mendeteksi: "${rawText}"`);
+                }
+                log(`Akurasi deteksi: ${confidence}% / Minimal: ${currentSensitivity}%`);
 
                 if (cleanText.length >= 3 && confidence >= currentSensitivity) {
                     log(`Teks valid terdeteksi (${confidence}%). Mematikan kamera.`);
@@ -511,7 +515,7 @@
                         }
                     }
                 } else {
-                    log('Akurasi di bawah batas minimal sensitivitas.');
+                    log('Akurasi di bawah batas minimal sensitivitas atau teks tidak memenuhi syarat.');
                 }
             } catch (err) {
                 log('Gagal memproses frame: ' + err.message, 'error');
