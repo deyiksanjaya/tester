@@ -20,6 +20,7 @@
             -ms-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
+            touch-action: none;
         }
         #video {
             position: absolute;
@@ -213,14 +214,12 @@
             if (e.target.closest('.modal')) return;
             
             holdTimeout = setTimeout(() => {
-                if (scanIntervalId || video.srcObject) {
+                if (currentMode === 'peek' && peekImageSrc) {
                     isHolding = true;
-                    if (currentMode === 'peek' && peekImageSrc) {
-                        peekImg.src = peekImageSrc;
-                        peekImg.style.display = 'block';
-                    }
+                    peekImg.src = peekImageSrc;
+                    peekImg.style.display = 'block';
                 }
-            }, 250);
+            }, 200);
         };
 
         const handlePointerEnd = (e) => {
@@ -231,6 +230,7 @@
                 isHolding = false;
                 peekImg.style.display = 'none';
                 peekImg.src = '';
+                e.preventDefault();
             } else {
                 if (e.type === 'pointerup') {
                     tapCount++;
@@ -252,7 +252,7 @@
                                 }
                             }
                             tapCount = 0;
-                        }, 300);
+                        }, 250);
                     }
                 }
             }
@@ -332,14 +332,18 @@
                 const { data } = await ocrWorker.recognize(canvas);
                 
                 if (data.text.trim().length > 3) {
+                    stopCamera();
+                    
                     if (currentMode === 'ocr') {
                         const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
                         await sendToCloudVision(base64Image);
                     } else if (currentMode === 'peek') {
                         let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+                        let found = false;
                         
                         data.lines.forEach(line => {
                             if (line.text.trim().length > 0) {
+                                found = true;
                                 if (line.bbox.x0 < minX) minX = line.bbox.x0;
                                 if (line.bbox.y0 < minY) minY = line.bbox.y0;
                                 if (line.bbox.x1 > maxX) maxX = line.bbox.x1;
@@ -347,22 +351,24 @@
                             }
                         });
 
-                        const pad = 15;
-                        minX = Math.max(0, minX - pad);
-                        minY = Math.max(0, minY - pad);
-                        maxX = Math.min(canvas.width, maxX + pad);
-                        maxY = Math.min(canvas.height, maxY + pad);
+                        if (found) {
+                            const pad = 15;
+                            minX = Math.max(0, minX - pad);
+                            minY = Math.max(0, minY - pad);
+                            maxX = Math.min(canvas.width, maxX + pad);
+                            maxY = Math.min(canvas.height, maxY + pad);
 
-                        const w = maxX - minX;
-                        const h = maxY - minY;
+                            const w = maxX - minX;
+                            const h = maxY - minY;
 
-                        if (w > 0 && h > 0) {
-                            const cropCanvas = document.createElement('canvas');
-                            cropCanvas.width = w;
-                            cropCanvas.height = h;
-                            const cropCtx = cropCanvas.getContext('2d');
-                            cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
-                            peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
+                            if (w > 0 && h > 0) {
+                                const cropCanvas = document.createElement('canvas');
+                                cropCanvas.width = w;
+                                cropCanvas.height = h;
+                                const cropCtx = cropCanvas.getContext('2d');
+                                cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
+                                peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
+                            }
                         }
                     }
                 }
