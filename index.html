@@ -28,7 +28,7 @@
             opacity: 0;
             pointer-events: none;
         }
-        #canvas {
+        #canvas, #native-camera-input {
             display: none;
         }
         #display-area {
@@ -192,6 +192,7 @@
 
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
+    <input type="file" accept="image/*" capture="environment" id="native-camera-input">
     <img id="peek-img" src="" alt="">
 
     <div id="stealth-dot"></div>
@@ -223,6 +224,21 @@
                     <option value="peek">Peek Picture</option>
                 </select>
             </div>
+            <div class="input-group">
+                <span class="input-label">Interval Snapshot (Otomatis)</span>
+                <select id="interval-select">
+                    <option value="500">0.5 Detik</option>
+                    <option value="1000">1 Detik</option>
+                    <option value="2000">2 Detik</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <span class="input-label">Tipe Kamera</span>
+                <select id="type-select">
+                    <option value="auto">Kamera Otomatis (Video Stream)</option>
+                    <option value="manual">Kamera Manual (Ambil Foto)</option>
+                </select>
+            </div>
             <div class="btn-group">
                 <button class="btn-secondary" id="close-btn">Tutup</button>
                 <button class="btn-primary" id="save-btn">Simpan</button>
@@ -233,6 +249,7 @@
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
+        const nativeCameraInput = document.getElementById('native-camera-input');
         const resultText = document.getElementById('result-text');
         const peekImg = document.getElementById('peek-img');
         const stealthDot = document.getElementById('stealth-dot');
@@ -240,6 +257,8 @@
         const apiKeyInput = document.getElementById('api-key-input');
         const cameraSelect = document.getElementById('camera-select');
         const modeSelect = document.getElementById('mode-select');
+        const intervalSelect = document.getElementById('interval-select');
+        const typeSelect = document.getElementById('type-select');
         const saveBtn = document.getElementById('save-btn');
         const closeBtn = document.getElementById('close-btn');
         const mainConsole = document.getElementById('main-console');
@@ -247,6 +266,8 @@
         let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
         let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
         let currentMode = localStorage.getItem('stealthScannerMode') || 'ocr';
+        let currentInterval = parseInt(localStorage.getItem('stealthScannerInterval')) || 2000;
+        let currentCameraType = localStorage.getItem('stealthScannerType') || 'auto';
         
         let scanIntervalId = null;
         let isProcessing = false;
@@ -309,17 +330,24 @@
                         apiKeyInput.value = visionApiKey;
                         cameraSelect.value = currentFacingMode;
                         modeSelect.value = currentMode;
+                        intervalSelect.value = currentInterval.toString();
+                        typeSelect.value = currentCameraType;
                         tapCount = 0;
                         log('Menu konfigurasi dibuka.');
                     } else {
                         tapTimeout = setTimeout(() => {
                             if (tapCount === 2) {
-                                if (scanIntervalId || video.srcObject) {
-                                    log('Mematikan kamera...');
-                                    stopCamera();
+                                if (currentCameraType === 'manual') {
+                                    log('Membuka kamera foto bawaan...');
+                                    nativeCameraInput.click();
                                 } else {
-                                    log('Menghubungkan kamera...');
-                                    startSystem();
+                                    if (scanIntervalId || video.srcObject) {
+                                        log('Mematikan kamera otomatis...');
+                                        stopCamera();
+                                    } else {
+                                        log('Menghubungkan kamera otomatis...');
+                                        startSystem();
+                                    }
                                 }
                             }
                             tapCount = 0;
@@ -334,6 +362,41 @@
         document.body.addEventListener('pointercancel', handlePointerEnd);
         document.body.addEventListener('pointerleave', handlePointerEnd);
 
+        nativeCameraInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            log('Memproses foto manual yang diambil...');
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const maxDim = 720;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+                    log('Mengirim foto manual ke Cloud Vision API...');
+                    sendToCloudVision(base64Image);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
         closeBtn.addEventListener('click', () => {
             settingsModal.style.display = 'none';
         });
@@ -342,10 +405,14 @@
             visionApiKey = apiKeyInput.value.trim();
             currentFacingMode = cameraSelect.value;
             currentMode = modeSelect.value;
+            currentInterval = parseInt(intervalSelect.value);
+            currentCameraType = typeSelect.value;
 
             localStorage.setItem('stealthScannerKey', visionApiKey);
             localStorage.setItem('stealthScannerCamera', currentFacingMode);
             localStorage.setItem('stealthScannerMode', currentMode);
+            localStorage.setItem('stealthScannerInterval', currentInterval);
+            localStorage.setItem('stealthScannerType', currentCameraType);
 
             settingsModal.style.display = 'none';
             
@@ -356,7 +423,7 @@
             peekImg.src = '';
             stealthDot.className = '';
             
-            log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}`);
+            log(`Konfigurasi disimpan. Mode: ${currentMode}, Tipe: ${currentCameraType}, Interval: ${currentInterval}ms`);
             stopCamera();
         });
 
@@ -378,14 +445,14 @@
             stealthDot.className = '';
             
             try {
-                log(`Mengaktifkan kamera (${currentFacingMode})...`);
+                log(`Mengaktifkan kamera video (${currentFacingMode})...`);
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: currentFacingMode } 
                 });
                 video.srcObject = stream;
                 
-                scanIntervalId = setInterval(processSnapshot, 2000);
-                log('Mulai pemindaian Cloud OCR setiap 2 detik.');
+                scanIntervalId = setInterval(processSnapshot, currentInterval);
+                log(`Mulai pemindaian otomatis setiap ${currentInterval / 1000} detik.`);
             } catch (err) {
                 log('Gagal mengakses kamera: ' + err.message, 'error');
                 stealthDot.className = 'dot-error';
@@ -403,8 +470,8 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-            log('Mengirim snapshot ke Cloud Vision API...');
+            const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            log('Mengambil snapshot otomatis...');
             await sendToCloudVision(base64Image);
         }
 
@@ -413,6 +480,7 @@
                 log('Kunci API tidak ditemukan.', 'error');
                 stealthDot.className = 'dot-error';
                 stopCamera();
+                isProcessing = false;
                 return;
             }
 
@@ -435,7 +503,7 @@
                 
                 if (data.responses && data.responses[0].fullTextAnnotation) {
                     const textResult = data.responses[0].fullTextAnnotation.text;
-                    log('Respons Cloud OCR diterima dengan sukses.', 'success');
+                    log('Respons Cloud OCR diterima.', 'success');
                     
                     if (currentMode === 'ocr') {
                         extractedText = textResult;
@@ -480,7 +548,7 @@
                         }
                     }
                 } else {
-                    log('Pemindaian kosong. Lanjut mengambil snapshot berikutnya...');
+                    log('Pemindaian kosong. Lanjut mencari...');
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
