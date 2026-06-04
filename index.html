@@ -328,16 +328,14 @@
             sliderValue.innerText = e.target.value;
         });
 
-        debugPreview.addEventListener('click', () => {
-            debugPreview.style.display = 'none';
-            log('Pratinjau gambar ditutup.');
-        });
-
         const handlePointerStart = (e) => {
-            if (e.target.closest('.modal') || e.target.closest('#main-console') || e.target.closest('#debug-preview')) return;
+            if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
             
             holdTimeout = setTimeout(() => {
                 isHolding = true;
+                if (debugPreview.style.display === 'block') {
+                    debugPreview.style.visibility = 'hidden';
+                }
                 if (currentMode === 'peek' && peekImageSrc) {
                     peekImg.src = peekImageSrc;
                     peekImg.style.display = 'block';
@@ -351,7 +349,7 @@
         };
 
         const handlePointerEnd = (e) => {
-            if (e.target.closest('.modal') || e.target.closest('#main-console') || e.target.closest('#debug-preview')) return;
+            if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
             clearTimeout(holdTimeout);
             
             if (isHolding) {
@@ -359,9 +357,16 @@
                 peekImg.style.display = 'none';
                 peekImg.src = '';
                 resultText.style.display = 'none';
+                debugPreview.style.visibility = 'visible';
                 log('Tampilan disembunyikan kembali.');
                 e.preventDefault();
+                e.stopPropagation();
             } else {
+                if (e.target.closest('#debug-preview')) {
+                    debugPreview.style.display = 'none';
+                    log('Pratinjau gambar ditutup.');
+                    return;
+                }
                 if (e.type === 'pointerup') {
                     tapCount++;
                     clearTimeout(tapTimeout);
@@ -425,6 +430,7 @@
             stealthDot.className = '';
             lastCaptureHash = '';
             
+            isProcessing = false;
             log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}, Kecerahan Kertas: ${currentSensitivity}`);
             stopCamera();
         });
@@ -445,12 +451,12 @@
 
         async function startSystem() {
             if (scanIntervalId) return;
+            isProcessing = false;
             stealthDot.className = '';
             stableFrames = 0;
             prevCorners = null;
             debugPreview.style.display = 'none';
             debugPreview.src = '';
-            isProcessing = false;
             
             try {
                 log(`Mengaktifkan kamera video (${currentFacingMode})...`);
@@ -602,7 +608,6 @@
 
         async function executeCapture(tl, tr, br, bl) {
             isProcessing = true;
-            stopCamera();
 
             const nativeW = video.videoWidth;
             const nativeH = video.videoHeight;
@@ -611,6 +616,8 @@
             canvas.height = nativeH;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0, nativeW, nativeH);
+
+            stopCamera();
 
             const scaleX = nativeW / 160;
             const scaleY = nativeH / 120;
@@ -813,53 +820,59 @@
 
                 const data = await response.json();
                 
-                if (data.responses && data.responses[0].fullTextAnnotation) {
-                    const textResult = data.responses[0].fullTextAnnotation.text;
-                    log('Respons Cloud OCR diterima.', 'success');
-                    
-                    if (currentMode === 'ocr') {
-                        extractedText = textResult;
-                        stealthDot.className = 'dot-success';
-                        log('Teks berhasil disimpan. Siap di-peeking.', 'success');
-                    } else if (currentMode === 'peek') {
-                        const annotations = data.responses[0].textAnnotations;
-                        if (annotations && annotations.length > 0) {
-                            const vertices = annotations[0].boundingPoly.vertices;
-                            let minX = finalCropCanvas.width, minY = finalCropCanvas.height, maxX = 0, maxY = 0;
-                            
-                            vertices.forEach(v => {
-                                const x = v.x || 0;
-                                const y = v.y || 0;
-                                if (x < minX) minX = x;
-                                if (y < minY) minY = y;
-                                if (x > maxX) maxX = x;
-                                if (y > maxY) maxY = y;
-                            });
+                if (data.responses && data.responses[0]) {
+                    const responseObj = data.responses[0];
+                    if (responseObj.fullTextAnnotation) {
+                        const textResult = responseObj.fullTextAnnotation.text;
+                        log('Respons Cloud OCR diterima.', 'success');
+                        
+                        if (currentMode === 'ocr') {
+                            extractedText = textResult;
+                            stealthDot.className = 'dot-success';
+                            log('Teks berhasil disimpan. Siap di-peeking.', 'success');
+                        } else if (currentMode === 'peek') {
+                            const annotations = responseObj.textAnnotations;
+                            if (annotations && annotations.length > 0) {
+                                const vertices = annotations[0].boundingPoly.vertices;
+                                let minX = finalCropCanvas.width, minY = finalCropCanvas.height, maxX = 0, maxY = 0;
+                                
+                                vertices.forEach(v => {
+                                    const x = v.x || 0;
+                                    const y = v.y || 0;
+                                    if (x < minX) minX = x;
+                                    if (y < minY) minY = y;
+                                    if (x > maxX) maxX = x;
+                                    if (y > maxY) maxY = y;
+                                });
 
-                            const pad = 10;
-                            minX = Math.max(0, minX - pad);
-                            minY = Math.max(0, minY - pad);
-                            maxX = Math.min(finalCropCanvas.width, maxX + pad);
-                            maxY = Math.min(finalCropCanvas.height, maxY + pad);
+                                const pad = 10;
+                                minX = Math.max(0, minX - pad);
+                                minY = Math.max(0, minY - pad);
+                                maxX = Math.min(finalCropCanvas.width, maxX + pad);
+                                maxY = Math.min(finalCropCanvas.height, maxY + pad);
 
-                            const w = maxX - minX;
-                            const h = maxY - minY;
+                                const w = maxX - minX;
+                                const h = maxY - minY;
 
-                            if (w > 0 && h > 0) {
-                                const cropCanvas = document.createElement('canvas');
-                                cropCanvas.width = w;
-                                cropCanvas.height = h;
-                                const cropCtx = cropCanvas.getContext('2d');
-                                cropCtx.drawImage(finalCropCanvas, minX, minY, w, h, 0, 0, w, h);
-                                peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.95);
-                                stealthDot.className = 'dot-success';
-                                log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
+                                if (w > 0 && h > 0) {
+                                    const cropCanvas = document.createElement('canvas');
+                                    cropCanvas.width = w;
+                                    cropCanvas.height = h;
+                                    const cropCtx = cropCanvas.getContext('2d');
+                                    cropCtx.drawImage(finalCropCanvas, minX, minY, w, h, 0, 0, w, h);
+                                    peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.95);
+                                    stealthDot.className = 'dot-success';
+                                    log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
+                                }
                             }
                         }
+                    } else {
+                        stealthDot.className = 'dot-error';
+                        log('Cloud OCR tidak mendeteksi teks di kertas.', 'error');
                     }
                 } else {
                     stealthDot.className = 'dot-error';
-                    log('Cloud OCR gagal mengenali teks di kertas.', 'error');
+                    log('Respons Cloud OCR kosong.', 'error');
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
