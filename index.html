@@ -258,7 +258,7 @@
                 </select>
             </div>
             <div class="input-group">
-                <span class="input-label">Sensitivitas Tinta (Kontras)</span>
+                <span class="input-label">Sensitivitas Kontras</span>
                 <div class="slider-container">
                     <input type="range" id="sensitivity-slider" min="20" max="100" step="5">
                     <span id="slider-value">40</span>
@@ -586,10 +586,38 @@
                                         if (edges[cy * aWidth + cx] === 1) rawEdges++;
                                     }
                                 }
+                                
                                 const density = rawEdges / (bw * bh);
                                 
-                                if (density > 0.05 && density < 0.45) {
-                                    const score = rawEdges * aspect;
+                                let verticalTransitions = 0;
+                                let horizontalTransitions = 0;
+                                
+                                for (let cy = minY; cy <= maxY; cy += 2) {
+                                    let prev = 0;
+                                    for (let cx = minX; cx <= maxX; cx++) {
+                                        const current = edges[cy * aWidth + cx];
+                                        if (current !== prev) {
+                                            horizontalTransitions++;
+                                        }
+                                        prev = current;
+                                    }
+                                }
+                                
+                                for (let cx = minX; cx <= maxX; cx += 2) {
+                                    let prev = 0;
+                                    for (let cy = minY; cy <= maxY; cy++) {
+                                        const current = edges[cy * aWidth + cx];
+                                        if (current !== prev) {
+                                            verticalTransitions++;
+                                        }
+                                        prev = current;
+                                    }
+                                }
+                                
+                                const transitionScore = horizontalTransitions + verticalTransitions;
+                                
+                                if (density > 0.08 && density < 0.35 && transitionScore > 120) {
+                                    const score = rawEdges * aspect * (transitionScore / 100);
                                     if (score > maxScore) {
                                         maxScore = score;
                                         bestBox = { minX, minY, maxX, maxY, w: bw, h: bh };
@@ -610,7 +638,7 @@
                     
                     if (shiftX < 15 && shiftY < 15) {
                         stableFrames++;
-                        if (stableFrames >= 8) {
+                        if (stableFrames >= 12 && maxScore > 400) {
                             log('Posisi teks stabil. Mengambil gambar...');
                             executeCaptureText(bestBox);
                         }
@@ -684,6 +712,22 @@
                 cd[i] = cd[i+1] = cd[i+2] = Math.round(gray);
             }
             cCtx.putImageData(cropData, 0, 0);
+
+            const previewData = cCtx.getImageData(0, 0, cropCanvas.width, cropCanvas.height);
+            let darkPixels = 0;
+            for (let i = 0; i < previewData.data.length; i += 4) {
+                const gray = previewData.data[i] * 0.299 + previewData.data[i + 1] * 0.587 + previewData.data[i + 2] * 0.114;
+                if (gray < 150) {
+                    darkPixels++;
+                }
+            }
+            const inkRatio = darkPixels / (cropCanvas.width * cropCanvas.height);
+            if (inkRatio < 0.01) {
+                log('Terlalu sedikit tinta. Skip OCR.', 'error');
+                isProcessing = false;
+                startSystem();
+                return;
+            }
 
             const currentHash = computeImageHash(cropCanvas);
             if (lastCaptureHash && calculateHammingDistance(lastCaptureHash, currentHash) < 5) {
