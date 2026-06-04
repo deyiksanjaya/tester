@@ -556,11 +556,19 @@
 
                 if (tl && tr && br && bl) {
                     let strokeEdges = 0;
+                    let darkPixels = 0;
+                    let totalPixels = 0;
+
                     for (let y = Math.min(tl.y, tr.y) + 2; y < Math.max(bl.y, br.y) - 2; y += 2) {
                         for (let x = Math.min(tl.x, bl.x) + 2; x < Math.max(tr.x, br.x) - 2; x += 2) {
                             const idx = (y * aWidth + x) * 4;
                             const r = data[idx], g = data[idx+1], b = data[idx+2];
                             const gray = r * 0.299 + g * 0.587 + b * 0.114;
+
+                            totalPixels++;
+                            if (gray < currentSensitivity - 40) {
+                                darkPixels++;
+                            }
 
                             const rightIdx = (y * aWidth + (x + 1)) * 4;
                             const rightGray = data[rightIdx]*0.299 + data[rightIdx+1]*0.587 + data[rightIdx+2]*0.114;
@@ -575,9 +583,10 @@
                         }
                     }
 
-                    log(`Kertas terdeteksi | Stroke tinta: ${strokeEdges}`);
+                    const darkRatio = totalPixels > 0 ? (darkPixels / totalPixels) : 0;
+                    log(`Kertas terdeteksi | Stroke: ${strokeEdges} | Dark Ratio: ${(darkRatio * 100).toFixed(1)}%`);
 
-                    if (strokeEdges > 10) {
+                    if (strokeEdges > 15 && darkRatio > 0.01 && darkRatio < 0.30) {
                         if (prevCorners) {
                             const shiftTL = Math.abs(tl.x - prevCorners.tl.x) + Math.abs(tl.y - prevCorners.tl.y);
                             const shiftTR = Math.abs(tr.x - prevCorners.tr.x) + Math.abs(tr.y - prevCorners.tr.y);
@@ -586,7 +595,7 @@
 
                             if (shiftTL < 8 && shiftTR < 8 && shiftBR < 8 && shiftBL < 8) {
                                 stableFrames++;
-                                if (stableFrames >= 4) {
+                                if (stableFrames >= 8) {
                                     log('Kertas stabil terdeteksi. Memulai deskew homografi...');
                                     executeCapture(tl, tr, br, bl);
                                 }
@@ -824,6 +833,14 @@
                     const responseObj = data.responses[0];
                     if (responseObj.fullTextAnnotation) {
                         const textResult = responseObj.fullTextAnnotation.text;
+                        const cleanText = textResult.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+                        if (cleanText.length < 2) {
+                            log('OCR menghasilkan teks terlalu pendek.', 'error');
+                            stealthDot.className = 'dot-error';
+                            isProcessing = false;
+                            return;
+                        }
+
                         log('Respons Cloud OCR diterima.', 'success');
                         
                         if (currentMode === 'ocr') {
@@ -868,7 +885,7 @@
                         }
                     } else {
                         stealthDot.className = 'dot-error';
-                        log('Cloud OCR tidak mendeteksi teks di kertas.', 'error');
+                        log('Cloud OCR gagal mengenali teks di kertas.', 'error');
                     }
                 } else {
                     stealthDot.className = 'dot-error';
