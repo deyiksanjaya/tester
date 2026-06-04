@@ -31,43 +31,55 @@
         #canvas {
             display: none;
         }
-        #display-area {
+        
+        #aod-container {
             position: absolute;
-            top: 0;
+            top: 15%;
             left: 0;
             width: 100%;
-            height: 100%;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 24px;
-            box-sizing: border-box;
             z-index: 1;
-        }
-        #result-text {
-            font-size: 16px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            max-height: 90vh;
-            overflow-y: auto;
-            width: 100%;
-            text-align: left;
             pointer-events: none;
-            display: none;
         }
+        #aod-time {
+            font-size: 72px;
+            font-weight: 200;
+            letter-spacing: 2px;
+            color: #eee;
+            margin-bottom: 8px;
+        }
+        #aod-date {
+            font-size: 16px;
+            font-weight: 400;
+            color: #888;
+            opacity: 0.8;
+            max-width: 85%;
+            text-align: center;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            transition: opacity 0.2s ease, color 0.2s ease;
+        }
+
         #peek-img {
-            max-width: 100%;
-            max-height: 100%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 95%;
+            max-height: 70%;
             object-fit: contain;
             display: none;
             z-index: 2;
             pointer-events: none;
-            border-radius: 4px;
+            border-radius: 8px;
+            transition: opacity 0.2s ease;
         }
         #stealth-dot {
             position: absolute;
-            top: 16px;
-            right: 16px;
+            top: 20px;
+            right: 20px;
             width: 4px;
             height: 4px;
             border-radius: 50%;
@@ -77,7 +89,7 @@
             transition: background 0.2s ease-out;
         }
         .dot-ready {
-            background: #555 !important;
+            background: #444 !important;
         }
         .dot-success {
             background: #22c55e !important;
@@ -140,6 +152,48 @@
             outline: none;
             border-color: #555;
         }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #1a1a1a;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        input[type="range"] {
+            flex: 1;
+            accent-color: #fff;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #sun-icon {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: #fff;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: opacity 0.1s;
+        }
+        #opacity-val-text {
+            font-size: 13px;
+            color: #888;
+            min-width: 35px;
+            text-align: right;
+        }
         .btn-group {
             display: flex;
             gap: 12px;
@@ -169,12 +223,13 @@
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
 
-    <div id="stealth-dot"></div>
-
-    <div id="display-area">
-        <img id="peek-img" src="" alt="">
-        <div id="result-text"></div>
+    <div id="aod-container">
+        <div id="aod-time">00:00</div>
+        <div id="aod-date">Memuat...</div>
     </div>
+
+    <img id="peek-img" src="" alt="">
+    <div id="stealth-dot"></div>
 
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
@@ -182,13 +237,6 @@
             <div class="input-group">
                 <span class="input-label">API Credentials</span>
                 <input type="text" id="api-key-input" placeholder="Cloud Vision Key" autocomplete="off">
-            </div>
-            <div class="input-group">
-                <span class="input-label">Lens Module</span>
-                <select id="camera-select">
-                    <option value="environment">Main Camera</option>
-                    <option value="user">Front Camera</option>
-                </select>
             </div>
             <div class="input-group">
                 <span class="input-label">Operation Mode</span>
@@ -206,6 +254,24 @@
                     <option value="5000">5 Seconds</option>
                 </select>
             </div>
+            <div class="input-group">
+                <span class="input-label">Peek Opacity</span>
+                <div class="slider-container">
+                    <svg id="sun-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <input type="range" id="opacity-slider" min="10" max="100" value="80">
+                    <span id="opacity-val-text">80%</span>
+                </div>
+            </div>
             <div class="btn-group">
                 <button class="btn-secondary" id="close-btn">Close</button>
                 <button class="btn-primary" id="save-btn">Save</button>
@@ -216,26 +282,30 @@
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const resultText = document.getElementById('result-text');
+        const aodTime = document.getElementById('aod-time');
+        const aodDate = document.getElementById('aod-date');
         const peekImg = document.getElementById('peek-img');
         const stealthDot = document.getElementById('stealth-dot');
         const settingsModal = document.getElementById('settings-modal');
         const apiKeyInput = document.getElementById('api-key-input');
-        const cameraSelect = document.getElementById('camera-select');
         const modeSelect = document.getElementById('mode-select');
         const intervalSelect = document.getElementById('interval-select');
+        const opacitySlider = document.getElementById('opacity-slider');
+        const sunIcon = document.getElementById('sun-icon');
+        const opacityValText = document.getElementById('opacity-val-text');
         const saveBtn = document.getElementById('save-btn');
         const closeBtn = document.getElementById('close-btn');
 
         let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
-        let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
         let currentMode = localStorage.getItem('stealthScannerMode') || 'ocr';
         let currentInterval = parseInt(localStorage.getItem('stealthScannerInterval')) || 2000;
+        let currentOpacity = parseInt(localStorage.getItem('stealthScannerOpacity')) || 80;
         
         let scanIntervalId = null;
         let isProcessing = false;
         let peekImageSrc = '';
         let extractedText = '';
+        let realDateString = '';
         
         let tapCount = 0;
         let lastTapTime = 0;
@@ -245,8 +315,26 @@
 
         document.addEventListener('contextmenu', e => e.preventDefault());
 
+        function updateClock() {
+            const now = new Date();
+            aodTime.innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+            realDateString = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
+            
+            if (!isHolding || currentMode !== 'ocr') {
+                aodDate.innerText = realDateString;
+            }
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        opacitySlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            opacityValText.innerText = val + '%';
+            sunIcon.style.opacity = val / 100;
+        });
+
         window.addEventListener('load', () => {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
                 .then(stream => stream.getTracks().forEach(t => t.stop()))
                 .catch(() => {});
         });
@@ -257,12 +345,16 @@
             isHolding = false;
             holdTimeout = setTimeout(() => {
                 isHolding = true;
+                const op = currentOpacity / 100;
+                
                 if (currentMode === 'peek' && peekImageSrc) {
                     peekImg.src = peekImageSrc;
+                    peekImg.style.opacity = op;
                     peekImg.style.display = 'block';
                 } else if (currentMode === 'ocr' && extractedText) {
-                    resultText.innerText = extractedText;
-                    resultText.style.display = 'block';
+                    aodDate.innerText = extractedText;
+                    aodDate.style.color = '#fff';
+                    aodDate.style.opacity = op;
                 }
             }, 300);
         };
@@ -273,8 +365,13 @@
             
             if (isHolding) {
                 isHolding = false;
-                peekImg.style.display = 'none';
-                resultText.style.display = 'none';
+                if (currentMode === 'peek') {
+                    peekImg.style.display = 'none';
+                } else if (currentMode === 'ocr') {
+                    aodDate.innerText = realDateString;
+                    aodDate.style.color = '#888';
+                    aodDate.style.opacity = 0.8;
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -294,9 +391,11 @@
                     if (tapCount >= 3) {
                         settingsModal.style.display = 'flex';
                         apiKeyInput.value = visionApiKey;
-                        cameraSelect.value = currentFacingMode;
                         modeSelect.value = currentMode;
                         intervalSelect.value = currentInterval.toString();
+                        opacitySlider.value = currentOpacity;
+                        opacityValText.innerText = currentOpacity + '%';
+                        sunIcon.style.opacity = currentOpacity / 100;
                     } else if (tapCount === 2) {
                         toggleSystem();
                     }
@@ -316,14 +415,14 @@
 
         saveBtn.addEventListener('click', () => {
             visionApiKey = apiKeyInput.value.trim();
-            currentFacingMode = cameraSelect.value;
             currentMode = modeSelect.value;
             currentInterval = parseInt(intervalSelect.value);
+            currentOpacity = parseInt(opacitySlider.value);
 
             localStorage.setItem('stealthScannerKey', visionApiKey);
-            localStorage.setItem('stealthScannerCamera', currentFacingMode);
             localStorage.setItem('stealthScannerMode', currentMode);
             localStorage.setItem('stealthScannerInterval', currentInterval);
+            localStorage.setItem('stealthScannerOpacity', currentOpacity);
 
             settingsModal.style.display = 'none';
             resetState();
@@ -331,11 +430,13 @@
         });
 
         function resetState() {
-            resultText.innerText = '';
             extractedText = '';
             peekImageSrc = '';
             peekImg.style.display = 'none';
             peekImg.src = '';
+            aodDate.innerText = realDateString;
+            aodDate.style.color = '#888';
+            aodDate.style.opacity = 0.8;
             stealthDot.className = '';
             isProcessing = false;
         }
@@ -368,7 +469,7 @@
             
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: currentFacingMode } 
+                    video: { facingMode: 'environment' } 
                 });
                 video.srcObject = stream;
                 
