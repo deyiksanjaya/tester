@@ -829,8 +829,22 @@
 
                 const data = await response.json();
                 
+                if (data.error) {
+                    log(`Google API Error: ${data.error.message} (Status: ${data.error.status})`, 'error');
+                    stealthDot.className = 'dot-error';
+                    isProcessing = false;
+                    return;
+                }
+
                 if (data.responses && data.responses[0]) {
                     const responseObj = data.responses[0];
+                    if (responseObj.error) {
+                        log(`Vision API Error: ${responseObj.error.message}`, 'error');
+                        stealthDot.className = 'dot-error';
+                        isProcessing = false;
+                        return;
+                    }
+
                     if (responseObj.fullTextAnnotation) {
                         const textResult = responseObj.fullTextAnnotation.text;
                         const cleanText = textResult.replace(/[^a-zA-Z0-9 ]/g, '').trim();
@@ -889,7 +903,7 @@
                     }
                 } else {
                     stealthDot.className = 'dot-error';
-                    log('Respons Cloud OCR kosong.', 'error');
+                    log('Respons Cloud OCR tidak memiliki data responses.', 'error');
                 }
             } catch (err) {
                 stealthDot.className = 'dot-error';
