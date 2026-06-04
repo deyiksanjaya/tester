@@ -21,13 +21,6 @@
             -webkit-touch-callout: none;
             touch-action: none;
         }
-        #video {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-            pointer-events: none;
-        }
         #canvas {
             display: none;
         }
@@ -220,7 +213,6 @@
 </head>
 <body>
 
-    <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
 
     <div id="aod-container">
@@ -280,7 +272,6 @@
     </div>
 
     <script>
-        const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const aodTime = document.getElementById('aod-time');
         const aodDate = document.getElementById('aod-date');
@@ -313,6 +304,12 @@
         let holdTimeout;
         let isHolding = false;
 
+        let activeStream = null;
+        let imageCapture = null;
+        let fallbackVideo = document.createElement('video');
+        fallbackVideo.autoplay = true;
+        fallbackVideo.playsInline = true;
+
         document.addEventListener('contextmenu', e => e.preventDefault());
 
         function updateClock() {
@@ -331,12 +328,6 @@
             const val = e.target.value;
             opacityValText.innerText = val + '%';
             sunIcon.style.opacity = val / 100;
-        });
-
-        window.addEventListener('load', () => {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(stream => stream.getTracks().forEach(t => t.stop()))
-                .catch(() => {});
         });
 
         const handlePointerStart = (e) => {
@@ -442,7 +433,7 @@
         }
 
         async function toggleSystem() {
-            if (scanIntervalId || video.srcObject) {
+            if (scanIntervalId || activeStream) {
                 stopCamera();
             } else {
                 startSystem();
@@ -450,10 +441,13 @@
         }
 
         function stopCamera() {
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
+            if (activeStream) {
+                activeStream.getTracks().forEach(track => track.stop());
+                activeStream = null;
             }
+            fallbackVideo.srcObject = null;
+            imageCapture = null;
+            
             if (scanIntervalId) {
                 clearInterval(scanIntervalId);
                 scanIntervalId = null;
@@ -468,32 +462,56 @@
             resetState();
             
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
+                activeStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: 'environment' } 
                 });
-                video.srcObject = stream;
                 
-                video.onloadedmetadata = () => {
-                    video.play();
+                const track = activeStream.getVideoTracks()[0];
+                
+                if (window.ImageCapture) {
+                    imageCapture = new ImageCapture(track);
                     scanIntervalId = setInterval(executeCloudVisionCapture, currentInterval);
                     stealthDot.className = 'dot-ready';
-                };
+                } else {
+                    fallbackVideo.srcObject = activeStream;
+                    fallbackVideo.onloadedmetadata = () => {
+                        fallbackVideo.play();
+                        scanIntervalId = setInterval(executeCloudVisionCapture, currentInterval);
+                        stealthDot.className = 'dot-ready';
+                    };
+                }
             } catch (err) {
                 stealthDot.className = 'dot-error';
             }
         }
 
         async function executeCloudVisionCapture() {
-            if (!video.videoWidth || isProcessing || !visionApiKey) return;
+            if (isProcessing || !visionApiKey) return;
             isProcessing = true;
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            try {
+                const ctx = canvas.getContext('2d');
+                
+                if (imageCapture) {
+                    const bitmap = await imageCapture.grabFrame();
+                    canvas.width = bitmap.width;
+                    canvas.height = bitmap.height;
+                    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+                } else if (fallbackVideo.videoWidth) {
+                    canvas.width = fallbackVideo.videoWidth;
+                    canvas.height = fallbackVideo.videoHeight;
+                    ctx.drawImage(fallbackVideo, 0, 0, canvas.width, canvas.height);
+                } else {
+                    isProcessing = false;
+                    return;
+                }
 
-            const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-            await sendToCloudVision(base64Image);
+                const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+                await sendToCloudVision(base64Image);
+            } catch (err) {
+                stealthDot.className = 'dot-error';
+                isProcessing = false;
+            }
         }
 
         async function sendToCloudVision(base64String) {
