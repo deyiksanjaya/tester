@@ -537,7 +537,31 @@
                 }
             }
 
-            if (largestComp.length > 800) {
+            if (largestComp.length > 1000 && largestComp.length < 11000) {
+                let minX = aWidth, minY = aHeight, maxX = 0, maxY = 0;
+                let sumPaper = 0;
+
+                for (let idx of largestComp) {
+                    const x = idx % aWidth;
+                    const y = Math.floor(idx / aWidth);
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
+
+                    const px = idx * 4;
+                    sumPaper += data[px] * 0.299 + data[px+1] * 0.587 + data[px+2] * 0.114;
+                }
+
+                const boxWidth = maxX - minX;
+                const boxHeight = maxY - minY;
+
+                const aspect = boxWidth / boxHeight;
+                if (aspect < 0.45 || aspect > 2.2) return;
+
+                const density = largestComp.length / (boxWidth * boxHeight);
+                if (density < 0.45 || density > 0.95) return;
+
                 let minSum = Infinity, maxSum = -Infinity;
                 let minDiff = Infinity, maxDiff = -Infinity;
                 let tl = null, tr = null, br = null, bl = null;
@@ -555,6 +579,38 @@
                 }
 
                 if (tl && tr && br && bl) {
+                    const cx = (tl.x + tr.x + br.x + bl.x) / 4;
+                    const cy = (tl.y + tr.y + br.y + bl.y) / 4;
+
+                    const getGray = (x, y) => {
+                        x = Math.max(0, Math.min(aWidth - 1, x));
+                        y = Math.max(0, Math.min(aHeight - 1, y));
+                        const idx = (y * aWidth + x) * 4;
+                        return data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114;
+                    };
+
+                    const sampleOut = (p) => {
+                        const dx = p.x - cx;
+                        const dy = p.y - cy;
+                        const sx = Math.round(cx + dx * 1.25);
+                        const sy = Math.round(cy + dy * 1.25);
+                        return { x: sx, y: sy };
+                    };
+
+                    const otl = sampleOut(tl);
+                    const otr = sampleOut(tr);
+                    const obr = sampleOut(br);
+                    const obl = sampleOut(bl);
+
+                    const avgPaper = sumPaper / largestComp.length;
+                    const avgBg = (getGray(otl.x, otl.y) + getGray(otr.x, otr.y) + getGray(obr.x, obr.y) + getGray(obl.x, obl.y)) / 4;
+
+                    if (avgPaper - avgBg < 45) {
+                        stableFrames = 0;
+                        prevCorners = null;
+                        return;
+                    }
+
                     let strokeEdges = 0;
                     let darkPixels = 0;
                     let totalPixels = 0;
@@ -613,7 +669,11 @@
                 stableFrames = 0;
                 prevCorners = null;
             }
+        } else {
+            stableFrames = 0;
+            prevCorners = null;
         }
+    }
 
         async function executeCapture(tl, tr, br, bl) {
             isProcessing = true;
