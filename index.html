@@ -74,7 +74,7 @@
             background: transparent;
             z-index: 5;
             pointer-events: none;
-            transition: background 0.3s;
+            transition: background 0.2s ease-out;
         }
         .dot-ready {
             background: #555 !important;
@@ -238,11 +238,18 @@
         let extractedText = '';
         
         let tapCount = 0;
+        let lastTapTime = 0;
         let tapTimeout;
         let holdTimeout;
         let isHolding = false;
 
         document.addEventListener('contextmenu', e => e.preventDefault());
+
+        window.addEventListener('load', () => {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } })
+                .then(stream => stream.getTracks().forEach(t => t.stop()))
+                .catch(() => {});
+        });
 
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal')) return;
@@ -257,7 +264,7 @@
                     resultText.innerText = extractedText;
                     resultText.style.display = 'block';
                 }
-            }, 350);
+            }, 300);
         };
 
         const handlePointerEnd = (e) => {
@@ -274,11 +281,17 @@
             }
 
             if (e.type === 'pointerup') {
-                tapCount++;
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    tapCount++;
+                } else {
+                    tapCount = 1;
+                }
+                lastTapTime = now;
+
                 clearTimeout(tapTimeout);
-                
                 tapTimeout = setTimeout(() => {
-                    if (tapCount === 3) {
+                    if (tapCount >= 3) {
                         settingsModal.style.display = 'flex';
                         apiKeyInput.value = visionApiKey;
                         cameraSelect.value = currentFacingMode;
@@ -288,7 +301,7 @@
                         toggleSystem();
                     }
                     tapCount = 0;
-                }, 350);
+                }, 220);
             }
         };
 
@@ -359,8 +372,11 @@
                 });
                 video.srcObject = stream;
                 
-                scanIntervalId = setInterval(executeCloudVisionCapture, currentInterval);
-                stealthDot.className = 'dot-ready';
+                video.onloadedmetadata = () => {
+                    video.play();
+                    scanIntervalId = setInterval(executeCloudVisionCapture, currentInterval);
+                    stealthDot.className = 'dot-ready';
+                };
             } catch (err) {
                 stealthDot.className = 'dot-error';
             }
