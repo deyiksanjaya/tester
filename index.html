@@ -302,6 +302,7 @@
         let extractedText = '';
         let lastCaptureHash = '';
         
+        let lastTapTime = 0;
         let tapCount = 0;
         let tapTimeout;
         let holdTimeout;
@@ -331,6 +332,7 @@
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
             
+            isHolding = false;
             holdTimeout = setTimeout(() => {
                 isHolding = true;
                 if (debugPreview.style.display === 'block') {
@@ -345,7 +347,7 @@
                     resultText.style.display = 'block';
                     log('Menampilkan hasil teks.');
                 }
-            }, 200);
+            }, 400);
         };
 
         const handlePointerEnd = (e) => {
@@ -361,16 +363,28 @@
                 log('Tampilan disembunyikan kembali.');
                 e.preventDefault();
                 e.stopPropagation();
-            } else {
+                return;
+            }
+
+            if (e.type === 'pointerup') {
                 if (e.target.closest('#debug-preview')) {
                     debugPreview.style.display = 'none';
                     log('Pratinjau gambar ditutup.');
                     return;
                 }
-                if (e.type === 'pointerup') {
+
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTapTime;
+                
+                if (tapLength < 400 && tapLength > 0) {
                     tapCount++;
-                    clearTimeout(tapTimeout);
-                    
+                } else {
+                    tapCount = 1;
+                }
+                lastTapTime = currentTime;
+
+                clearTimeout(tapTimeout);
+                tapTimeout = setTimeout(() => {
                     if (tapCount === 3) {
                         settingsModal.style.display = 'flex';
                         apiKeyInput.value = visionApiKey;
@@ -378,23 +392,18 @@
                         modeSelect.value = currentMode;
                         sensitivitySlider.value = currentSensitivity;
                         sliderValue.innerText = currentSensitivity;
-                        tapCount = 0;
                         log('Menu konfigurasi dibuka.');
-                    } else {
-                        tapTimeout = setTimeout(() => {
-                            if (tapCount === 2) {
-                                if (scanIntervalId || video.srcObject) {
-                                    log('Mematikan kamera...');
-                                    stopCamera();
-                                } else {
-                                    log('Menghubungkan kamera...');
-                                    startSystem();
-                                }
-                            }
-                            tapCount = 0;
-                        }, 250);
+                    } else if (tapCount === 2) {
+                        if (scanIntervalId || video.srcObject) {
+                            log('Mematikan kamera...');
+                            stopCamera();
+                        } else {
+                            log('Menghubungkan kamera...');
+                            startSystem();
+                        }
                     }
-                }
+                    tapCount = 0;
+                }, 400);
             }
         };
 
@@ -537,31 +546,7 @@
                 }
             }
 
-            if (largestComp.length > 1000 && largestComp.length < 11000) {
-                let minX = aWidth, minY = aHeight, maxX = 0, maxY = 0;
-                let sumPaper = 0;
-
-                for (let idx of largestComp) {
-                    const x = idx % aWidth;
-                    const y = Math.floor(idx / aWidth);
-                    if (x < minX) minX = x;
-                    if (y < minY) minY = y;
-                    if (x > maxX) maxX = x;
-                    if (y > maxY) maxY = y;
-
-                    const px = idx * 4;
-                    sumPaper += data[px] * 0.299 + data[px+1] * 0.587 + data[px+2] * 0.114;
-                }
-
-                const boxWidth = maxX - minX;
-                const boxHeight = maxY - minY;
-
-                const aspect = boxWidth / boxHeight;
-                if (aspect < 0.45 || aspect > 2.2) return;
-
-                const density = largestComp.length / (boxWidth * boxHeight);
-                if (density < 0.45 || density > 0.95) return;
-
+            if (largestComp.length > 800) {
                 let minSum = Infinity, maxSum = -Infinity;
                 let minDiff = Infinity, maxDiff = -Infinity;
                 let tl = null, tr = null, br = null, bl = null;
@@ -579,38 +564,6 @@
                 }
 
                 if (tl && tr && br && bl) {
-                    const cx = (tl.x + tr.x + br.x + bl.x) / 4;
-                    const cy = (tl.y + tr.y + br.y + bl.y) / 4;
-
-                    const getGray = (x, y) => {
-                        x = Math.max(0, Math.min(aWidth - 1, x));
-                        y = Math.max(0, Math.min(aHeight - 1, y));
-                        const idx = (y * aWidth + x) * 4;
-                        return data[idx] * 0.299 + data[idx+1] * 0.587 + data[idx+2] * 0.114;
-                    };
-
-                    const sampleOut = (p) => {
-                        const dx = p.x - cx;
-                        const dy = p.y - cy;
-                        const sx = Math.round(cx + dx * 1.25);
-                        const sy = Math.round(cy + dy * 1.25);
-                        return { x: sx, y: sy };
-                    };
-
-                    const otl = sampleOut(tl);
-                    const otr = sampleOut(tr);
-                    const obr = sampleOut(br);
-                    const obl = sampleOut(bl);
-
-                    const avgPaper = sumPaper / largestComp.length;
-                    const avgBg = (getGray(otl.x, otl.y) + getGray(otr.x, otr.y) + getGray(obr.x, obr.y) + getGray(obl.x, obl.y)) / 4;
-
-                    if (avgPaper - avgBg < 45) {
-                        stableFrames = 0;
-                        prevCorners = null;
-                        return;
-                    }
-
                     let strokeEdges = 0;
                     let darkPixels = 0;
                     let totalPixels = 0;
@@ -669,11 +622,7 @@
                 stableFrames = 0;
                 prevCorners = null;
             }
-        } else {
-            stableFrames = 0;
-            prevCorners = null;
         }
-    }
 
         async function executeCapture(tl, tr, br, bl) {
             isProcessing = true;
@@ -728,27 +677,36 @@
             const checkData = wCtx.getImageData(0, 0, warpW, warpH);
             const d = checkData.data;
 
+            let centerSum = 0;
+            let centerCount = 0;
+            const startX = Math.round(warpW * 0.1);
+            const endX = Math.round(warpW * 0.9);
+            const startY = Math.round(warpH * 0.1);
+            const endY = Math.round(warpH * 0.9);
+
+            for (let y = startY; y < endY; y += 2) {
+                for (let x = startX; x < endX; x += 2) {
+                    const idx = (y * warpW + x) * 4;
+                    const r = d[idx], g = d[idx+1], b = d[idx+2];
+                    const gray = r * 0.299 + g * 0.587 + b * 0.114;
+                    centerSum += gray;
+                    centerCount++;
+                }
+            }
+
+            const avgLuminance = centerCount > 0 ? (centerSum / centerCount) : 180;
+            const inkThreshold = avgLuminance - 40;
+
             let inkMinX = warpW, inkMinY = warpH, inkMaxX = 0, inkMaxY = 0;
             let inkFound = false;
 
-            const marginX = Math.round(warpW * 0.05);
-            const marginY = Math.round(warpH * 0.05);
-
-            for (let y = marginY; y < warpH - marginY; y += 2) {
-                for (let x = marginX; x < warpW - marginX; x += 2) {
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
                     const idx = (y * warpW + x) * 4;
                     const r = d[idx], g = d[idx+1], b = d[idx+2];
                     const gray = r * 0.299 + g * 0.587 + b * 0.114;
 
-                    const rightIdx = (y * warpW + (x + 2)) * 4;
-                    const rightGray = d[rightIdx]*0.299 + d[rightIdx+1]*0.587 + d[rightIdx+2]*0.114;
-
-                    const bottomIdx = ((y + 2) * warpW + x) * 4;
-                    const bottomGray = d[bottomIdx]*0.299 + d[bottomIdx+1]*0.587 + d[bottomIdx+2]*0.114;
-
-                    const grad = Math.abs(gray - rightGray) + Math.abs(gray - bottomGray);
-
-                    if (grad > 30 && gray < 150) {
+                    if (gray < inkThreshold) {
                         inkFound = true;
                         if (x < inkMinX) inkMinX = x;
                         if (y < inkMinY) inkMinY = y;
@@ -759,12 +717,11 @@
             }
 
             if (inkFound) {
-                const padX = 30;
-                const padY = 30;
-                inkMinX = Math.max(marginX, inkMinX - padX);
-                inkMinY = Math.max(marginY, inkMinY - padY);
-                inkMaxX = Math.min(warpW - marginX, inkMaxX + padX);
-                inkMaxY = Math.min(warpH - marginY, inkMaxY + padY);
+                const pad = 20;
+                inkMinX = Math.max(0, inkMinX - pad);
+                inkMinY = Math.max(0, inkMinY - pad);
+                inkMaxX = Math.min(warpW, inkMaxX + pad);
+                inkMaxY = Math.min(warpH, inkMaxY + pad);
 
                 const finalCropW = inkMaxX - inkMinX;
                 const finalCropH = inkMaxY - inkMinY;
