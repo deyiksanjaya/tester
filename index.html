@@ -69,6 +69,21 @@
             pointer-events: none;
             border-radius: 4px;
         }
+        #debug-preview {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 85%;
+            max-height: 55%;
+            border: 2px solid #333;
+            border-radius: 8px;
+            display: none;
+            z-index: 3;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
         #stealth-dot {
             position: absolute;
             top: 12px;
@@ -211,6 +226,7 @@
     <canvas id="canvas"></canvas>
     <canvas id="analysis-canvas"></canvas>
     <img id="peek-img" src="" alt="">
+    <img id="debug-preview" src="" alt="">
 
     <div id="stealth-dot"></div>
 
@@ -261,6 +277,7 @@
         const analysisCanvas = document.getElementById('analysis-canvas');
         const resultText = document.getElementById('result-text');
         const peekImg = document.getElementById('peek-img');
+        const debugPreview = document.getElementById('debug-preview');
         const stealthDot = document.getElementById('stealth-dot');
         const settingsModal = document.getElementById('settings-modal');
         const apiKeyInput = document.getElementById('api-key-input');
@@ -308,10 +325,15 @@
             sliderValue.innerText = e.target.value;
         });
 
+        debugPreview.addEventListener('click', () => {
+            debugPreview.style.display = 'none';
+            log('Pratinjau gambar ditutup.');
+        });
+
         log('Sistem aktif. Ketuk 2x untuk mulai, ketuk 3x untuk konfigurasi.');
 
         const handlePointerStart = (e) => {
-            if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
+            if (e.target.closest('.modal') || e.target.closest('#main-console') || e.target.closest('#debug-preview')) return;
             
             holdTimeout = setTimeout(() => {
                 isHolding = true;
@@ -328,7 +350,7 @@
         };
 
         const handlePointerEnd = (e) => {
-            if (e.target.closest('.modal') || e.target.closest('#main-console')) return;
+            if (e.target.closest('.modal') || e.target.closest('#main-console') || e.target.closest('#debug-preview')) return;
             clearTimeout(holdTimeout);
             
             if (isHolding) {
@@ -397,6 +419,8 @@
             peekImageSrc = '';
             peekImg.style.display = 'none';
             peekImg.src = '';
+            debugPreview.style.display = 'none';
+            debugPreview.src = '';
             stealthDot.className = '';
             
             log(`Konfigurasi disimpan. Mode: ${currentMode}, Kamera: ${currentFacingMode}, Kecerahan Kertas: ${currentSensitivity}`);
@@ -423,6 +447,8 @@
             stealthDot.className = '';
             stableFrames = 0;
             prevBox = null;
+            debugPreview.style.display = 'none';
+            debugPreview.src = '';
             
             try {
                 log(`Mengaktifkan kamera video (${currentFacingMode})...`);
@@ -510,8 +536,8 @@
                         if (shiftX < 10 && shiftY < 10 && shiftW < 12 && shiftH < 12) {
                             stableFrames++;
                             if (stableFrames >= 4) {
-                                log('Kertas berisi tulisan terdeteksi stabil. Mengirim snapshot...');
-                                executeCapture();
+                                log('Kertas berisi tulisan terdeteksi stabil. Memproses gambar...');
+                                executeCapture(minX, minY, maxX, maxY);
                             }
                         } else {
                             stableFrames = 0;
@@ -528,19 +554,43 @@
             }
         }
 
-        async function executeCapture() {
+        async function executeCapture(minX, minY, maxX, maxY) {
             isProcessing = true;
             stopCamera();
 
-            const targetWidth = 480;
-            const scale = targetWidth / video.videoWidth;
-            canvas.width = targetWidth;
-            canvas.height = video.videoHeight * scale;
-            
+            const pad = 20;
+            const cropX = Math.max(0, (minX / 120) * video.videoWidth - pad);
+            const cropY = Math.max(0, (minY / 90) * video.videoHeight - pad);
+            const cropW = Math.min(video.videoWidth - cropX, ((maxX - minX) / 120) * video.videoWidth + pad * 2);
+            const cropH = Math.min(video.videoHeight - cropY, ((maxY - minY) / 90) * video.videoHeight + pad * 2);
+
+            canvas.width = 400;
+            canvas.height = (cropH / cropW) * 400;
+
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
+
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                let r = d[i], g = d[i+1], b = d[i+2];
+                let v = r * 0.299 + g * 0.587 + b * 0.114;
+                if (v < 110) {
+                    v = 0;
+                } else if (v > 180) {
+                    v = 255;
+                } else {
+                    v = ((v - 110) / 70) * 255;
+                }
+                d[i] = d[i+1] = d[i+2] = v;
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            const base64Url = canvas.toDataURL('image/jpeg', 0.85);
+            debugPreview.src = base64Url;
+            debugPreview.style.display = 'block';
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            const base64Image = base64Url.split(',')[1];
             await sendToCloudVision(base64Image);
         }
 
@@ -592,7 +642,7 @@
                                 if (y > maxY) maxY = y;
                             });
 
-                            const pad = 15;
+                            const pad = 10;
                             minX = Math.max(0, minX - pad);
                             minY = Math.max(0, minY - pad);
                             maxX = Math.min(canvas.width, maxX + pad);
@@ -607,7 +657,7 @@
                                 cropCanvas.height = h;
                                 const cropCtx = cropCanvas.getContext('2d');
                                 cropCtx.drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
-                                peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.9);
+                                peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.95);
                                 stealthDot.className = 'dot-success';
                                 log('Pemotongan gambar tulisan selesai. Siap di-peeking.', 'success');
                             }
