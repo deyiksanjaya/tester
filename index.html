@@ -330,6 +330,12 @@
             sunIcon.style.opacity = val / 100;
         });
 
+        window.addEventListener('load', () => {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+                .then(stream => stream.getTracks().forEach(t => t.stop()))
+                .catch(() => {});
+        });
+
         const handlePointerStart = (e) => {
             if (e.target.closest('.modal')) return;
             
@@ -463,7 +469,7 @@
             
             try {
                 activeStream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
+                    video: { facingMode: 'user' } 
                 });
                 
                 const track = activeStream.getVideoTracks()[0];
