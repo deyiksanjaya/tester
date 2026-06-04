@@ -546,7 +546,30 @@
                 }
             }
 
-            if (largestComp.length > 800) {
+            if (largestComp.length > 1000 && largestComp.length < 14000) {
+                let minX = aWidth, minY = aHeight, maxX = 0, maxY = 0;
+                
+                for (let idx of largestComp) {
+                    const x = idx % aWidth;
+                    const y = Math.floor(idx / aWidth);
+                    if (x < minX) minX = x;
+                    if (y < minY) minY = y;
+                    if (x > maxX) maxX = x;
+                    if (y > maxY) maxY = y;
+                }
+
+                let edgesTouched = 0;
+                if (minX <= 2) edgesTouched++;
+                if (minY <= 2) edgesTouched++;
+                if (maxX >= aWidth - 3) edgesTouched++;
+                if (maxY >= aHeight - 3) edgesTouched++;
+                
+                if (edgesTouched >= 3) {
+                    stableFrames = 0;
+                    prevCorners = null;
+                    return;
+                }
+
                 let minSum = Infinity, maxSum = -Infinity;
                 let minDiff = Infinity, maxDiff = -Infinity;
                 let tl = null, tr = null, br = null, bl = null;
@@ -564,6 +587,20 @@
                 }
 
                 if (tl && tr && br && bl) {
+                    const quadArea = 0.5 * Math.abs(
+                        (tl.x*tr.y - tl.y*tr.x) +
+                        (tr.x*br.y - tr.y*br.x) +
+                        (br.x*bl.y - br.y*bl.x) +
+                        (bl.x*tl.y - bl.y*tl.x)
+                    );
+
+                    const shapeRatio = quadArea / largestComp.length;
+                    if (shapeRatio < 0.70 || shapeRatio > 1.35) {
+                        stableFrames = 0;
+                        prevCorners = null;
+                        return;
+                    }
+
                     let strokeEdges = 0;
                     let darkPixels = 0;
                     let totalPixels = 0;
@@ -593,9 +630,9 @@
                     }
 
                     const darkRatio = totalPixels > 0 ? (darkPixels / totalPixels) : 0;
-                    log(`Kertas terdeteksi | Stroke: ${strokeEdges} | Dark Ratio: ${(darkRatio * 100).toFixed(1)}%`);
+                    log(`Geometri OK | Stroke: ${strokeEdges} | Dark Ratio: ${(darkRatio * 100).toFixed(1)}%`);
 
-                    if (strokeEdges > 15 && darkRatio > 0.01 && darkRatio < 0.30) {
+                    if (strokeEdges > 15 && strokeEdges < 180 && darkRatio > 0.01 && darkRatio < 0.30) {
                         if (prevCorners) {
                             const shiftTL = Math.abs(tl.x - prevCorners.tl.x) + Math.abs(tl.y - prevCorners.tl.y);
                             const shiftTR = Math.abs(tr.x - prevCorners.tr.x) + Math.abs(tr.y - prevCorners.tr.y);
