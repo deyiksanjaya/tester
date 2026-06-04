@@ -5,448 +5,455 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Scanner</title>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
         body, html {
-            width: 100%; height: 100%;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             background: #000;
             font-family: system-ui, -apple-system, sans-serif;
             overflow: hidden;
             color: #fff;
             -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
             touch-action: none;
         }
-
-        #video, #canvas {
+        #video {
             position: absolute;
-            width: 1px; height: 1px;
-            opacity: 0; pointer-events: none;
-        }
-
-        /* Stealth dot */
-        #dot {
-            position: absolute;
-            top: env(safe-area-inset-top, 12px);
-            right: 12px;
-            margin-top: 12px;
-            width: 5px; height: 5px;
-            border-radius: 50%;
-            background: transparent;
-            z-index: 9;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
             pointer-events: none;
-            transition: background 0.4s, opacity 0.4s;
         }
-        #dot.idle     { background: #444; opacity: 1; }
-        #dot.scanning { background: #facc15; opacity: 0.8; }
-        #dot.success  { background: #22c55e; opacity: 0.6; }
-        #dot.error    { background: #ef4444; opacity: 0.7; }
-
-        /* Peek overlay */
-        #peek-img {
+        #canvas {
+            display: none;
+        }
+        #display-area {
             position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            max-width: 92%;
-            max-height: 88%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+            z-index: 1;
+        }
+        #result-text {
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 100%;
+            text-align: left;
+            pointer-events: none;
+            display: none;
+        }
+        #peek-img {
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
             display: none;
-            z-index: 5;
+            z-index: 2;
             pointer-events: none;
-            border-radius: 6px;
+            border-radius: 4px;
         }
-
-        #result-text {
+        #stealth-dot {
             position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: calc(100% - 48px);
-            max-height: 88%;
-            overflow-y: auto;
-            font-size: 15px;
-            line-height: 1.7;
-            white-space: pre-wrap;
-            color: rgba(255,255,255,0.88);
-            display: none;
+            top: 16px;
+            right: 16px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: transparent;
             z-index: 5;
             pointer-events: none;
-            text-align: left;
+            transition: background 0.3s;
         }
-
-        /* Modal */
+        .dot-ready {
+            background: #555 !important;
+        }
+        .dot-success {
+            background: #22c55e !important;
+        }
+        .dot-error {
+            background: #ef4444 !important;
+        }
         .modal-overlay {
             display: none;
             position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.96);
-            z-index: 20;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10;
             justify-content: center;
             align-items: center;
         }
-        .modal-overlay.open { display: flex; }
-
         .modal {
-            background: #0e0e0e;
-            border: 1px solid #1e1e1e;
+            background: #111;
+            padding: 28px;
             border-radius: 16px;
-            padding: 28px 24px;
-            width: 88%;
+            width: 85%;
             max-width: 320px;
+            border: 1px solid #222;
         }
         .modal-title {
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            color: #ccc;
+            font-size: 16px;
+            font-weight: 500;
             margin-bottom: 24px;
+            color: #fff;
+            letter-spacing: 0.5px;
         }
-        .field { margin-bottom: 18px; }
-        .field label {
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-label {
             display: block;
-            font-size: 11px;
-            color: #555;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
+            font-size: 12px;
+            color: #888;
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        input[type="text"],
-        input[type="password"],
-        select {
+        input[type="text"], select {
             width: 100%;
-            padding: 11px 14px;
-            background: #181818;
-            border: 1px solid #2a2a2a;
-            color: #e0e0e0;
-            border-radius: 10px;
+            padding: 14px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 8px;
             font-size: 14px;
+            box-sizing: border-box;
+        }
+        select {
             appearance: none;
         }
-        input:focus, select:focus { outline: none; border-color: #444; }
-
-        .slider-row {
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #555;
+        }
+        .btn-group {
             display: flex;
-            align-items: center;
             gap: 12px;
-        }
-        input[type="range"] {
-            flex: 1;
-            accent-color: #fff;
-            height: 2px;
-        }
-        .slider-val {
-            font-size: 14px;
-            color: #aaa;
-            min-width: 28px;
-            text-align: right;
-        }
-
-        .btn-row {
-            display: flex;
-            gap: 10px;
-            margin-top: 26px;
+            margin-top: 32px;
         }
         button {
             flex: 1;
-            padding: 12px;
-            border-radius: 10px;
+            padding: 14px;
+            border-radius: 8px;
             border: none;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.15s;
         }
-        button:active { opacity: 0.7; }
-        .btn-save { background: #fff; color: #000; }
-        .btn-close { background: #1e1e1e; color: #aaa; }
+        .btn-primary {
+            background: #fff;
+            color: #000;
+        }
+        .btn-secondary {
+            background: #222;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
 
-<video id="video" autoplay playsinline muted></video>
-<canvas id="canvas"></canvas>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas"></canvas>
 
-<div id="dot"></div>
-<img id="peek-img" src="" alt="">
-<div id="result-text"></div>
+    <div id="stealth-dot"></div>
 
-<div class="modal-overlay" id="modal">
-    <div class="modal">
-        <div class="modal-title">Konfigurasi</div>
+    <div id="display-area">
+        <img id="peek-img" src="" alt="">
+        <div id="result-text"></div>
+    </div>
 
-        <div class="field">
-            <label>API Key</label>
-            <input type="password" id="inp-key" placeholder="Google Cloud Vision Key" autocomplete="off">
-        </div>
-        <div class="field">
-            <label>Kamera</label>
-            <select id="inp-cam">
-                <option value="environment">Utama (Belakang)</option>
-                <option value="user">Depan</option>
-            </select>
-        </div>
-        <div class="field">
-            <label>Mode</label>
-            <select id="inp-mode">
-                <option value="ocr">Teks (OCR)</option>
-                <option value="peek">Gambar (Peek)</option>
-            </select>
-        </div>
-        <div class="field">
-            <label>Interval Scan (detik)</label>
-            <div class="slider-row">
-                <input type="range" id="inp-interval" min="2" max="15" step="1">
-                <span class="slider-val" id="interval-val">5</span>
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <div class="modal-title">System Configuration</div>
+            <div class="input-group">
+                <span class="input-label">API Credentials</span>
+                <input type="text" id="api-key-input" placeholder="Cloud Vision Key" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <span class="input-label">Lens Module</span>
+                <select id="camera-select">
+                    <option value="environment">Main Camera</option>
+                    <option value="user">Front Camera</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <span class="input-label">Operation Mode</span>
+                <select id="mode-select">
+                    <option value="ocr">Text Extraction</option>
+                    <option value="peek">Image Capture</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <span class="input-label">Scan Interval</span>
+                <select id="interval-select">
+                    <option value="1000">1 Second</option>
+                    <option value="2000">2 Seconds</option>
+                    <option value="3000">3 Seconds</option>
+                    <option value="5000">5 Seconds</option>
+                </select>
+            </div>
+            <div class="btn-group">
+                <button class="btn-secondary" id="close-btn">Close</button>
+                <button class="btn-primary" id="save-btn">Save</button>
             </div>
         </div>
-
-        <div class="btn-row">
-            <button class="btn-close" id="btn-close">Tutup</button>
-            <button class="btn-save" id="btn-save">Simpan</button>
-        </div>
     </div>
-</div>
 
-<script>
-    // ── State ──────────────────────────────────────────────────────────────
-    let apiKey      = localStorage.getItem('sc_key')      || '';
-    let facingMode  = localStorage.getItem('sc_cam')      || 'environment';
-    let mode        = localStorage.getItem('sc_mode')     || 'ocr';
-    let interval    = parseInt(localStorage.getItem('sc_interval')) || 5;
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const resultText = document.getElementById('result-text');
+        const peekImg = document.getElementById('peek-img');
+        const stealthDot = document.getElementById('stealth-dot');
+        const settingsModal = document.getElementById('settings-modal');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const cameraSelect = document.getElementById('camera-select');
+        const modeSelect = document.getElementById('mode-select');
+        const intervalSelect = document.getElementById('interval-select');
+        const saveBtn = document.getElementById('save-btn');
+        const closeBtn = document.getElementById('close-btn');
 
-    let scanTimer   = null;
-    let isRunning   = false;
-    let isCapturing = false;
-    let peekSrc     = '';
-    let ocrText     = '';
-    let isHolding   = false;
-    let tapCount    = 0;
-    let tapTimer    = null;
-    let holdTimer   = null;
+        let visionApiKey = localStorage.getItem('stealthScannerKey') || '';
+        let currentFacingMode = localStorage.getItem('stealthScannerCamera') || 'environment';
+        let currentMode = localStorage.getItem('stealthScannerMode') || 'ocr';
+        let currentInterval = parseInt(localStorage.getItem('stealthScannerInterval')) || 2000;
+        
+        let scanIntervalId = null;
+        let isProcessing = false;
+        let peekImageSrc = '';
+        let extractedText = '';
+        
+        let tapCount = 0;
+        let tapTimeout;
+        let holdTimeout;
+        let isHolding = false;
 
-    // ── DOM ───────────────────────────────────────────────────────────────
-    const video       = document.getElementById('video');
-    const canvas      = document.getElementById('canvas');
-    const dot         = document.getElementById('dot');
-    const peekImg     = document.getElementById('peek-img');
-    const resultText  = document.getElementById('result-text');
-    const modal       = document.getElementById('modal');
-    const inpKey      = document.getElementById('inp-key');
-    const inpCam      = document.getElementById('inp-cam');
-    const inpMode     = document.getElementById('inp-mode');
-    const inpInterval = document.getElementById('inp-interval');
-    const intervalVal = document.getElementById('interval-val');
-    const btnSave     = document.getElementById('btn-save');
-    const btnClose    = document.getElementById('btn-close');
+        document.addEventListener('contextmenu', e => e.preventDefault());
 
-    // init slider display
-    inpInterval.value = interval;
-    intervalVal.textContent = interval;
-    inpInterval.addEventListener('input', () => {
-        intervalVal.textContent = inpInterval.value;
-    });
-
-    document.addEventListener('contextmenu', e => e.preventDefault());
-
-    // ── Dot helper ────────────────────────────────────────────────────────
-    function setDot(state) { // 'idle' | 'scanning' | 'success' | 'error'
-        dot.className = state;
-    }
-
-    // ── Camera ────────────────────────────────────────────────────────────
-    async function startCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } }
-            });
-            video.srcObject = stream;
-            await video.play();
-        } catch (e) {
-            setDot('error');
-        }
-    }
-
-    function stopCamera() {
-        if (video.srcObject) {
-            video.srcObject.getTracks().forEach(t => t.stop());
-            video.srcObject = null;
-        }
-        if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
-        isRunning = false;
-        isCapturing = false;
-        setDot('idle');
-    }
-
-    async function startSystem() {
-        if (isRunning) return;
-        isRunning = true;
-        isCapturing = false;
-        setDot('idle');
-        await startCamera();
-        // small delay to let camera warm up
-        await new Promise(r => setTimeout(r, 800));
-        await captureAndSend(); // first shot immediately
-        scanTimer = setInterval(captureAndSend, interval * 1000);
-    }
-
-    // ── Capture & Send ────────────────────────────────────────────────────
-    async function captureAndSend() {
-        if (isCapturing || !video.videoWidth) return;
-        if (!apiKey) { setDot('error'); return; }
-
-        isCapturing = true;
-        setDot('scanning');
-
-        // Draw frame to canvas
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0);
-
-        const base64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
-
-        try {
-            const res  = await fetch(
-                `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        requests: [{
-                            image: { content: base64 },
-                            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }]
-                        }]
-                    })
-                }
-            );
-
-            const json = await res.json();
-            const r0   = json.responses && json.responses[0];
-
-            if (r0 && r0.fullTextAnnotation) {
-                ocrText = r0.fullTextAnnotation.text;
-                setDot('success');
-
-                if (mode === 'peek') {
-                    // Crop to bounding box of all text
-                    const anns = r0.textAnnotations;
-                    if (anns && anns.length > 0) {
-                        const verts = anns[0].boundingPoly.vertices;
-                        let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
-                        verts.forEach(v => {
-                            const x = v.x || 0, y = v.y || 0;
-                            if (x < minX) minX = x;
-                            if (y < minY) minY = y;
-                            if (x > maxX) maxX = x;
-                            if (y > maxY) maxY = y;
-                        });
-                        const pad = 12;
-                        minX = Math.max(0, minX - pad);
-                        minY = Math.max(0, minY - pad);
-                        maxX = Math.min(canvas.width,  maxX + pad);
-                        maxY = Math.min(canvas.height, maxY + pad);
-                        const w = maxX - minX, h = maxY - minY;
-                        if (w > 0 && h > 0) {
-                            const crop   = document.createElement('canvas');
-                            crop.width   = w; crop.height = h;
-                            crop.getContext('2d').drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
-                            peekSrc = crop.toDataURL('image/jpeg', 0.95);
-                        }
-                    }
-                }
-            } else {
-                setDot('error');
-            }
-        } catch (_) {
-            setDot('error');
-        }
-
-        isCapturing = false;
-    }
-
-    // ── Gestures ──────────────────────────────────────────────────────────
-    function onPointerDown(e) {
-        if (e.target.closest('.modal')) return;
-
-        holdTimer = setTimeout(() => {
-            isHolding = true;
-            if (mode === 'peek' && peekSrc) {
-                peekImg.src = peekSrc;
-                peekImg.style.display = 'block';
-            } else if (mode === 'ocr' && ocrText) {
-                resultText.textContent = ocrText;
-                resultText.style.display = 'block';
-            }
-        }, 200);
-    }
-
-    function onPointerUp(e) {
-        if (e.target.closest('.modal')) return;
-        clearTimeout(holdTimer);
-
-        if (isHolding) {
+        const handlePointerStart = (e) => {
+            if (e.target.closest('.modal')) return;
+            
             isHolding = false;
+            holdTimeout = setTimeout(() => {
+                isHolding = true;
+                if (currentMode === 'peek' && peekImageSrc) {
+                    peekImg.src = peekImageSrc;
+                    peekImg.style.display = 'block';
+                } else if (currentMode === 'ocr' && extractedText) {
+                    resultText.innerText = extractedText;
+                    resultText.style.display = 'block';
+                }
+            }, 350);
+        };
+
+        const handlePointerEnd = (e) => {
+            if (e.target.closest('.modal')) return;
+            clearTimeout(holdTimeout);
+            
+            if (isHolding) {
+                isHolding = false;
+                peekImg.style.display = 'none';
+                resultText.style.display = 'none';
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            if (e.type === 'pointerup') {
+                tapCount++;
+                clearTimeout(tapTimeout);
+                
+                tapTimeout = setTimeout(() => {
+                    if (tapCount === 3) {
+                        settingsModal.style.display = 'flex';
+                        apiKeyInput.value = visionApiKey;
+                        cameraSelect.value = currentFacingMode;
+                        modeSelect.value = currentMode;
+                        intervalSelect.value = currentInterval.toString();
+                    } else if (tapCount === 2) {
+                        toggleSystem();
+                    }
+                    tapCount = 0;
+                }, 350);
+            }
+        };
+
+        document.body.addEventListener('pointerdown', handlePointerStart);
+        document.body.addEventListener('pointerup', handlePointerEnd);
+        document.body.addEventListener('pointercancel', handlePointerEnd);
+        document.body.addEventListener('pointerleave', handlePointerEnd);
+
+        closeBtn.addEventListener('click', () => {
+            settingsModal.style.display = 'none';
+        });
+
+        saveBtn.addEventListener('click', () => {
+            visionApiKey = apiKeyInput.value.trim();
+            currentFacingMode = cameraSelect.value;
+            currentMode = modeSelect.value;
+            currentInterval = parseInt(intervalSelect.value);
+
+            localStorage.setItem('stealthScannerKey', visionApiKey);
+            localStorage.setItem('stealthScannerCamera', currentFacingMode);
+            localStorage.setItem('stealthScannerMode', currentMode);
+            localStorage.setItem('stealthScannerInterval', currentInterval);
+
+            settingsModal.style.display = 'none';
+            resetState();
+            stopCamera();
+        });
+
+        function resetState() {
+            resultText.innerText = '';
+            extractedText = '';
+            peekImageSrc = '';
             peekImg.style.display = 'none';
             peekImg.src = '';
-            resultText.style.display = 'none';
-            e.preventDefault();
-            return;
+            stealthDot.className = '';
+            isProcessing = false;
         }
 
-        if (e.type !== 'pointerup') return;
+        async function toggleSystem() {
+            if (scanIntervalId || video.srcObject) {
+                stopCamera();
+            } else {
+                startSystem();
+            }
+        }
 
-        tapCount++;
-        clearTimeout(tapTimer);
+        function stopCamera() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            if (scanIntervalId) {
+                clearInterval(scanIntervalId);
+                scanIntervalId = null;
+            }
+            if (stealthDot.className === 'dot-ready' || stealthDot.className === 'dot-error') {
+                stealthDot.className = '';
+            }
+        }
 
-        if (tapCount === 3) {
-            tapCount = 0;
-            openModal();
-        } else {
-            tapTimer = setTimeout(() => {
-                if (tapCount === 2) {
-                    isRunning ? stopCamera() : startSystem();
+        async function startSystem() {
+            if (scanIntervalId) return;
+            resetState();
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: currentFacingMode } 
+                });
+                video.srcObject = stream;
+                
+                scanIntervalId = setInterval(executeCloudVisionCapture, currentInterval);
+                stealthDot.className = 'dot-ready';
+            } catch (err) {
+                stealthDot.className = 'dot-error';
+            }
+        }
+
+        async function executeCloudVisionCapture() {
+            if (!video.videoWidth || isProcessing || !visionApiKey) return;
+            isProcessing = true;
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const base64Image = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            await sendToCloudVision(base64Image);
+        }
+
+        async function sendToCloudVision(base64String) {
+            const url = `https://vision.googleapis.com/v1/images:annotate?key=${visionApiKey}`;
+            const payload = {
+                requests: [{
+                    image: { content: base64String },
+                    features: [{ type: "DOCUMENT_TEXT_DETECTION" }]
+                }]
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                if (data.responses && data.responses[0] && data.responses[0].fullTextAnnotation) {
+                    const responseObj = data.responses[0];
+                    const textResult = responseObj.fullTextAnnotation.text;
+                    const cleanText = textResult.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+                    
+                    if (cleanText.length >= 3) {
+                        if (currentMode === 'ocr') {
+                            extractedText = textResult;
+                            stealthDot.className = 'dot-success';
+                            stopCamera();
+                        } else if (currentMode === 'peek') {
+                            const annotations = responseObj.textAnnotations;
+                            if (annotations && annotations.length > 0) {
+                                const vertices = annotations[0].boundingPoly.vertices;
+                                let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+                                
+                                vertices.forEach(v => {
+                                    const x = v.x || 0;
+                                    const y = v.y || 0;
+                                    if (x < minX) minX = x;
+                                    if (y < minY) minY = y;
+                                    if (x > maxX) maxX = x;
+                                    if (y > maxY) maxY = y;
+                                });
+
+                                const pad = 30;
+                                minX = Math.max(0, minX - pad);
+                                minY = Math.max(0, minY - pad);
+                                maxX = Math.min(canvas.width, maxX + pad);
+                                maxY = Math.min(canvas.height, maxY + pad);
+
+                                const w = maxX - minX;
+                                const h = maxY - minY;
+
+                                if (w > 0 && h > 0) {
+                                    const cropCanvas = document.createElement('canvas');
+                                    cropCanvas.width = w;
+                                    cropCanvas.height = h;
+                                    cropCanvas.getContext('2d').drawImage(canvas, minX, minY, w, h, 0, 0, w, h);
+                                    
+                                    peekImageSrc = cropCanvas.toDataURL('image/jpeg', 0.95);
+                                    stealthDot.className = 'dot-success';
+                                    stopCamera();
+                                }
+                            }
+                        }
+                    } else {
+                        stealthDot.className = 'dot-ready';
+                    }
+                } else {
+                    stealthDot.className = 'dot-ready';
                 }
-                tapCount = 0;
-            }, 280);
+            } catch (err) {
+                stealthDot.className = 'dot-error';
+            }
+            isProcessing = false;
         }
-    }
-
-    document.body.addEventListener('pointerdown',  onPointerDown);
-    document.body.addEventListener('pointerup',    onPointerUp);
-    document.body.addEventListener('pointercancel', onPointerUp);
-    document.body.addEventListener('pointerleave',  onPointerUp);
-
-    // ── Modal ─────────────────────────────────────────────────────────────
-    function openModal() {
-        inpKey.value      = apiKey;
-        inpCam.value      = facingMode;
-        inpMode.value     = mode;
-        inpInterval.value = interval;
-        intervalVal.textContent = interval;
-        modal.classList.add('open');
-    }
-
-    btnClose.addEventListener('click', () => modal.classList.remove('open'));
-
-    btnSave.addEventListener('click', () => {
-        apiKey     = inpKey.value.trim();
-        facingMode = inpCam.value;
-        mode       = inpMode.value;
-        interval   = parseInt(inpInterval.value);
-
-        localStorage.setItem('sc_key',      apiKey);
-        localStorage.setItem('sc_cam',      facingMode);
-        localStorage.setItem('sc_mode',     mode);
-        localStorage.setItem('sc_interval', interval);
-
-        modal.classList.remove('open');
-
-        // Reset state
-        peekSrc  = '';
-        ocrText  = '';
-        peekImg.style.display   = 'none';
-        resultText.style.display = 'none';
-        stopCamera();
-    });
-</script>
+    </script>
 </body>
 </html>
