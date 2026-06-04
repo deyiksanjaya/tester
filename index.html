@@ -87,10 +87,11 @@
             background: transparent;
             z-index: 5;
             pointer-events: none;
+            opacity: 0.15;
             transition: background 0.2s ease-out;
         }
         .dot-ready {
-            background: #444 !important;
+            background: #666 !important;
         }
         .dot-success {
             background: #22c55e !important;
@@ -340,16 +341,16 @@
             isHolding = false;
             holdTimeout = setTimeout(() => {
                 isHolding = true;
-                const op = currentOpacity / 100;
                 
                 if (currentMode === 'peek' && peekImageSrc) {
+                    const op = currentOpacity / 100;
                     peekImg.src = peekImageSrc;
                     peekImg.style.opacity = op;
                     peekImg.style.display = 'block';
                 } else if (currentMode === 'ocr' && extractedText) {
                     aodDate.innerText = extractedText;
                     aodDate.style.color = '#fff';
-                    aodDate.style.opacity = op;
+                    aodDate.style.opacity = 1;
                 }
             }, 300);
         };
