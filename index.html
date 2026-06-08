@@ -1,81 +1,153 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deteksi Kepalan Tangan</title>
-    <!-- Memuat MediaPipe Vision -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js" crossorigin="anonymous"></script>
-    <style>
-        body { margin: 0; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #1a1a1a; color: white; }
-        #video { border-radius: 12px; transform: scaleX(-1); width: 100%; max-width: 600px; }
-        #status { margin-top: 20px; font-size: 24px; font-weight: bold; }
-        .fist { color: #ff4757; }
-        .palm { color: #2ed573; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Senter Gestur</title>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000000;
+    overflow: hidden;
+    font-family: system-ui, sans-serif;
+    position: fixed;
+    inset: 0;
+  }
+  #ui {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    background-color: #000000;
+  }
+  button {
+    padding: 12px 32px;
+    background-color: #ffffff;
+    color: #000000;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  button:active {
+    opacity: 0.8;
+  }
+  #video {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hidden {
+    display: none !important;
+  }
+</style>
 </head>
 <body>
+<div id="ui"><button id="btn">Mulai</button></div>
+<video id="video" playsinline autoplay muted></video>
+<script>
+  const video = document.getElementById('video');
+  const btn = document.getElementById('btn');
+  const ui = document.getElementById('ui');
+  let track = null;
+  let isOn = false;
 
-    <h2>Deteksi Kepalan Tangan</h2>
-    <video id="video" autoplay playsinline></video>
-    <div id="status">Memuat AI...</div>
+  btn.addEventListener('click', async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      video.srcObject = stream;
+      await video.play();
+      track = stream.getVideoTracks()[0];
+      ui.classList.add('hidden');
+      start();
+    } catch (e) {
+      btn.textContent = 'Gagal Mengakses Kamera';
+    }
+  });
 
-    <script type="module">
-        import { GestureRecognizer, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js";
+  function start() {
+    const hands = new Hands({
+      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+    });
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.7
+    });
+    hands.onResults(res => {
+      if (res.multiHandLandmarks?.length) {
+        const lm = res.multiHandLandmarks[0];
+        const isFist = checkFist(lm);
+        const isOpen = checkOpen(lm);
+        if (isOpen && !isOn) toggle(true);
+        else if (isFist && isOn) toggle(false);
+      }
+    });
+    const cam = new Camera(video, {
+      onFrame: async () => await hands.send({ image: video }),
+      width: 640,
+      height: 480
+    });
+    cam.start();
+  }
 
-        let gestureRecognizer;
-        const video = document.getElementById("video");
-        const status = document.getElementById("status");
+  function dist(p1, p2) {
+    return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+  }
 
-        async function init() {
-            // 1. Setup MediaPipe
-            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm");
-            
-            // 2. Load model Gesture Recognizer
-            gestureRecognizer = await GestureRecognizer.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO"
-            });
+  function checkFist(lm) {
+    const w = lm[0];
+    const t = [8, 12, 16, 20];
+    const b = [5, 9, 13, 17];
+    let f = 0;
+    for (let i = 0; i < 4; i++) {
+      if (dist(lm[t[i]], w) < dist(lm[b[i]], w)) f++;
+    }
+    return f >= 3;
+  }
 
-            // 3. Akses kamera
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            video.addEventListener("loadeddata", predictWebcam);
-        }
+  function checkOpen(lm) {
+    const w = lm[0];
+    const t = [8, 12, 16, 20];
+    const b = [5, 9, 13, 17];
+    let e = 0;
+    for (let i = 0; i < 4; i++) {
+      if (dist(lm[t[i]], w) > dist(lm[b[i]], w) * 1.2) e++;
+    }
+    return e >= 3;
+  }
 
-        async function predictWebcam() {
-            let lastVideoTime = -1;
-            
-            async function render() {
-                const startTimeMs = performance.now();
-                
-                if (video.currentTime !== lastVideoTime) {
-                    lastVideoTime = video.currentTime;
-                    const results = gestureRecognizer.recognizeForVideo(video, startTimeMs);
-
-                    if (results.gestures.length > 0) {
-                        const gesture = results.gestures[0][0].categoryName;
-                        if (gesture === "Closed_Fist") {
-                            status.innerHTML = '<span class="fist">Tangan Mengepal!</span>';
-                        } else if (gesture === "Open_Palm") {
-                            status.innerHTML = '<span class="palm">Tangan Terbuka</span>';
-                        } else {
-                            status.innerText = "Terdeteksi: " + gesture;
-                        }
-                    } else {
-                        status.innerText = "Tangan tidak terdeteksi";
-                    }
-                }
-                requestAnimationFrame(render);
-            }
-            render();
-        }
-
-        init();
-    </script>
+  async function toggle(turnOn) {
+    if (turnOn === isOn) return;
+    try {
+      if (turnOn) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        track = stream.getVideoTracks()[0];
+        await track.applyConstraints({ advanced: [{ torch: true }] });
+        video.srcObject = stream;
+        isOn = true;
+      } else {
+        if (track) track.stop();
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        track = stream.getVideoTracks()[0];
+        video.srcObject = stream;
+        isOn = false;
+      }
+    } catch (e) {}
+  }
+</script>
 </body>
 </html>
-
