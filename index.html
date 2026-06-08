@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Senter Gestur</title>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<title>Kontrol Gestur</title>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <style>
   body, html {
@@ -46,6 +45,8 @@
     height: 100%;
     object-fit: cover;
     z-index: 1;
+    top: 0;
+    left: 0;
   }
   #status {
     position: absolute;
@@ -67,38 +68,51 @@
 </style>
 </head>
 <body>
-<div id="ui"><button id="btn">Mulai</button></div>
+<div id="ui"><button id="btn">Inisialisasi</button></div>
 <video id="video" playsinline autoplay muted></video>
-<div id="status" class="hidden">Menyiapkan kamera...</div>
+<div id="status" class="hidden">Menyiapkan sistem...</div>
 <script>
   const video = document.getElementById('video');
   const btn = document.getElementById('btn');
   const ui = document.getElementById('ui');
   const statusEl = document.getElementById('status');
+  
   let track = null;
   let isOn = false;
   let isToggling = false;
   let lastToggleTime = 0;
+  let hands = null;
+  let processingFrame = false;
 
   btn.addEventListener('click', async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: 'environment' } }
+        });
+      } catch (err) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+      }
+      
       video.srcObject = stream;
       await video.play();
       track = stream.getVideoTracks()[0];
+      
       ui.classList.add('hidden');
       statusEl.classList.remove('hidden');
-      statusEl.textContent = 'Menunggu gestur tangan...';
-      start();
+      statusEl.textContent = 'Menunggu input gestur...';
+      
+      startSystem();
     } catch (e) {
-      btn.textContent = 'Gagal Mengakses Kamera';
+      btn.textContent = 'Akses Ditolak';
     }
   });
 
-  function start() {
-    const hands = new Hands({
+  function startSystem() {
+    hands = new Hands({
       locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
     });
     hands.setOptions({
@@ -108,30 +122,37 @@
       minTrackingConfidence: 0.7
     });
     hands.onResults(res => {
-      if (res.multiHandLandmarks?.length) {
+      if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
         const lm = res.multiHandLandmarks[0];
         const isFist = checkFist(lm);
         const isOpen = checkOpen(lm);
         
         if (isOpen) {
-          statusEl.textContent = 'Gestur: Terbuka | Aksi: Menyalakan Senter';
+          statusEl.textContent = 'Gestur: Terbuka | Status: Aktif';
           if (!isOn) toggle(true);
         } else if (isFist) {
-          statusEl.textContent = 'Gestur: Mengepal | Aksi: Mematikan Senter';
+          statusEl.textContent = 'Gestur: Mengepal | Status: Nonaktif';
           if (isOn) toggle(false);
         } else {
-          statusEl.textContent = 'Gestur: Tidak Dikenali | Aksi: Menunggu';
+          statusEl.textContent = 'Gestur: Netral | Status: Siaga';
         }
       } else {
-        statusEl.textContent = 'Gestur: Tangan Tidak Terlihat | Aksi: Menunggu';
+        statusEl.textContent = 'Gestur: Tidak Terdeteksi | Status: Siaga';
       }
     });
-    const cam = new Camera(video, {
-      onFrame: async () => await hands.send({ image: video }),
-      width: 640,
-      height: 480
-    });
-    cam.start();
+
+    requestAnimationFrame(processFrame);
+  }
+
+  async function processFrame() {
+    if (!video.paused && video.readyState >= 2 && !isToggling && !processingFrame) {
+      processingFrame = true;
+      try {
+        await hands.send({ image: video });
+      } catch (e) {}
+      processingFrame = false;
+    }
+    requestAnimationFrame(processFrame);
   }
 
   function dist(p1, p2) {
@@ -162,17 +183,30 @@
 
   async function toggle(turnOn) {
     const now = Date.now();
-    if (turnOn === isOn || isToggling || (now - lastToggleTime < 1000)) return;
+    if (turnOn === isOn || isToggling || (now - lastToggleTime < 1200)) return;
     
     isToggling = true;
     lastToggleTime = now;
 
     try {
-      if (track) track.stop();
+      if (track) {
+        track.stop();
+        video.srcObject = null;
+      }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
+      await new Promise(r => setTimeout(r, 150));
+
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: 'environment' } }
+        });
+      } catch (err) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+      }
+
       track = stream.getVideoTracks()[0];
 
       if (turnOn) {
@@ -180,7 +214,12 @@
       }
 
       video.srcObject = stream;
-      await video.play();
+      
+      await new Promise(resolve => {
+        video.onloadedmetadata = () => {
+          video.play().then(resolve).catch(resolve);
+        };
+      });
 
       isOn = turnOn;
     } catch (e) {
@@ -194,11 +233,10 @@
   });
   
   document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && track) {
-          track.stop();
-      }
+    if (document.visibilityState === 'hidden' && track) {
+      track.stop();
+    }
   });
-
 </script>
 </body>
 </html>
