@@ -162,16 +162,27 @@
 
   async function toggle(turnOn) {
     const now = Date.now();
-    if (turnOn === isOn || isToggling || (now - lastToggleTime < 500)) return;
+    if (turnOn === isOn || isToggling || (now - lastToggleTime < 1000)) return;
     
     isToggling = true;
     lastToggleTime = now;
 
     try {
-      if (track) {
-        await track.applyConstraints({ advanced: [{ torch: turnOn }] });
-        isOn = turnOn;
+      if (track) track.stop();
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      track = stream.getVideoTracks()[0];
+
+      if (turnOn) {
+        await track.applyConstraints({ advanced: [{ torch: true }] });
       }
+
+      video.srcObject = stream;
+      await video.play();
+
+      isOn = turnOn;
     } catch (e) {
     } finally {
       isToggling = false;
