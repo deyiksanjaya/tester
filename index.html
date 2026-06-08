@@ -60,7 +60,6 @@
     letter-spacing: 0.5px;
     z-index: 5;
     pointer-events: none;
-    display: none;
   }
   .hidden {
     display: none !important;
@@ -70,7 +69,7 @@
 <body>
 <div id="ui"><button id="btn">Mulai</button></div>
 <video id="video" playsinline autoplay muted></video>
-<div id="status">Menyiapkan kamera...</div>
+<div id="status" class="hidden">Menyiapkan kamera...</div>
 <script>
   const video = document.getElementById('video');
   const btn = document.getElementById('btn');
@@ -78,6 +77,8 @@
   const statusEl = document.getElementById('status');
   let track = null;
   let isOn = false;
+  let isToggling = false;
+  let lastToggleTime = 0;
 
   btn.addEventListener('click', async () => {
     try {
@@ -88,7 +89,7 @@
       await video.play();
       track = stream.getVideoTracks()[0];
       ui.classList.add('hidden');
-      statusEl.style.display = 'block';
+      statusEl.classList.remove('hidden');
       statusEl.textContent = 'Menunggu gestur tangan...';
       start();
     } catch (e) {
@@ -160,23 +161,33 @@
   }
 
   async function toggle(turnOn) {
-    if (turnOn === isOn) return;
+    const now = Date.now();
+    if (turnOn === isOn || isToggling || (now - lastToggleTime < 500)) return;
+    
+    isToggling = true;
+    lastToggleTime = now;
+
     try {
-      if (turnOn) {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        track = stream.getVideoTracks()[0];
-        await track.applyConstraints({ advanced: [{ torch: true }] });
-        video.srcObject = stream;
-        isOn = true;
-      } else {
-        if (track) track.stop();
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        track = stream.getVideoTracks()[0];
-        video.srcObject = stream;
-        isOn = false;
+      if (track) {
+        await track.applyConstraints({ advanced: [{ torch: turnOn }] });
+        isOn = turnOn;
       }
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+      isToggling = false;
+    }
   }
+
+  window.addEventListener('beforeunload', () => {
+    if (track) track.stop();
+  });
+  
+  document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && track) {
+          track.stop();
+      }
+  });
+
 </script>
 </body>
 </html>
