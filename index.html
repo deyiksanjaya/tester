@@ -6,164 +6,81 @@
 <meta name="theme-color" content="#000000" id="theme-color-meta">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title id="pageTitle">Scanner</title>
+<title>CNN News</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
-html.mode-scan, html.mode-scan body {
+body {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
     background-color: #000;
-    overflow: hidden;
-    position: fixed;
-    inset: 0;
-}
-html.mode-article, html.mode-article body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: auto;
-    background-color: #fff;
-    overflow-x: hidden;
-    overflow-y: auto;
-    position: static;
+    font-family: 'CNN Sans Display', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
 }
 #scanner-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     width: 100vw;
     height: 100vh;
     height: 100dvh;
-    min-width: 100%;
-    min-height: 100%;
     background-color: #000;
     z-index: 99999;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-#scanner-container video::-webkit-media-controls,
-#scanner-container video::-webkit-media-controls-enclosure,
-#scanner-container video::-webkit-media-controls-overlay-play-button,
-#scanner-container video::-webkit-media-controls-start-playback-button {
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-overlay-play-button,
+video::-webkit-media-controls-start-playback-button {
     display: none !important;
     -webkit-appearance: none !important;
 }
-#video { pointer-events: none; }
-#overlay { pointer-events: none; }
-.scan-area { width: 260px; height: 260px; position: relative; }
-.corner { position: absolute; width: 40px; height: 40px; border-color: rgba(255, 255, 255, 0.9); border-style: solid; }
+#video {
+    pointer-events: none;
+}
+#overlay {
+    pointer-events: none;
+}
+.scan-area {
+    width: 260px;
+    height: 260px;
+    position: relative;
+}
+.corner {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-color: rgba(255, 255, 255, 0.9);
+    border-style: solid;
+}
 .tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 16px; }
 .tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 16px; }
 .bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 16px; }
 .br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 16px; }
-@font-face {
-    font-family: 'CNN Sans Display';
-    src: url('fonts/cnn_sans_display-v1.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'CNN Sans Display';
-    src: url('fonts/cnn_sans_display-medium-v1.woff2') format('woff2');
-    font-weight: 500;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'CNN Sans Display';
-    src: url('fonts/cnn_sans_display-bold-v1.woff2') format('woff2');
-    font-weight: 700;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'Noto Serif';
-    src: url('fonts/noto_serif-bold-v1.woff2') format('woff2');
-    font-weight: 700;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'Noto Serif';
-    src: url('fonts/noto_serif-bold_italic-v1.woff2') format('woff2');
-    font-weight: 700;
-    font-style: italic;
-}
-@font-face {
-    font-family: 'Noto Serif Extra Condensed Black';
-    src: url('fonts/noto_serif_extra_condensed_black-v1.woff2') format('woff2');
-    font-weight: 900;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'Noto Sans Arabic';
-    src: url('fonts/noto_sans_arabic-v1.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'Noto Sans Arabic';
-    src: url('fonts/noto_sans_arabic-v1.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'Noto Serif Semi Condensed';
-    src: url('fonts/noto_serif_semi_condensed-v1.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-}
-@font-face {
-    font-family: 'Helvetica Neue';
-    src: url('fonts/helveticaneue-v1.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-}
+
+@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
+@font-face { font-family: 'Noto Serif'; src: url('fonts/noto_serif-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
+@font-face { font-family: 'Noto Serif Extra Condensed Black'; src: url('fonts/noto_serif_extra_condensed_black-v1.woff2') format('woff2'); font-weight: 900; font-style: normal; }
+@font-face { font-family: 'Noto Serif Semi Condensed'; src: url('fonts/noto_serif_semi_condensed-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+
 #article-container {
-    font-family: 'CNN Sans Display', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    user-select: none;
+    display: none;
+    background-color: #fff;
+    min-height: 100vh;
     color: #111827;
 }
 h1 { font-family: 'Noto Serif Extra Condensed Black', serif; }
 .article-content p { font-family: 'Noto Serif Semi Condensed', serif; }
-.article-content h2,
-.article-content h3 { font-family: 'Noto Serif', serif; }
+.article-content h2, .article-content h3 { font-family: 'Noto Serif', serif; }
 .font-semibold { font-weight: 500; }
 .font-extrabold { font-weight: 800; }
-#loadingOverlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-color: #fff;
-    display: flex; justify-content: center; align-items: center;
-    z-index: 9999;
-    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
-}
-.spinner {
-    border: 8px solid #f3f3f3;
-    border-top: 8px solid #007bff;
-    border-radius: 50%;
-    width: 60px; height: 60px;
-    animation: spin 1s linear infinite;
-}
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-main {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
-}
+
 .gallery-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.9);
     display: flex; justify-content: center; align-items: center;
-    z-index: 2000;
+    z-index: 200000;
     opacity: 0; visibility: hidden;
     transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
 }
@@ -175,6 +92,7 @@ main {
 .article-image-block img, .gallery-content img {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     display: block; pointer-events: none;
+    transition: opacity 0.8s ease-in-out;
 }
 .article-image-block img { object-fit: cover; object-position: top; }
 .gallery-content img { object-fit: contain; object-position: center; }
@@ -193,7 +111,7 @@ main {
 }
 </style>
 </head>
-<body class="mode-scan">
+<body>
 
 <div id="scanner-container">
     <video id="video" autoplay playsinline muted class="fixed inset-0 w-full h-full object-cover z-0"></video>
@@ -208,20 +126,16 @@ main {
     </div>
 </div>
 
-<div id="article-container" style="display: none;" class="bg-white">
-    <div id="loadingOverlay">
-        <div class="spinner"></div>
-    </div>
-
+<div id="article-container">
     <br><br><br>
     
-    <header id="mainHeader" class="flex items-center justify-between py-2 bg-white sticky top-0 z-10 px-4 sm:px-6 lg:px-8">
+    <header id="mainHeader" class="flex items-center justify-between py-2 bg-white sticky top-0 z-10 px-4 sm:px-6 lg:px-8 shadow-sm">
         <div class="flex items-center space-x-2 max-w-4xl mx-auto w-full">
             <button class="text-gray-600 focus:outline-none">
-                <img src="menu.png" alt="Menu" class="w-6 h-6" oncontextmenu="return false;" ondragstart="return false;" draggable="false">
+                <i class="fas fa-bars text-xl"></i>
             </button>
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/960px-CNN.svg.png" alt="Logo" class="h-5">
-            <span id="headerWorld" class="font-semibold text-lg"></span>
+            <span class="font-semibold text-lg">World</span>
         </div>
     </header>
 
@@ -229,128 +143,65 @@ main {
         <div class="border-t-2 border-black"></div>
         <article>
             <div class="flex items-center text-xs text-gray-500 mt-4 mb-4">
-                <span id="breadcrumbWorld" class="font-semibold"></span>
+                <span class="font-semibold">World</span>
                 <svg class="w-3 h-3 mx-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                 </svg>
-                <span id="breadcrumbAmerica"></span>
+                <span>Americas</span>
                 <span class="mx-2">•</span>
-                <span id="readTime"></span>
+                <span>5 Min Read</span>
             </div>
 
             <div class="flex items-start mb-6 -ml-4 sm:-ml-6 lg:-ml-8">
                 <div class="cnn-red-bar self-stretch"></div>
-                <h1 id="articleTitle" class="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight pl-4 sm:pl-6 lg:pl-8"></h1>
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight pl-4 sm:pl-6 lg:pl-8">Tragedi Mengejutkan: Penemuan di Kediaman Keluarga Smith</h1>
             </div>
 
             <div class="flex items-center text-gray-600 mb-1 text-xs">
-                <span id="publishedLabel" class="font-semibold"></span>
-                <time id="publishedTime" datetime="2010-03-15 10:00" class="ml-1"></time>
-                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
+                <span class="font-semibold">Published</span>
+                <time datetime="2023-10-15 10:00" class="ml-1">10:00 AM EDT, Sun October 15, 2023</time>
             </div>
             <p class="text-gray-700 mb-4 text-sm">
-                <span id="authorPrefix"></span> <span id="authorName" class="font-semibold"></span>
+                By <span class="font-semibold">CNN Reporter</span>
             </p>
 
             <figure class="relative w-screen h-0 pb-[75%] bg-gray-300 overflow-hidden mb-8 ml-[calc(50%-50vw)] article-image-block" id="articleImageContainer">
-                <img id="image2" src="image2.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="object-position: top;" oncontextmenu="return false;" ondragstart="return false;" draggable="false">
-                <img id="image1" src="image1.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="object-position: top;" oncontextmenu="return false;" ondragstart="return false;" draggable="false">
-                <figcaption id="imageFigcaption" class="absolute bottom-0 left-0 w-full bg-white bg-opacity-80 p-2 text-xs text-gray-600"></figcaption>
+                <img id="image2" src="image2.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="object-position: top; opacity: 1;">
+                <img id="image1" src="image1.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="object-position: top; opacity: 1;">
+                <figcaption class="absolute bottom-0 left-0 w-full bg-white bg-opacity-80 p-2 text-xs text-gray-600">Dokumentasi kepolisian di lokasi kejadian perkara.</figcaption>
             </figure>
 
-            <div class="article-content text-lg leading-relaxed mb-4" id="articleContent"></div>
+            <div class="article-content text-lg leading-relaxed mb-4" id="articleContent">
+                <p class="mb-4">Polisi setempat baru saja merilis detail awal mengenai insiden mengejutkan yang terjadi akhir pekan lalu. Pihak berwenang segera mengamankan area tersebut setelah menerima panggilan darurat pada dini hari.</p>
+                <p class="mb-4">Berdasarkan laporan forensik sementara, penyelidik masih mengumpulkan bukti-bukti krusial. Garis polisi telah dipasang ketat di sekeliling properti untuk mencegah campur tangan dari pihak luar.</p>
+                
+                <figure class="evidence-figure">
+                    <img src="evidence.png" alt="Barang Bukti">
+                    <figcaption>Barang bukti utama yang diamankan dari TKP.</figcaption>
+                </figure>
+                
+                <h2 class="text-xl font-bold mb-4 mt-6">Investigasi Lanjutan</h2>
+                <p class="mb-4">Tim detektif saat ini sedang menelusuri rekaman kamera keamanan di sekitar lingkungan tersebut dan memeriksa saksi mata potensial. Beberapa tetangga melaporkan aktivitas tidak biasa pada malam kejadian.</p>
+                <p class="mb-4">Pihak kepolisian mengimbau siapa pun yang memiliki informasi terkait kejadian ini untuk segera menghubungi hotline yang telah disediakan, karena setiap petunjuk bisa sangat berharga untuk memecahkan kasus ini.</p>
+            </div>
         </article>
 
         <section class="border-t border-gray-200 pt-6 mt-8">
-            <h2 id="relatedTitle" class="text-2xl font-bold mb-4"></h2>
+            <h2 class="text-2xl font-bold mb-4">Related News</h2>
             <ul class="list-none p-0">
-                <li class="mb-2"><a id="relatedLink1" href="#" class="text-blue-600 hover:underline"></a></li>
-                <li class="mb-2"><a id="relatedLink2" href="#" class="text-blue-600 hover:underline"></a></li>
-                <li class="mb-2"><a id="relatedLink3" href="#" class="text-blue-600 hover:underline"></a></li>
+                <li class="mb-2"><a href="#" class="text-blue-600 hover:underline">Perkembangan Kasus: Detektif Temukan Petunjuk Baru</a></li>
+                <li class="mb-2"><a href="#" class="text-blue-600 hover:underline">Sejarah Kepemilikan Properti Keluarga Smith</a></li>
+                <li class="mb-2"><a href="#" class="text-blue-600 hover:underline">Statistik Keamanan Lingkungan di Tahun 2023</a></li>
             </ul>
         </section>
     </main>
+</div>
 
-    <section class="bg-black text-white py-8 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-4xl mx-auto">
-            <div class="relative mb-8">
-                <input id="searchPlaceholder" type="text" class="w-full bg-gray-800 text-white border border-gray-700 rounded-md py-3 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="border-b border-gray-700 mb-8 pb-8">
-                <a id="signIn" href="#" class="block text-center text-white text-lg font-semibold hover:underline"></a>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
-                <ul class="list-none p-0">
-                    <li class="mb-2"><a id="liveTv" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="listen" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="watch" href="#" class="text-white hover:text-gray-400"></a></li>
-                </ul>
-                <ul class="list-none p-0">
-                    <li class="mb-2"><a id="world" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="usPolitics" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="business" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="markets" href="#" class="text-white hover:text-gray-400"></a></li>
-                </ul>
-                <ul class="list-none p-0">
-                    <li class="mb-2"><a id="health" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="entertainment" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="tech" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="style" href="#" class="text-white hover:text-gray-400"></a></li>
-                    <li class="mb-2"><a id="travel" href="#" class="text-white hover:text-gray-400"></a></li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <footer class="bg-gray-900 text-gray-300 py-8 text-center">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-center mb-6">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/960px-CNN.svg.png" alt="CNN Logo" class="h-6 mr-2 filter grayscale">
-                <span class="font-bold text-xl text-white">World</span>
-            </div>
-
-            <p id="followCnn" class="text-sm font-semibold mb-6"></p>
-
-            <div class="flex justify-center space-x-6 mb-8">
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-tiktok"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-linkedin-in"></i></a>
-            </div>
-
-            <div class="border-t border-gray-700 pt-8 mb-8">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 text-sm">
-                    <a id="termsOfUse" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                    <a id="privacyPolicy" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                    <a id="cookieSettings" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                    <a id="adChoices" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                    <a id="accessibility" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                    <a id="about" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                    <a id="newsletters" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                    <a id="transcripts" href="#" class="text-gray-400 hover:text-white mx-2"></a>
-                </div>
-            </div>
-
-            <p id="copyright" class="text-xs text-gray-500 leading-relaxed"></p>
-        </div>
-    </footer>
-
-    <div id="galleryOverlay" class="gallery-overlay">
-        <span class="close-button">&times;</span>
-        <div class="gallery-content">
-            <img id="galleryImage2" src="image2.jpg" alt="" oncontextmenu="return false;" ondragstart="return false;" draggable="false">
-            <img id="galleryImage1" src="image1.jpg" alt="" oncontextmenu="return false;" ondragstart="return false;" draggable="false">
-        </div>
+<div id="galleryOverlay" class="gallery-overlay">
+    <span class="close-button">&times;</span>
+    <div class="gallery-content">
+        <img id="galleryImage2" src="image2.jpg" alt="" style="opacity: 1;">
+        <img id="galleryImage1" src="image1.jpg" alt="" style="opacity: 1;">
     </div>
 </div>
 
@@ -360,18 +211,17 @@ const canvasElement = document.getElementById("canvas");
 const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
 let scanning = true;
 window.scannerStream = null;
+let isImage2Active = false;
 
-function transitionToArticle() {
+function showArticle() {
     document.getElementById('scanner-container').style.display = 'none';
     document.getElementById('article-container').style.display = 'block';
-    document.documentElement.classList.remove('mode-scan');
-    document.documentElement.classList.add('mode-article');
-    document.body.className = '';
+    document.body.style.backgroundColor = '#ffffff';
     document.getElementById('theme-color-meta').setAttribute('content', '#ffffff');
+    window.addEventListener('scroll', revealImageOnScroll);
 }
 
 async function startCamera() {
-    document.documentElement.classList.add('mode-scan');
     try {
         const s = await navigator.mediaDevices.getUserMedia({ 
             video: { 
@@ -398,378 +248,43 @@ function tick() {
         const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
         if (code) {
             scanning = false;
-            if (window.onQRScanned) {
-                window.onQRScanned(code.data);
+            if (window.scannerStream) {
+                window.scannerStream.getTracks().forEach(track => track.stop());
             }
+            showArticle();
+            return;
         }
     }
-    if (scanning) {
-        requestAnimationFrame(tick);
-    }
-}
-</script>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-
-let translations = {};
-try {
-    const module = await import('./languages.js');
-    translations = module.translations;
-} catch (e) {
-    translations = {
-        'id': { title: "CNN News", htmlLang: "id", articleP1: "" },
-        'eng': { title: "CNN News", htmlLang: "en", articleP1: "" }
-    };
+    requestAnimationFrame(tick);
 }
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCFDxFe2PnyxaLRb7VctQSHhQh7ZKoSDaU",
-    authDomain: "atmamagicbyheri.firebaseapp.com",
-    projectId: "atmamagicbyheri",
-    storageBucket: "atmamagicbyheri.appspot.com",
-    messagingSenderId: "672288947327",
-    appId: "1:672288947327:web:4ee5d222045bfaf6ed934a"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+function revealImageOnScroll() {
+    const article = document.getElementById('articleContent');
+    const img1 = document.getElementById('image1');
+    const galImg1 = document.getElementById('galleryImage1');
 
-const mainHeader = document.getElementById('mainHeader');
-const articleImageContainer = document.getElementById('articleImageContainer');
-const image1 = document.getElementById('image1');
-const image2 = document.getElementById('image2');
-const galleryOverlay = document.getElementById('galleryOverlay');
-const galleryImage1 = document.getElementById('galleryImage1');
-const galleryImage2 = document.getElementById('galleryImage2');
-const closeButton = document.querySelector('.gallery-overlay .close-button');
-const loadingOverlay = document.getElementById('loadingOverlay');
-const mainContent = document.querySelector('main');
-const IMAGE_STATE_KEY = 'smithFamilyImageState';
-const LANGUAGE_KEY = 'userLanguage';
-
-const getUrlParams = () => new URLSearchParams(window.location.search);
-const capitalizeFirstLetter = (string) => string ? string.charAt(0).toUpperCase() + string.slice(1) : '';
-
-function applyTranslations(lang) {
-    const t = translations[lang];
-    if (!t) return;
-    const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-    const setHTML = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-    const setPlaceholder = (id, text) => { const el = document.getElementById(id); if (el) el.placeholder = text; };
-    document.documentElement.lang = t.htmlLang || lang;
-    setText('pageTitle', t.title);
-    setText('headerWorld', t.headerWorld);
-    setText('breadcrumbWorld', t.breadcrumbWorld);
-    setText('breadcrumbAmerica', t.breadcrumbAmerica);
-    setText('readTime', t.readTime);
-    setText('articleTitle', t.articleTitle);
-    setText('publishedLabel', t.publishedLabel);
-    setText('publishedTime', t.publishedTime);
-    setText('authorPrefix', t.authorPrefix);
-    setText('authorName', t.authorName);
-    setText('imageFigcaption', t.imageFigcaption);
-    setText('relatedTitle', t.relatedTitle);
-    setText('relatedLink1', t.relatedLink1);
-    setText('relatedLink2', t.relatedLink2);
-    setText('relatedLink3', t.relatedLink3);
-    setPlaceholder('searchPlaceholder', t.searchPlaceholder);
-    setText('signIn', t.signIn);
-    setText('liveTv', t.liveTv);
-    setText('listen', t.listen);
-    setText('watch', t.watch);
-    setText('world', t.world);
-    setText('usPolitics', t.usPolitics);
-    setText('business', t.business);
-    setText('markets', t.markets);
-    setText('health', t.health);
-    setText('entertainment', t.entertainment);
-    setText('tech', t.tech);
-    setText('style', t.style);
-    setText('travel', t.travel);
-    setText('followCnn', t.followCnn);
-    setText('termsOfUse', t.termsOfUse);
-    setText('privacyPolicy', t.privacyPolicy);
-    setText('cookieSettings', t.cookieSettings);
-    setText('adChoices', t.adChoices);
-    setText('accessibility', t.accessibility);
-    setText('about', t.about);
-    setText('newsletters', t.newsletters);
-    setText('transcripts', t.transcripts);
-    setHTML('copyright', t.copyright);
-}
-
-function getArticleParams(secretCode, lang) {
-    const idParam = secretCode || 'FlFlFl';
-    const decodingMap = { 'Fl': 'a', 'uC': 'b', 'zW': 'c', 'Xy': 'd', 'Qr': 'e', 'aA': 'f', 'bB': 'g', 'cC': 'h', 'dD': 'i' };
-    let decodedChars = [];
-    
-    for (let i = 0; i < idParam.length; i += 2) {
-        const encodedSegment = idParam.substring(i, i + 2);
-        decodedChars.push(decodingMap[encodedSegment] || 'a');
-    }
-    
-    while (decodedChars.length < 3) decodedChars.push('a');
-    decodedChars = decodedChars.slice(0, 3);
-    const [namaKorbanChar, lokasiChar, alatChar] = decodedChars;
-
-    const victimOptions = {
-        'a': 'Eleanor', 'b': 'Abigail', 'c': 'Lillian', 'd': 'Margaret', 'e': 'Beatrice',
-        'f': 'Dorothy', 'g': 'Florence', 'h': 'Mildred', 'i': 'Virginia'
-    };
-
-    const sceneOptionsId = {
-        'a': 'kamar lantai dua', 'b': 'loteng', 'c': 'gudang belakang', 'd': 'ruang bawah tanah',
-        'e': 'lorong dekat dapur', 'f': 'perpustakaan', 'g': 'teras samping', 'h': 'garasi tua', 'i': 'ruang makan'
-    };
-
-    const sceneOptionsEng = {
-        'a': 'the second-floor room', 'b': 'the attic', 'c': 'the back shed', 'd': 'the basement',
-        'e': 'the hallway near the kitchen', 'f': 'the library', 'g': 'the side porch', 'h': 'the old garage', 'i': 'the dining room'
-    };
-
-    const weaponOptionsId = {
-        'a': { name: 'pisau', image: 'knife.png' },
-        'b': { name: 'palu', image: 'hammer.png' },
-        'c': { name: 'gunting', image: 'scissors.png' },
-        'd': { name: 'linggis', image: 'crowbar.png' },
-        'e': { name: 'batang besi', image: 'iron-rod.png' },
-        'f': { name: 'tali', image: 'rope.png' },
-        'g': { name: 'racun', image: 'poison.png' },
-        'h': { name: 'revolver', image: 'revolver.png' },
-        'i': { name: 'kapak', image: 'axe.png' }
-    };
-
-    const weaponOptionsEng = {
-        'a': { name: 'a knife', image: 'knife.png' },
-        'b': { name: 'a hammer', image: 'hammer.png' },
-        'c': { name: 'a pair of scissors', image: 'scissors.png' },
-        'd': { name: 'a crowbar', image: 'crowbar.png' },
-        'e': { name: 'an iron rod', image: 'iron-rod.png' },
-        'f': { name: 'a rope', image: 'rope.png' },
-        'g': { name: 'poison', image: 'poison.png' },
-        'h': { name: 'a revolver', image: 'revolver.png' },
-        'i': { name: 'an axe', image: 'axe.png' }
-    };
-
-    const isIndo = lang === 'id';
-    const alatObject = isIndo ? weaponOptionsId[alatChar] : weaponOptionsEng[alatChar];
-
-    return {
-        namaKorban: victimOptions[namaKorbanChar],
-        lokasi: isIndo ? sceneOptionsId[lokasiChar] : sceneOptionsEng[lokasiChar],
-        alat: alatObject.name,
-        alatImage: alatObject.image
-    };
-}
-
-function populateArticleContent(lang, articleParams) {
-    const t = translations[lang];
-    if (!t) return;
-    const { namaKorban, lokasi, alat, alatImage } = articleParams;
-    const lokasiLower = lokasi;
-    const alatLower = alat;
-    
-    const evidenceFigureHTML = alatImage ? `
-        <figure class="evidence-figure">
-            <img src="./evidences/${alatImage}" alt="${(t.evidenceCaption || '').replace('${alat}', alatLower)}" oncontextmenu="return false;" ondragstart="return false;" draggable="false">
-            <figcaption>${(t.evidenceCaption || '').replace('${alat}', alatLower)}</figcaption>
-        </figure>
-    ` : '';
-    const articleHTML = `
-        <p>${t.articleP1 || ''}</p>
-        <p>${t.articleP2 || ''}</p>
-        <p>${t.articleP3 || ''}</p>
-        ${evidenceFigureHTML}
-        <h2 class="text-xl font-bold mb-4 mt-6">${t.articleH2 || ''}</h2>
-        <p>${t.articleP4 || ''}</p>
-        <p>${t.articleP5 || ''}</p>
-        <h3 class="text-lg font-bold mb-4 mt-6">${t.articleH3 || ''}</h3>
-        <p>${t.articleP6 || ''}</p>
-        <p>${t.articleP7 || ''}</p>
-        <p>${t.articleP8 || ''}</p>
-    `;
-    let finalArticleHtml = articleHTML
-        .replace(/\$\{namaKorban\}/g, capitalizeFirstLetter(namaKorban))
-        .replace(/\$\{lokasi\}/g, lokasiLower)
-        .replace(/\$\{alat\}/g, alatLower);
-    document.getElementById('articleContent').innerHTML = finalArticleHtml;
-}
-
-function updateImageVisibility(isImage2Active) {
-    if (image1 && galleryImage1 && image2 && galleryImage2) {
-        image1.style.opacity = isImage2Active ? '0' : '1';
-        galleryImage1.style.opacity = isImage2Active ? '0' : '1';
-        image2.style.opacity = '1';
-        galleryImage2.style.opacity = '1';
-    }
-}
-
-function showContent() {
-    if (loadingOverlay && mainContent) {
-        loadingOverlay.style.opacity = '0';
-        loadingOverlay.style.visibility = 'hidden';
-        mainContent.style.visibility = 'visible';
-        mainContent.style.opacity = '1';
-    }
-}
-
-function setupCommonInteractivity() {
-    if (articleImageContainer) {
-        articleImageContainer.addEventListener('click', () => {
-            if (galleryOverlay) galleryOverlay.classList.add('active');
-        });
-    }
-    if (galleryOverlay) {
-        galleryOverlay.addEventListener('click', (event) => {
-            if (event.target === galleryOverlay) galleryOverlay.classList.remove('active');
-        });
-    }
-    if (closeButton) {
-        closeButton.addEventListener('click', () => {
-            if (galleryOverlay) galleryOverlay.classList.remove('active');
-        });
-    }
-    
-    let lastTap = 0;
-    let tapCount = 0;
-    if (mainHeader) {
-        mainHeader.addEventListener('click', () => {
-            const currentTime = new Date().getTime();
-            if (currentTime - lastTap < 500) {
-                tapCount++;
-            } else {
-                tapCount = 1;
-            }
-            lastTap = currentTime;
-            if (tapCount === 3) {
-                localStorage.removeItem(IMAGE_STATE_KEY);
-                localStorage.removeItem(LANGUAGE_KEY);
-                updateImageVisibility(false);
-                tapCount = 0;
-            }
-        });
-    }
-    
-    let inactivityRedirectTimer;
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            inactivityRedirectTimer = setTimeout(() => {
-                window.location.replace("https://www.cnid.my.id/index.html");
-            }, 60000);
-        } else {
-            clearTimeout(inactivityRedirectTimer);
-        }
-    });
-}
-
-function setupNormalPage(secretCode, lang) {
-    let isImage2Active = localStorage.getItem(IMAGE_STATE_KEY) === 'true';
-    
-    const articleParams = getArticleParams(secretCode, lang);
-    applyTranslations(lang);
-    populateArticleContent(lang, articleParams);
-    updateImageVisibility(isImage2Active);
-
-    function revealImageOnScroll() {
-        const article = document.getElementById('articleContent');
-        if (article && image1 && galleryImage1) {
-            const articleRect = article.getBoundingClientRect();
-            const scrollMidPoint = window.innerHeight / 2;
-            if (articleRect.top + articleRect.height / 2 <= scrollMidPoint && !isImage2Active) {
-                image1.style.opacity = '0';
-                galleryImage1.style.opacity = '0';
-                localStorage.setItem(IMAGE_STATE_KEY, 'true');
-                isImage2Active = true;
-                window.removeEventListener('scroll', revealImageOnScroll);
-            }
+    if (article && img1) {
+        const articleRect = article.getBoundingClientRect();
+        const scrollMidPoint = window.innerHeight / 2;
+        if (articleRect.top + articleRect.height / 2 <= scrollMidPoint && !isImage2Active) {
+            img1.style.opacity = '0';
+            if (galImg1) galImg1.style.opacity = '0';
+            isImage2Active = true;
+            window.removeEventListener('scroll', revealImageOnScroll);
         }
     }
-    
-    window.addEventListener('scroll', revealImageOnScroll);
 }
 
-function setupLockedPage(secretCode, lang) {
-    const articleParams = getArticleParams(secretCode, lang);
-    applyTranslations(lang);
-    populateArticleContent(lang, articleParams);
-    
-    localStorage.setItem(IMAGE_STATE_KEY, 'true');
-    updateImageVisibility(true);
-}
+document.getElementById('articleImageContainer').addEventListener('click', () => {
+    document.getElementById('galleryOverlay').classList.add('active');
+});
 
-window.onQRScanned = function(data) {
-    if (window.scannerStream) {
-        window.scannerStream.getTracks().forEach(track => track.stop());
-    }
-    transitionToArticle();
-
-    let urlId = data;
-    let lang = 'id';
-    try {
-        const url = new URL(data);
-        urlId = url.searchParams.get('id') || data;
-        lang = url.searchParams.get('lang') || 'id';
-    } catch(e) {}
-
-    initializePage(urlId, lang);
-}
-
-async function initializePage(scannedId = null, scannedLang = null) {
-    try {
-        setupCommonInteractivity();
-        
-        const params = getUrlParams();
-        const urlId = scannedId || params.get('id');
-        let lang = scannedLang || params.get('lang');
-
-        const isCustomId = /^\d{6}$/.test(urlId);
-
-        if (!lang) {
-            lang = localStorage.getItem(LANGUAGE_KEY);
-        }
-        
-        if (lang !== 'eng' && lang !== 'id') {
-            lang = 'id';
-        }
-
-        if (!urlId) {
-            setupLockedPage(null, lang);
-        } else if (isCustomId) {
-            try {
-                const docRef = doc(db, "printedQR", urlId);
-                const docSnap = await getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    if (data.lang === 'eng' || data.lang === 'id') {
-                        lang = data.lang;
-                        localStorage.setItem(LANGUAGE_KEY, lang);
-                    }
-
-                    if (data.isPerforming === true) {
-                        setupNormalPage(data.id, lang);
-                    } else {
-                        setupLockedPage(data.id, lang);
-                    }
-                } else {
-                    setupLockedPage(null, lang);
-                }
-            } catch (error) {
-                setupLockedPage(null, lang);
-            }
-        } else {
-            setupNormalPage(urlId, lang);
-        }
-    } finally {
-        showContent();
-    }
-}
+document.querySelector('.gallery-overlay .close-button').addEventListener('click', () => {
+    document.getElementById('galleryOverlay').classList.remove('active');
+});
 
 if (new URLSearchParams(window.location.search).has('id')) {
-    transitionToArticle();
-    initializePage();
+    showArticle();
 } else {
     window.addEventListener('load', () => {
         startCamera();
@@ -778,3 +293,5 @@ if (new URLSearchParams(window.location.search).has('id')) {
 </script>
 </body>
 </html>
+
+
