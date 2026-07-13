@@ -1,253 +1,223 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#000000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Scanner</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    html, body {
-      width: 100%;
-      height: 100vh;
-      height: 100dvh;
-      height: var(--real-vh, 100vh);
-      position: fixed;
-      top: 0;
-      left: 0;
-      margin: 0;
-      padding: 0;
-      background-color: black;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      overscroll-behavior-y: none;
-      overflow: hidden;
-    }
-    video::-webkit-media-controls,
-    video::-webkit-media-controls-enclosure,
-    video::-webkit-media-controls-overlay-play-button,
-    video::-webkit-media-controls-start-playback-button {
-      display: none !important;
-      -webkit-appearance: none !important;
-    }
-    video { 
-      pointer-events: none; 
-      position: fixed;
-      top: 0; 
-      right: 0; 
-      bottom: 0; 
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 0;
-    }
-    .corner {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      border-color: white;
-      border-style: solid;
-    }
-    .corner-tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
-    .corner-tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
-    .corner-bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
-    .corner-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
-    .scan-line {
-      width: 100%;
-      height: 3px;
-      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 50%, rgba(255,255,255,0) 100%);
-      position: absolute;
-      top: 0;
-      left: 0;
-      opacity: 0.9;
-      box-shadow: 0 1px 6px rgba(255,255,255,0.4);
-      will-change: top;
-      animation: scan 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    }
-    @keyframes scan {
-      0% { top: 0; }
-      50% { top: calc(100% - 3px); }
-      100% { top: 0; }
-    }
-    .pb-safe {
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    .drawer-open {
-      transform: translateY(0) !important;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: transparent; 
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.15); 
-      border-radius: 4px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QR Scanner</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<style>
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+#video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.scan-area {
+    width: 260px;
+    height: 260px;
+    position: relative;
+}
+.corner {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-color: rgba(255, 255, 255, 0.9);
+    border-style: solid;
+}
+.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 16px; }
+.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 16px; }
+.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 16px; }
+.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 16px; }
+#ui-layer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 3;
+    padding: 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hidden-panel {
+    transform: translateY(150%);
+}
+.glass {
+    background: rgba(15, 15, 15, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 24px;
+    color: white;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+button {
+    pointer-events: auto;
+    cursor: pointer;
+}
+</style>
 </head>
-<body class="text-white select-none">
-  <video id="video" playsinline autoplay muted></video>
-  <canvas id="canvas" class="hidden"></canvas>
+<body>
 
-  <div id="ui-layer" class="absolute inset-0 z-10 flex flex-col pointer-events-none transition-opacity duration-300">
-    <div class="flex-1 bg-black/60"></div>
-    <div class="flex w-full h-64 sm:h-80 justify-center shrink-0">
-      <div class="flex-1 bg-black/60"></div>
-      <div class="w-64 sm:w-80 relative bg-transparent shrink-0">
-        <div class="corner corner-tl"></div>
-        <div class="corner corner-tr"></div>
-        <div class="corner corner-bl"></div>
-        <div class="corner corner-br"></div>
-        <div class="scan-line"></div>
-      </div>
-      <div class="flex-1 bg-black/60"></div>
+<video id="video" playsinline></video>
+<canvas id="canvas" hidden></canvas>
+
+<div id="overlay">
+    <div class="scan-area">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
     </div>
-    <div class="flex-1 bg-black/60"></div>
-  </div>
+</div>
 
-  <div id="loading" class="absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-300 pointer-events-none">
-    <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-white"></i>
-  </div>
-
-  <div id="redirecting" class="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
-    <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-white"></i>
-  </div>
-
-  <div id="result-drawer" class="absolute bottom-0 left-0 right-0 z-40 bg-white rounded-t-[28px] p-6 pb-safe pt-5 transform translate-y-full transition-transform duration-500 ease-in-out shadow-[0_-10px_40px_rgba(0,0,0,0.15)] pointer-events-auto flex flex-col">
-    <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 shrink-0"></div>
-    <div id="result-text" class="text-[15px] text-gray-800 break-words mb-6 font-medium leading-relaxed max-h-32 overflow-y-auto custom-scrollbar"></div>
-    <div class="flex gap-3 shrink-0">
-      <button id="btn-copy" class="flex-1 bg-[#f2f2f7] hover:bg-[#e5e5ea] active:scale-[0.98] text-black py-3.5 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
-        <i data-lucide="copy" class="w-4 h-4"></i>
-        <span>Salin</span>
-      </button>
-      <button id="btn-rescan" class="flex-[0.3] bg-[#f2f2f7] hover:bg-[#e5e5ea] active:scale-[0.98] text-black py-3.5 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
-        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-      </button>
+<div id="ui-layer" class="hidden-panel">
+    <div class="glass flex flex-col gap-4">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hasil Pindaian</div>
+        <div id="result-text" class="text-white text-base break-all font-mono"></div>
+        
+        <div class="flex gap-3 mt-3">
+            <button id="btn-copy" class="flex-1 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-2xl py-3.5 text-sm font-semibold transition-all">Salin</button>
+            <button id="btn-action" class="flex-1 bg-white text-black hover:bg-gray-100 active:bg-gray-200 rounded-2xl py-3.5 text-sm font-semibold transition-all hidden">Buka Tautan</button>
+        </div>
+        <button id="btn-rescan" class="w-full bg-transparent border border-white/20 text-white hover:bg-white/5 active:bg-white/10 rounded-2xl py-3.5 text-sm font-semibold transition-all mt-1">Pindai Ulang</button>
     </div>
-  </div>
+</div>
 
-  <script>
-    function setRealVH() {
-      const vh = (window.visualViewport?.height || window.innerHeight);
-      document.documentElement.style.setProperty('--real-vh', `${vh}px`);
-    }
-    setRealVH();
-    window.visualViewport?.addEventListener('resize', setRealVH);
-    window.addEventListener('resize', setRealVH);
+<script>
+const video = document.getElementById("video");
+const canvasElement = document.getElementById("canvas");
+const canvas = canvasElement.getContext("2d");
+const uiLayer = document.getElementById("ui-layer");
+const resultText = document.getElementById("result-text");
+const btnCopy = document.getElementById("btn-copy");
+const btnAction = document.getElementById("btn-action");
+const btnRescan = document.getElementById("btn-rescan");
+const overlay = document.getElementById("overlay");
+let scanning = true;
+let stream = null;
 
-    lucide.createIcons();
-
-    const video = document.getElementById("video");
-    const canvasElement = document.getElementById("canvas");
-    const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
-    const loading = document.getElementById("loading");
-    const uiLayer = document.getElementById("ui-layer");
-    const resultDrawer = document.getElementById("result-drawer");
-    const resultText = document.getElementById("result-text");
-    const btnCopy = document.getElementById("btn-copy");
-    const btnRescan = document.getElementById("btn-rescan");
-    const redirectingLayer = document.getElementById("redirecting");
-
-    let scanning = true;
-    let currentResult = "";
-
-    navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: "environment",
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-      } 
-    })
-      .then(function(stream) {
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(s) {
+        stream = s;
         video.srcObject = stream;
         video.setAttribute("playsinline", true);
         video.play();
         requestAnimationFrame(tick);
-      })
-      .catch(function(err) {
-        loading.innerHTML = '<span class="text-sm text-red-400 font-medium">Kamera tidak tersedia</span>';
-      });
+    }).catch(function(err) {
+        resultText.innerText = "Akses kamera ditolak atau tidak tersedia.";
+        showUI();
+    });
+}
 
-    function tick() {
-      if (!scanning) return;
-      
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        loading.style.opacity = "0";
-        setTimeout(() => loading.style.display = "none", 300);
-
+function tick() {
+    if (!scanning) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
         canvasElement.height = video.videoHeight;
         canvasElement.width = video.videoWidth;
         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-        
-        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert",
-        });
-
-        if (code && code.data) {
-          handleResult(code.data);
-        } else {
-          requestAnimationFrame(tick);
+        var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+        if (code) {
+            scanning = false;
+            handleResult(code.data);
         }
-      } else {
-        requestAnimationFrame(tick);
-      }
+    }
+    requestAnimationFrame(tick);
+}
+
+function handleResult(data) {
+    overlay.style.display = "none";
+    resultText.innerText = data;
+    
+    btnAction.classList.add("hidden");
+    btnAction.onclick = null;
+
+    if (data.startsWith("http://") || data.startsWith("https://")) {
+        btnAction.classList.remove("hidden");
+        btnAction.innerText = "Buka Tautan";
+        btnAction.onclick = () => window.open(data, "_blank");
+    } else if (data.startsWith("mailto:")) {
+        btnAction.classList.remove("hidden");
+        btnAction.innerText = "Kirim Email";
+        btnAction.onclick = () => window.location.href = data;
+    } else if (data.startsWith("tel:")) {
+        btnAction.classList.remove("hidden");
+        btnAction.innerText = "Panggil";
+        btnAction.onclick = () => window.location.href = data;
     }
 
-    function handleResult(data) {
-      scanning = false;
-      currentResult = data;
-      
-      if (navigator.vibrate) navigator.vibrate(50);
-      
-      video.pause();
-      
-      if (data.startsWith('http://') || data.startsWith('https://')) {
-        uiLayer.style.opacity = "0";
-        redirectingLayer.style.opacity = "1";
-        redirectingLayer.style.pointerEvents = "auto";
-        
-        setTimeout(() => {
-          window.location.href = data;
-        }, 800);
-      } else {
-        uiLayer.style.opacity = "0";
-        resultText.innerText = data;
-        resultDrawer.classList.add('drawer-open');
-      }
-    }
+    btnCopy.onclick = () => {
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(data).then(showCopiedStatus);
+        } else {
+            const tempInput = document.createElement("textarea");
+            tempInput.value = data;
+            tempInput.style.position = "absolute";
+            tempInput.style.left = "-9999px";
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            showCopiedStatus();
+        }
+    };
 
-    btnCopy.addEventListener('click', () => {
-      const el = document.createElement('textarea');
-      el.value = currentResult;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      
-      const originalText = btnCopy.querySelector('span').innerText;
-      btnCopy.querySelector('span').innerText = 'Tersalin';
-      setTimeout(() => {
-        btnCopy.querySelector('span').innerText = originalText;
-      }, 2000);
-    });
+    showUI();
+}
 
-    btnRescan.addEventListener('click', () => {
-      resultDrawer.classList.remove('drawer-open');
-      uiLayer.style.opacity = "1";
-      currentResult = "";
-      scanning = true;
-      video.play();
-      requestAnimationFrame(tick);
-    });
-  </script>
+function showCopiedStatus() {
+    const originalText = btnCopy.innerText;
+    btnCopy.innerText = "Disalin!";
+    setTimeout(() => { btnCopy.innerText = originalText; }, 2000);
+}
+
+function showUI() {
+    uiLayer.classList.remove("hidden-panel");
+}
+
+function hideUI() {
+    uiLayer.classList.add("hidden-panel");
+}
+
+btnRescan.onclick = () => {
+    hideUI();
+    overlay.style.display = "flex";
+    scanning = true;
+    requestAnimationFrame(tick);
+};
+
+startCamera();
+</script>
 </body>
 </html>
+
