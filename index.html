@@ -1,242 +1,196 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Kontrol Gestur</title>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-<style>
-  body, html {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #000000;
-    overflow: hidden;
-    font-family: system-ui, sans-serif;
-    position: fixed;
-    inset: 0;
-  }
-  #ui {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-    background-color: #000000;
-  }
-  button {
-    padding: 12px 32px;
-    background-color: #ffffff;
-    color: #000000;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-  }
-  button:active {
-    opacity: 0.8;
-  }
-  #video {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1;
-    top: 0;
-    left: 0;
-  }
-  #status {
-    position: absolute;
-    bottom: 40px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.8);
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    font-size: 14px;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    z-index: 5;
-    pointer-events: none;
-  }
-  .hidden {
-    display: none !important;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Scanner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .scanner-overlay {
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    }
+    .corner {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-color: white;
+      border-style: solid;
+    }
+    .corner-tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 12px; }
+    .corner-tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 12px; }
+    .corner-bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 12px; }
+    .corner-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 12px; }
+    .scan-line {
+      width: 100%;
+      height: 2px;
+      background: #fff;
+      position: absolute;
+      top: 0;
+      animation: scan 2s infinite linear;
+      opacity: 0.6;
+    }
+    @keyframes scan {
+      0% { top: 0; }
+      50% { top: 100%; }
+      100% { top: 0; }
+    }
+    .drawer-open {
+      transform: translateY(0);
+    }
+  </style>
 </head>
-<body>
-<div id="ui"><button id="btn">Inisialisasi</button></div>
-<video id="video" playsinline autoplay muted></video>
-<div id="status" class="hidden">Menyiapkan sistem...</div>
-<script>
-  const video = document.getElementById('video');
-  const btn = document.getElementById('btn');
-  const ui = document.getElementById('ui');
-  const statusEl = document.getElementById('status');
-  
-  let track = null;
-  let isOn = false;
-  let isToggling = false;
-  let lastToggleTime = 0;
-  let hands = null;
-  let processingFrame = false;
+<body class="w-screen h-screen fixed inset-0 flex flex-col items-center justify-center">
 
-  btn.addEventListener('click', async () => {
-    try {
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: 'environment' } }
-        });
-      } catch (err) {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
-      }
-      
-      video.srcObject = stream;
-      await video.play();
-      track = stream.getVideoTracks()[0];
-      
-      ui.classList.add('hidden');
-      statusEl.classList.remove('hidden');
-      statusEl.textContent = 'Menunggu input gestur...';
-      
-      startSystem();
-    } catch (e) {
-      btn.textContent = 'Akses Ditolak';
-    }
-  });
+  <video id="video" class="w-full h-full object-cover fixed inset-0 z-0" playsinline autoplay muted></video>
+  <canvas id="canvas" class="hidden"></canvas>
 
-  function startSystem() {
-    hands = new Hands({
-      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
-    });
-    hands.setOptions({
-      maxNumHands: 1,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.7
-    });
-    hands.onResults(res => {
-      if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
-        const lm = res.multiHandLandmarks[0];
-        const isFist = checkFist(lm);
-        const isOpen = checkOpen(lm);
-        
-        if (isOpen) {
-          statusEl.textContent = 'Gestur: Terbuka | Status: Aktif';
-          if (!isOn) toggle(true);
-        } else if (isFist) {
-          statusEl.textContent = 'Gestur: Mengepal | Status: Nonaktif';
-          if (isOn) toggle(false);
-        } else {
-          statusEl.textContent = 'Gestur: Netral | Status: Siaga';
-        }
-      } else {
-        statusEl.textContent = 'Gestur: Tidak Terdeteksi | Status: Siaga';
-      }
-    });
+  <div id="ui-layer" class="fixed inset-0 z-10 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300">
+    <div class="relative w-64 h-64 sm:w-80 sm:h-80 scanner-overlay rounded-xl">
+      <div class="corner corner-tl"></div>
+      <div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div>
+      <div class="corner corner-br"></div>
+      <div class="scan-line"></div>
+    </div>
+    <div class="mt-8 text-white/80 text-sm font-medium tracking-wide">
+      Arahkan kamera ke QR
+    </div>
+  </div>
 
-    requestAnimationFrame(processFrame);
-  }
+  <div id="loading" class="fixed inset-0 z-50 bg-black flex items-center justify-center text-white transition-opacity duration-300">
+    <span class="text-sm">Menyiapkan kamera...</span>
+  </div>
 
-  async function processFrame() {
-    if (!video.paused && video.readyState >= 2 && !isToggling && !processingFrame) {
-      processingFrame = true;
-      try {
-        await hands.send({ image: video });
-      } catch (e) {}
-      processingFrame = false;
-    }
-    requestAnimationFrame(processFrame);
-  }
-
-  function dist(p1, p2) {
-    return Math.hypot(p1.x - p2.x, p1.y - p2.y);
-  }
-
-  function checkFist(lm) {
-    const w = lm[0];
-    const t = [8, 12, 16, 20];
-    const b = [5, 9, 13, 17];
-    let f = 0;
-    for (let i = 0; i < 4; i++) {
-      if (dist(lm[t[i]], w) < dist(lm[b[i]], w)) f++;
-    }
-    return f >= 3;
-  }
-
-  function checkOpen(lm) {
-    const w = lm[0];
-    const t = [8, 12, 16, 20];
-    const b = [5, 9, 13, 17];
-    let e = 0;
-    for (let i = 0; i < 4; i++) {
-      if (dist(lm[t[i]], w) > dist(lm[b[i]], w) * 1.2) e++;
-    }
-    return e >= 3;
-  }
-
-  async function toggle(turnOn) {
-    const now = Date.now();
-    if (turnOn === isOn || isToggling || (now - lastToggleTime < 1200)) return;
+  <div id="result-drawer" class="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[2rem] p-6 pb-10 transform translate-y-full transition-transform duration-500 ease-in-out shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+    <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
     
-    isToggling = true;
-    lastToggleTime = now;
+    <div class="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Hasil</div>
+    <div id="result-text" class="text-lg text-gray-900 break-words mb-8 font-medium leading-relaxed max-h-32 overflow-y-auto"></div>
+    
+    <div class="flex gap-3">
+      <button id="btn-copy" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors">
+        <i data-lucide="copy" class="w-5 h-5"></i>
+        <span>Salin</span>
+      </button>
+      <button id="btn-action" class="flex-1 bg-black hover:bg-gray-800 text-white py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors hidden">
+        <i data-lucide="external-link" class="w-5 h-5"></i>
+        <span>Buka</span>
+      </button>
+    </div>
+    
+    <button id="btn-rescan" class="w-full mt-3 bg-transparent text-gray-500 py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
+      <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+      <span>Pindai Ulang</span>
+    </button>
+  </div>
 
-    try {
-      if (track) {
-        track.stop();
-        video.srcObject = null;
-      }
+  <script>
+    lucide.createIcons();
 
-      await new Promise(r => setTimeout(r, 150));
+    const video = document.getElementById("video");
+    const canvasElement = document.getElementById("canvas");
+    const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
+    const loading = document.getElementById("loading");
+    const uiLayer = document.getElementById("ui-layer");
+    const resultDrawer = document.getElementById("result-drawer");
+    const resultText = document.getElementById("result-text");
+    const btnCopy = document.getElementById("btn-copy");
+    const btnAction = document.getElementById("btn-action");
+    const btnRescan = document.getElementById("btn-rescan");
 
-      let stream;
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { exact: 'environment' } }
-        });
-      } catch (err) {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
-      }
+    let scanning = true;
+    let currentResult = "";
 
-      track = stream.getVideoTracks()[0];
-
-      if (turnOn) {
-        await track.applyConstraints({ advanced: [{ torch: true }] });
-      }
-
-      video.srcObject = stream;
-      
-      await new Promise(resolve => {
-        video.onloadedmetadata = () => {
-          video.play().then(resolve).catch(resolve);
-        };
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+      .then(function(stream) {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+        requestAnimationFrame(tick);
+      })
+      .catch(function(err) {
+        loading.innerHTML = '<span class="text-sm text-red-400">Kamera tidak dapat diakses</span>';
       });
 
-      isOn = turnOn;
-    } catch (e) {
-    } finally {
-      isToggling = false;
-    }
-  }
+    function tick() {
+      if (!scanning) return;
+      
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        loading.style.opacity = "0";
+        setTimeout(() => loading.style.display = "none", 300);
 
-  window.addEventListener('beforeunload', () => {
-    if (track) track.stop();
-  });
-  
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden' && track) {
-      track.stop();
+        canvasElement.height = video.videoHeight;
+        canvasElement.width = video.videoWidth;
+        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+        
+        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code && code.data) {
+          handleResult(code.data);
+        } else {
+          requestAnimationFrame(tick);
+        }
+      } else {
+        requestAnimationFrame(tick);
+      }
     }
-  });
-</script>
+
+    function handleResult(data) {
+      scanning = false;
+      currentResult = data;
+      
+      if (navigator.vibrate) navigator.vibrate(50);
+      
+      video.pause();
+      uiLayer.style.opacity = "0";
+      
+      resultText.innerText = data;
+      
+      if (data.startsWith('http://') || data.startsWith('https://')) {
+        btnAction.classList.remove('hidden');
+        btnAction.onclick = () => window.open(data, '_blank');
+      } else {
+        btnAction.classList.add('hidden');
+      }
+      
+      resultDrawer.classList.add('drawer-open');
+    }
+
+    btnCopy.addEventListener('click', () => {
+      const el = document.createElement('textarea');
+      el.value = currentResult;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      
+      const originalText = btnCopy.querySelector('span').innerText;
+      btnCopy.querySelector('span').innerText = 'Tersalin';
+      setTimeout(() => {
+        btnCopy.querySelector('span').innerText = originalText;
+      }, 2000);
+    });
+
+    btnRescan.addEventListener('click', () => {
+      resultDrawer.classList.remove('drawer-open');
+      uiLayer.style.opacity = "1";
+      currentResult = "";
+      scanning = true;
+      video.play();
+      requestAnimationFrame(tick);
+    });
+  </script>
 </body>
 </html>
