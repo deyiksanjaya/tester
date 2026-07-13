@@ -1,20 +1,31 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Scanner</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
+      background-color: black;
       overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior-y: none;
     }
+    video::-webkit-media-controls,
+    video::-webkit-media-controls-enclosure,
+    video::-webkit-media-controls-overlay-play-button,
+    video::-webkit-media-controls-start-playback-button {
+      display: none !important;
+      -webkit-appearance: none !important;
+    }
+    video { pointer-events: none; }
     .scanner-overlay {
       box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
     }
@@ -49,11 +60,14 @@
     .drawer-open {
       transform: translateY(0);
     }
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
   </style>
 </head>
-<body class="w-screen h-[100dvh] fixed inset-0 flex flex-col items-center justify-center">
+<body class="h-screen w-screen overflow-hidden text-white select-none bg-black">
 
-  <video id="video" class="w-full h-full object-cover absolute inset-0 z-0" playsinline autoplay muted></video>
+  <video id="video" class="fixed inset-0 w-full h-full object-cover z-0" playsinline autoplay muted></video>
   <canvas id="canvas" class="hidden"></canvas>
 
   <div id="ui-layer" class="fixed inset-0 z-10 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300">
@@ -64,36 +78,31 @@
       <div class="corner corner-br"></div>
       <div class="scan-line"></div>
     </div>
-    <div class="mt-8 text-white/80 text-sm font-medium tracking-wide">
-      Arahkan kamera ke kode QR
-    </div>
   </div>
 
   <div id="loading" class="fixed inset-0 z-50 bg-black flex items-center justify-center text-white transition-opacity duration-300">
-    <span class="text-sm font-medium">Memulai kamera...</span>
+    <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-white"></i>
   </div>
 
   <div id="redirecting" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 pointer-events-none transition-opacity duration-300">
-    <i data-lucide="loader-2" class="w-8 h-8 animate-spin mb-4 text-white"></i>
-    <span class="text-sm font-medium tracking-wide">Membuka tautan...</span>
+    <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-white"></i>
   </div>
 
-  <div id="result-drawer" class="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-[2rem] p-6 pb-10 transform translate-y-full transition-transform duration-500 ease-in-out shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-    <div class="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+  <div id="result-drawer" class="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-3xl p-6 pb-safe pt-5 transform translate-y-full transition-transform duration-500 ease-in-out shadow-2xl">
+    <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8"></div>
     
-    <div class="mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Hasil Pemindaian</div>
     <div id="result-text" class="text-lg text-gray-900 break-words mb-8 font-medium leading-relaxed max-h-32 overflow-y-auto"></div>
     
     <div class="flex gap-3">
       <button id="btn-copy" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors">
         <i data-lucide="copy" class="w-5 h-5"></i>
-        <span>Salin</span>
+        <span>Copy</span>
       </button>
     </div>
     
     <button id="btn-rescan" class="w-full mt-3 bg-transparent text-gray-500 py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
       <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-      <span>Pindai Ulang</span>
+      <span>Rescan</span>
     </button>
   </div>
 
@@ -128,7 +137,7 @@
         requestAnimationFrame(tick);
       })
       .catch(function(err) {
-        loading.innerHTML = '<span class="text-sm text-red-400">Kamera tidak tersedia</span>';
+        loading.innerHTML = '<span class="text-sm text-red-400">Camera unavailable</span>';
       });
 
     function tick() {
@@ -189,7 +198,7 @@
       document.body.removeChild(el);
       
       const originalText = btnCopy.querySelector('span').innerText;
-      btnCopy.querySelector('span').innerText = 'Tersalin';
+      btnCopy.querySelector('span').innerText = 'Copied';
       setTimeout(() => {
         btnCopy.querySelector('span').innerText = originalText;
       }, 2000);
