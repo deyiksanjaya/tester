@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -13,7 +13,9 @@
   <style>
     html, body {
       width: 100%;
-      height: 100%;
+      height: 100vh;
+      height: 100dvh;
+      height: var(--real-vh, 100vh);
       position: fixed;
       top: 0;
       left: 0;
@@ -122,7 +124,7 @@
     <div class="flex gap-3 shrink-0">
       <button id="btn-copy" class="flex-1 bg-[#f2f2f7] hover:bg-[#e5e5ea] active:scale-[0.98] text-black py-3.5 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
         <i data-lucide="copy" class="w-4 h-4"></i>
-        <span>Copy</span>
+        <span>Salin</span>
       </button>
       <button id="btn-rescan" class="flex-[0.3] bg-[#f2f2f7] hover:bg-[#e5e5ea] active:scale-[0.98] text-black py-3.5 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
@@ -131,6 +133,14 @@
   </div>
 
   <script>
+    function setRealVH() {
+      const vh = (window.visualViewport?.height || window.innerHeight);
+      document.documentElement.style.setProperty('--real-vh', `${vh}px`);
+    }
+    setRealVH();
+    window.visualViewport?.addEventListener('resize', setRealVH);
+    window.addEventListener('resize', setRealVH);
+
     lucide.createIcons();
 
     const video = document.getElementById("video");
@@ -161,7 +171,7 @@
         requestAnimationFrame(tick);
       })
       .catch(function(err) {
-        loading.innerHTML = '<span class="text-sm text-red-400 font-medium">Camera access denied</span>';
+        loading.innerHTML = '<span class="text-sm text-red-400 font-medium">Kamera tidak tersedia</span>';
       });
 
     function tick() {
@@ -222,7 +232,7 @@
       document.body.removeChild(el);
       
       const originalText = btnCopy.querySelector('span').innerText;
-      btnCopy.querySelector('span').innerText = 'Copied';
+      btnCopy.querySelector('span').innerText = 'Tersalin';
       setTimeout(() => {
         btnCopy.querySelector('span').innerText = originalText;
       }, 2000);
