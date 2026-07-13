@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>QR Scanner</title>
@@ -12,38 +13,26 @@
 body, html {
     margin: 0;
     padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-#video {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
     width: 100vw;
     height: 100vh;
-    height: 100dvh;
-    min-width: 100%;
-    min-height: 100%;
-    object-fit: cover;
-    z-index: 1;
+    overflow: hidden;
+    background-color: black;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+}
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-overlay-play-button,
+video::-webkit-media-controls-start-playback-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+}
+#video {
+    pointer-events: none;
 }
 #overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
     pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
 }
 .scan-area {
     width: 260px;
@@ -62,15 +51,8 @@ body, html {
 .bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 16px; }
 .br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 16px; }
 #ui-layer {
-    position: fixed;
-    bottom: env(safe-area-inset-bottom, 24px);
-    left: 24px;
-    right: 24px;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    padding-bottom: env(safe-area-inset-bottom, 24px);
 }
 .hidden-panel {
     transform: translateY(200%);
@@ -80,9 +62,6 @@ body, html {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
-    padding: 24px;
-    color: white;
     box-shadow: 0 10px 40px rgba(0,0,0,0.3);
 }
 button {
@@ -91,12 +70,12 @@ button {
 }
 </style>
 </head>
-<body>
+<body class="text-white select-none">
 
-<video id="video" playsinline></video>
-<canvas id="canvas" hidden></canvas>
+<video id="video" autoplay playsinline muted class="fixed inset-0 w-full h-full object-cover z-0"></video>
+<canvas id="canvas" class="hidden"></canvas>
 
-<div id="overlay">
+<div id="overlay" class="fixed inset-0 z-10 flex flex-col justify-center items-center">
     <div class="scan-area">
         <div class="corner tl"></div>
         <div class="corner tr"></div>
@@ -105,23 +84,23 @@ button {
     </div>
 </div>
 
-<div id="ui-layer" class="hidden-panel">
-    <div class="glass flex flex-col gap-4">
-        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Hasil Pindaian</div>
-        <div id="result-text" class="text-white text-base break-all font-mono"></div>
+<div id="ui-layer" class="fixed bottom-0 left-0 w-full z-20 px-6 pt-6 hidden-panel pointer-events-none flex flex-col gap-4">
+    <div class="glass rounded-3xl p-6 w-full max-w-md mx-auto pointer-events-auto flex flex-col gap-4">
+        <div class="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Scanned Result</div>
+        <div id="result-text" class="text-white text-[15px] break-all font-mono leading-relaxed"></div>
         
-        <div class="flex gap-3 mt-3">
-            <button id="btn-copy" class="flex-1 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-2xl py-3.5 text-sm font-semibold transition-all">Salin</button>
-            <button id="btn-action" class="flex-1 bg-white text-black hover:bg-gray-100 active:bg-gray-200 rounded-2xl py-3.5 text-sm font-semibold transition-all hidden">Buka Tautan</button>
+        <div class="flex gap-3 mt-2">
+            <button id="btn-copy" class="flex-1 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl py-3.5 text-sm font-semibold transition-all border border-white/10">Copy</button>
+            <button id="btn-action" class="flex-1 bg-white text-black hover:bg-gray-100 active:bg-gray-200 rounded-xl py-3.5 text-sm font-bold transition-all hidden shadow-[0_4px_15px_rgba(255,255,255,0.2)]">Open</button>
         </div>
-        <button id="btn-rescan" class="w-full bg-transparent border border-white/20 text-white hover:bg-white/5 active:bg-white/10 rounded-2xl py-3.5 text-sm font-semibold transition-all mt-1">Pindai Ulang</button>
+        <button id="btn-rescan" class="w-full bg-transparent border border-white/20 text-white hover:bg-white/5 active:bg-white/10 rounded-xl py-3.5 text-sm font-semibold transition-all">Scan Again</button>
     </div>
 </div>
 
 <script>
 const video = document.getElementById("video");
 const canvasElement = document.getElementById("canvas");
-const canvas = canvasElement.getContext("2d");
+const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
 const uiLayer = document.getElementById("ui-layer");
 const resultText = document.getElementById("result-text");
 const btnCopy = document.getElementById("btn-copy");
@@ -131,19 +110,24 @@ const overlay = document.getElementById("overlay");
 let scanning = true;
 let stream = null;
 
-function startCamera() {
-    navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" } 
-    }).then(function(s) {
+async function startCamera() {
+    try {
+        const s = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: "environment",
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
         stream = s;
         video.srcObject = stream;
-        video.setAttribute("playsinline", true);
         video.play();
         requestAnimationFrame(tick);
-    }).catch(function(err) {
-        resultText.innerText = "Akses kamera ditolak atau tidak tersedia.";
+    } catch (err) {
+        resultText.innerText = "Camera access denied or unavailable.";
         showUI();
-    });
+    }
 }
 
 function tick() {
@@ -152,8 +136,8 @@ function tick() {
         canvasElement.height = video.videoHeight;
         canvasElement.width = video.videoWidth;
         canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-        var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-        var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
         if (code) {
             scanning = false;
             handleResult(code.data);
@@ -171,15 +155,15 @@ function handleResult(data) {
 
     if (data.startsWith("http://") || data.startsWith("https://")) {
         btnAction.classList.remove("hidden");
-        btnAction.innerText = "Buka Tautan";
+        btnAction.innerText = "Open Link";
         btnAction.onclick = () => window.open(data, "_blank");
     } else if (data.startsWith("mailto:")) {
         btnAction.classList.remove("hidden");
-        btnAction.innerText = "Kirim Email";
+        btnAction.innerText = "Send Email";
         btnAction.onclick = () => window.location.href = data;
     } else if (data.startsWith("tel:")) {
         btnAction.classList.remove("hidden");
-        btnAction.innerText = "Panggil";
+        btnAction.innerText = "Call";
         btnAction.onclick = () => window.location.href = data;
     }
 
@@ -204,7 +188,7 @@ function handleResult(data) {
 
 function showCopiedStatus() {
     const originalText = btnCopy.innerText;
-    btnCopy.innerText = "Disalin!";
+    btnCopy.innerText = "Copied!";
     setTimeout(() => { btnCopy.innerText = originalText; }, 2000);
 }
 
@@ -223,7 +207,11 @@ btnRescan.onclick = () => {
     requestAnimationFrame(tick);
 };
 
-startCamera();
+window.addEventListener('load', () => {
+    startCamera();
+});
 </script>
 </body>
 </html>
+
+
