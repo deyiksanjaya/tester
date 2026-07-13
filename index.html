@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#000000" id="theme-color-meta">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title id="pageTitle">Scanner</title>
@@ -11,12 +11,38 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
-#scanner-container {
+html.mode-scan, html.mode-scan body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    overflow: hidden;
     position: fixed;
     inset: 0;
+}
+html.mode-article, html.mode-article body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: auto;
+    background-color: #fff;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: static;
+}
+#scanner-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100vw;
     height: 100vh;
-    background-color: black;
+    height: 100dvh;
+    min-width: 100%;
+    min-height: 100%;
+    background-color: #000;
     z-index: 99999;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -35,7 +61,6 @@
 .tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 16px; }
 .bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 16px; }
 .br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 16px; }
-
 @font-face {
     font-family: 'CNN Sans Display';
     src: url('fonts/cnn_sans_display-v1.woff2') format('woff2');
@@ -96,38 +121,24 @@
     font-weight: 400;
     font-style: normal;
 }
-body {
+#article-container {
     font-family: 'CNN Sans Display', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     user-select: none;
+    color: #111827;
 }
-h1 {
-    font-family: 'Noto Serif Extra Condensed Black', serif;
-}
-.article-content p {
-    font-family: 'Noto Serif Semi Condensed', serif;
-}
+h1 { font-family: 'Noto Serif Extra Condensed Black', serif; }
+.article-content p { font-family: 'Noto Serif Semi Condensed', serif; }
 .article-content h2,
-.article-content h3 {
-    font-family: 'Noto Serif', serif;
-}
-.font-semibold {
-    font-weight: 500;
-}
-.font-extrabold {
-    font-weight: 800;
-}
+.article-content h3 { font-family: 'Noto Serif', serif; }
+.font-semibold { font-weight: 500; }
+.font-extrabold { font-weight: 800; }
 #loadingOverlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background-color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     z-index: 9999;
     transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
 }
@@ -135,8 +146,7 @@ h1 {
     border: 8px solid #f3f3f3;
     border-top: 8px solid #007bff;
     border-radius: 50%;
-    width: 60px;
-    height: 60px;
+    width: 60px; height: 60px;
     animation: spin 1s linear infinite;
 }
 @keyframes spin {
@@ -150,92 +160,40 @@ main {
 }
 .gallery-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
     z-index: 2000;
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0; visibility: hidden;
     transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
 }
-.gallery-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
+.gallery-overlay.active { opacity: 1; visibility: visible; }
 .gallery-content {
-    position: relative;
-    width: 90%;
-    max-width: 800px;
-    padding-top: 56.25%;
-    overflow: hidden;
-    background-color: #000;
+    position: relative; width: 90%; max-width: 800px;
+    padding-top: 56.25%; overflow: hidden; background-color: #000;
 }
-.article-image-block img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: top;
-    display: block;
-    pointer-events: none;
+.article-image-block img, .gallery-content img {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: block; pointer-events: none;
 }
-.gallery-content img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center;
-    display: block;
-    pointer-events: none;
-}
+.article-image-block img { object-fit: cover; object-position: top; }
+.gallery-content img { object-fit: contain; object-position: center; }
 .close-button {
-    position: absolute;
-    top: 20px;
-    right: 30px;
-    color: #fff;
-    font-size: 40px;
-    cursor: pointer;
-    z-index: 2001;
+    position: absolute; top: 20px; right: 30px;
+    color: #fff; font-size: 40px; cursor: pointer; z-index: 2001;
 }
-.cnn-red-bar {
-    width: 6px;
-    background-color: #CC0000;
-    flex-shrink: 0;
-}
+.cnn-red-bar { width: 6px; background-color: #CC0000; flex-shrink: 0; }
 .evidence-figure {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-    padding: 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    background-color: #f7fafc;
+    margin-top: 2rem; margin-bottom: 2rem; padding: 1rem;
+    border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f7fafc;
 }
-.evidence-figure img {
-    max-width: 100%;
-    height: auto;
-    margin: 0 auto;
-    display: block;
-    pointer-events: none;
-}
+.evidence-figure img { max-width: 100%; height: auto; margin: 0 auto; display: block; pointer-events: none; }
 .evidence-figure figcaption {
-    margin-top: 0.75rem;
-    text-align: center;
-    font-size: 0.875rem;
-    color: #4a5568;
-    font-style: italic;
+    margin-top: 0.75rem; text-align: center; font-size: 0.875rem; color: #4a5568; font-style: italic;
 }
 </style>
 </head>
-<body class="bg-white text-gray-900">
+<body class="mode-scan">
 
 <div id="scanner-container">
     <video id="video" autoplay playsinline muted class="fixed inset-0 w-full h-full object-cover z-0"></video>
@@ -250,11 +208,13 @@ main {
     </div>
 </div>
 
-<div id="article-container" style="display: none;">
+<div id="article-container" style="display: none;" class="bg-white">
     <div id="loadingOverlay">
         <div class="spinner"></div>
     </div>
 
+    <br><br><br>
+    
     <header id="mainHeader" class="flex items-center justify-between py-2 bg-white sticky top-0 z-10 px-4 sm:px-6 lg:px-8">
         <div class="flex items-center space-x-2 max-w-4xl mx-auto w-full">
             <button class="text-gray-600 focus:outline-none">
@@ -401,7 +361,17 @@ const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
 let scanning = true;
 window.scannerStream = null;
 
+function transitionToArticle() {
+    document.getElementById('scanner-container').style.display = 'none';
+    document.getElementById('article-container').style.display = 'block';
+    document.documentElement.classList.remove('mode-scan');
+    document.documentElement.classList.add('mode-article');
+    document.body.className = '';
+    document.getElementById('theme-color-meta').setAttribute('content', '#ffffff');
+}
+
 async function startCamera() {
+    document.documentElement.classList.add('mode-scan');
     try {
         const s = await navigator.mediaDevices.getUserMedia({ 
             video: { 
@@ -436,12 +406,6 @@ function tick() {
     if (scanning) {
         requestAnimationFrame(tick);
     }
-}
-
-if (!new URLSearchParams(window.location.search).has('id')) {
-    window.addEventListener('load', () => {
-        startCamera();
-    });
 }
 </script>
 
@@ -735,12 +699,10 @@ function setupLockedPage(secretCode, lang) {
 }
 
 window.onQRScanned = function(data) {
-    document.getElementById('scanner-container').style.display = 'none';
-    document.getElementById('article-container').style.display = 'block';
-    
     if (window.scannerStream) {
         window.scannerStream.getTracks().forEach(track => track.stop());
     }
+    transitionToArticle();
 
     let urlId = data;
     let lang = 'id';
@@ -806,12 +768,13 @@ async function initializePage(scannedId = null, scannedLang = null) {
 }
 
 if (new URLSearchParams(window.location.search).has('id')) {
-    document.getElementById('scanner-container').style.display = 'none';
-    document.getElementById('article-container').style.display = 'block';
+    transitionToArticle();
     initializePage();
+} else {
+    window.addEventListener('load', () => {
+        startCamera();
+    });
 }
 </script>
 </body>
 </html>
-
-
