@@ -11,22 +11,28 @@
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <style>
+@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-medium-v1.woff2') format('woff2'); font-weight: 500; font-style: normal; }
+@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
+@font-face { font-family: 'Noto Serif'; src: url('fonts/noto_serif-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
+@font-face { font-family: 'Noto Serif'; src: url('fonts/noto_serif-bold_italic-v1.woff2') format('woff2'); font-weight: 700; font-style: italic; }
+@font-face { font-family: 'Noto Serif Extra Condensed Black'; src: url('fonts/noto_serif_extra_condensed_black-v1.woff2') format('woff2'); font-weight: 900; font-style: normal; }
+@font-face { font-family: 'Noto Sans Arabic'; src: url('fonts/noto_sans_arabic-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'Noto Serif Semi Condensed'; src: url('fonts/noto_serif_semi_condensed-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+@font-face { font-family: 'Helvetica Neue'; src: url('fonts/helveticaneue-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+
 body {
-    margin: 0;
-    padding: 0;
-    background-color: #000;
-    font-family: 'CNN Sans Display', -apple-system, sans-serif;
+    background-color: black;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
+    margin: 0;
+    padding: 0;
 }
-#scanner-container {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    background-color: #000;
-    z-index: 99999;
+body.article-mode {
+    background-color: white;
+    font-family: 'CNN Sans Display', sans-serif;
+    overscroll-behavior-y: auto;
 }
 video::-webkit-media-controls,
 video::-webkit-media-controls-enclosure,
@@ -35,88 +41,46 @@ video::-webkit-media-controls-start-playback-button {
     display: none !important;
     -webkit-appearance: none !important;
 }
-#video {
-    pointer-events: none;
-}
-#overlay {
-    pointer-events: none;
-}
-.scan-area {
-    width: 260px;
-    height: 260px;
-    position: relative;
-}
-.corner {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    border-color: rgba(255, 255, 255, 0.9);
-    border-style: solid;
-}
+video { pointer-events: none; }
+.scan-area { width: 260px; height: 260px; position: relative; }
+.corner { position: absolute; width: 40px; height: 40px; border-color: rgba(255, 255, 255, 0.9); border-style: solid; }
 .tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 16px; }
 .tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 16px; }
 .bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 16px; }
 .br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 16px; }
 
-@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
-@font-face { font-family: 'Noto Serif'; src: url('fonts/noto_serif-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
-@font-face { font-family: 'Noto Serif Extra Condensed Black'; src: url('fonts/noto_serif_extra_condensed_black-v1.woff2') format('woff2'); font-weight: 900; font-style: normal; }
-@font-face { font-family: 'Noto Serif Semi Condensed'; src: url('fonts/noto_serif_semi_condensed-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
-
-#article-container {
-    display: none;
-    background-color: #fff;
-    min-height: 100vh;
-    color: #111827;
-}
 h1 { font-family: 'Noto Serif Extra Condensed Black', serif; }
 .article-content p { font-family: 'Noto Serif Semi Condensed', serif; }
 .article-content h2, .article-content h3 { font-family: 'Noto Serif', serif; }
 .font-semibold { font-weight: 500; }
 .font-extrabold { font-weight: 800; }
+.cnn-red-bar { width: 6px; background-color: #CC0000; flex-shrink: 0; }
 
 .gallery-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: rgba(0, 0, 0, 0.9);
     display: flex; justify-content: center; align-items: center;
-    z-index: 200000;
-    opacity: 0; visibility: hidden;
+    z-index: 2000; opacity: 0; visibility: hidden;
     transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
 }
 .gallery-overlay.active { opacity: 1; visibility: visible; }
-.gallery-content {
-    position: relative; width: 90%; max-width: 800px;
-    padding-top: 56.25%; overflow: hidden; background-color: #000;
-}
+.gallery-content { position: relative; width: 90%; max-width: 800px; padding-top: 56.25%; overflow: hidden; background-color: #000; }
 .article-image-block img, .gallery-content img {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: block; pointer-events: none;
-    transition: opacity 0.8s ease-in-out;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity 0.8s ease-in-out;
 }
 .article-image-block img { object-fit: cover; object-position: top; }
 .gallery-content img { object-fit: contain; object-position: center; }
-.close-button {
-    position: absolute; top: 20px; right: 30px;
-    color: #fff; font-size: 40px; cursor: pointer; z-index: 2001;
-}
-.cnn-red-bar { width: 6px; background-color: #CC0000; flex-shrink: 0; }
-.evidence-figure {
-    margin-top: 2rem; margin-bottom: 2rem; padding: 1rem;
-    border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f7fafc;
-}
+.close-button { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; cursor: pointer; z-index: 2001; }
+.evidence-figure { margin-top: 2rem; margin-bottom: 2rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f7fafc; }
 .evidence-figure img { max-width: 100%; height: auto; margin: 0 auto; display: block; pointer-events: none; }
-.evidence-figure figcaption {
-    margin-top: 0.75rem; text-align: center; font-size: 0.875rem; color: #4a5568; font-style: italic;
-}
+.evidence-figure figcaption { margin-top: 0.75rem; text-align: center; font-size: 0.875rem; color: #4a5568; font-style: italic; }
 </style>
 </head>
-<body>
+<body class="h-screen w-screen overflow-hidden select-none text-white">
 
-<div id="scanner-container">
+<div id="scanner-view" class="fixed inset-0 z-50 bg-black">
     <video id="video" autoplay playsinline muted class="fixed inset-0 w-full h-full object-cover z-0"></video>
-    <canvas id="canvas" class="hidden"></canvas>
-    <div id="overlay" class="fixed inset-0 z-10 flex flex-col justify-center items-center">
+    <div id="overlay" class="fixed inset-0 z-20 flex flex-col justify-center items-center pointer-events-none">
         <div class="scan-area">
             <div class="corner tl"></div>
             <div class="corner tr"></div>
@@ -124,12 +88,13 @@ h1 { font-family: 'Noto Serif Extra Condensed Black', serif; }
             <div class="corner br"></div>
         </div>
     </div>
+    <canvas id="canvas" class="hidden"></canvas>
 </div>
 
-<div id="article-container">
+<div id="article-view" class="hidden relative z-40 bg-white text-gray-900 w-full min-h-screen">
     <br><br><br>
     
-    <header id="mainHeader" class="flex items-center justify-between py-2 bg-white sticky top-0 z-10 px-4 sm:px-6 lg:px-8 shadow-sm">
+    <header class="flex items-center justify-between py-2 bg-white sticky top-0 z-10 px-4 sm:px-6 lg:px-8 shadow-sm">
         <div class="flex items-center space-x-2 max-w-4xl mx-auto w-full">
             <button class="text-gray-600 focus:outline-none">
                 <i class="fas fa-bars text-xl"></i>
@@ -195,6 +160,78 @@ h1 { font-family: 'Noto Serif Extra Condensed Black', serif; }
             </ul>
         </section>
     </main>
+
+    <section class="bg-black text-white py-8 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="relative mb-8">
+                <input type="text" placeholder="Search CNN..." class="w-full bg-gray-800 text-white border border-gray-700 rounded-md py-3 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="border-b border-gray-700 mb-8 pb-8">
+                <a href="#" class="block text-center text-white text-lg font-semibold hover:underline">Sign In</a>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
+                <ul class="list-none p-0">
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Live TV</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Listen</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Watch</a></li>
+                </ul>
+                <ul class="list-none p-0">
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">World</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">US Politics</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Business</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Markets</a></li>
+                </ul>
+                <ul class="list-none p-0">
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Health</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Entertainment</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Tech</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Style</a></li>
+                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Travel</a></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-gray-900 text-gray-300 py-8 text-center">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-center mb-6">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/960px-CNN.svg.png" alt="CNN Logo" class="h-6 mr-2 filter grayscale">
+                <span class="font-bold text-xl text-white">World</span>
+            </div>
+
+            <p class="text-sm font-semibold mb-6">FOLLOW CNN</p>
+
+            <div class="flex justify-center space-x-6 mb-8">
+                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-tiktok"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+
+            <div class="border-t border-gray-700 pt-8 mb-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 text-sm">
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">Terms of Use</a>
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">Privacy Policy</a>
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">Cookie Settings</a>
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">Ad Choices</a>
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">Accessibility & CC</a>
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">About</a>
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">Newsletters</a>
+                    <a href="#" class="text-gray-400 hover:text-white mx-2">Transcripts</a>
+                </div>
+            </div>
+
+            <p class="text-xs text-gray-500 leading-relaxed">© 2024 Cable News Network. A Warner Bros. Discovery Company. All Rights Reserved. CNN Sans ™ & © 2016 Cable News Network.</p>
+        </div>
+    </footer>
 </div>
 
 <div id="galleryOverlay" class="gallery-overlay">
@@ -213,10 +250,11 @@ let scanning = true;
 window.scannerStream = null;
 let isImage2Active = false;
 
-function showArticle() {
-    document.getElementById('scanner-container').style.display = 'none';
-    document.getElementById('article-container').style.display = 'block';
-    document.body.style.backgroundColor = '#ffffff';
+function transitionToArticle() {
+    document.getElementById('scanner-view').style.display = 'none';
+    document.getElementById('article-view').style.display = 'block';
+    document.body.classList.remove('h-screen', 'w-screen', 'overflow-hidden', 'text-white', 'bg-black');
+    document.body.classList.add('article-mode');
     document.getElementById('theme-color-meta').setAttribute('content', '#ffffff');
     window.addEventListener('scroll', revealImageOnScroll);
 }
@@ -229,7 +267,7 @@ async function startCamera() {
                 width: { ideal: 1920 },
                 height: { ideal: 1080 }
             },
-            audio: false
+            audio: false 
         });
         window.scannerStream = s;
         video.srcObject = window.scannerStream;
@@ -251,7 +289,7 @@ function tick() {
             if (window.scannerStream) {
                 window.scannerStream.getTracks().forEach(track => track.stop());
             }
-            showArticle();
+            transitionToArticle();
             return;
         }
     }
@@ -283,13 +321,9 @@ document.querySelector('.gallery-overlay .close-button').addEventListener('click
     document.getElementById('galleryOverlay').classList.remove('active');
 });
 
-if (new URLSearchParams(window.location.search).has('id')) {
-    showArticle();
-} else {
-    window.addEventListener('load', () => {
-        startCamera();
-    });
-}
+window.addEventListener('load', () => {
+    startCamera();
+});
 </script>
 </body>
 </html>
