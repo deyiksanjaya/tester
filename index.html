@@ -11,12 +11,19 @@
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body {
+    html, body {
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      margin: 0;
+      padding: 0;
       background-color: black;
-      overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
       overscroll-behavior-y: none;
+      overflow: hidden;
     }
     video::-webkit-media-controls,
     video::-webkit-media-controls-enclosure,
@@ -25,9 +32,15 @@
       display: none !important;
       -webkit-appearance: none !important;
     }
-    video { pointer-events: none; }
-    .scanner-overlay {
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    video { 
+      pointer-events: none; 
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
     }
     .corner {
       position: absolute;
@@ -57,53 +70,64 @@
       50% { top: calc(100% - 3px); }
       100% { top: 0; }
     }
-    .drawer-open {
-      transform: translateY(0);
-    }
     .pb-safe {
       padding-bottom: env(safe-area-inset-bottom);
     }
+    .drawer-open {
+      transform: translateY(0) !important;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent; 
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15); 
+      border-radius: 4px;
+    }
   </style>
 </head>
-<body class="h-screen w-screen overflow-hidden text-white select-none bg-black">
-
-  <video id="video" class="fixed inset-0 w-full h-full object-cover z-0" playsinline autoplay muted></video>
+<body class="text-white select-none">
+  <video id="video" playsinline autoplay muted></video>
   <canvas id="canvas" class="hidden"></canvas>
 
-  <div id="ui-layer" class="fixed inset-0 z-10 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300">
-    <div class="relative w-64 h-64 sm:w-80 sm:h-80 scanner-overlay rounded-xl">
-      <div class="corner corner-tl"></div>
-      <div class="corner corner-tr"></div>
-      <div class="corner corner-bl"></div>
-      <div class="corner corner-br"></div>
-      <div class="scan-line"></div>
+  <div id="ui-layer" class="absolute inset-0 z-10 flex flex-col pointer-events-none transition-opacity duration-300">
+    <div class="flex-1 bg-black/60"></div>
+    <div class="flex w-full h-64 sm:h-80 justify-center shrink-0">
+      <div class="flex-1 bg-black/60"></div>
+      <div class="w-64 sm:w-80 relative bg-transparent shrink-0">
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="flex-1 bg-black/60"></div>
     </div>
+    <div class="flex-1 bg-black/60"></div>
   </div>
 
-  <div id="loading" class="fixed inset-0 z-50 bg-black flex items-center justify-center text-white transition-opacity duration-300">
+  <div id="loading" class="absolute inset-0 z-50 flex items-center justify-center transition-opacity duration-300 pointer-events-none">
     <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-white"></i>
   </div>
 
-  <div id="redirecting" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center text-white opacity-0 pointer-events-none transition-opacity duration-300">
+  <div id="redirecting" class="absolute inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
     <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-white"></i>
   </div>
 
-  <div id="result-drawer" class="fixed bottom-0 left-0 right-0 z-40 bg-white rounded-t-3xl p-6 pb-safe pt-5 transform translate-y-full transition-transform duration-500 ease-in-out shadow-2xl">
-    <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8"></div>
-    
-    <div id="result-text" class="text-lg text-gray-900 break-words mb-8 font-medium leading-relaxed max-h-32 overflow-y-auto"></div>
-    
-    <div class="flex gap-3">
-      <button id="btn-copy" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors">
-        <i data-lucide="copy" class="w-5 h-5"></i>
+  <div id="result-drawer" class="absolute bottom-0 left-0 right-0 z-40 bg-white rounded-t-[28px] p-6 pb-safe pt-5 transform translate-y-full transition-transform duration-500 ease-in-out shadow-[0_-10px_40px_rgba(0,0,0,0.15)] pointer-events-auto flex flex-col">
+    <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 shrink-0"></div>
+    <div id="result-text" class="text-[15px] text-gray-800 break-words mb-6 font-medium leading-relaxed max-h-32 overflow-y-auto custom-scrollbar"></div>
+    <div class="flex gap-3 shrink-0">
+      <button id="btn-copy" class="flex-1 bg-[#f2f2f7] hover:bg-[#e5e5ea] active:scale-[0.98] text-black py-3.5 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+        <i data-lucide="copy" class="w-4 h-4"></i>
         <span>Copy</span>
       </button>
+      <button id="btn-rescan" class="flex-[0.3] bg-[#f2f2f7] hover:bg-[#e5e5ea] active:scale-[0.98] text-black py-3.5 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all">
+        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+      </button>
     </div>
-    
-    <button id="btn-rescan" class="w-full mt-3 bg-transparent text-gray-500 py-3.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
-      <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-      <span>Rescan</span>
-    </button>
   </div>
 
   <script>
@@ -137,7 +161,7 @@
         requestAnimationFrame(tick);
       })
       .catch(function(err) {
-        loading.innerHTML = '<span class="text-sm text-red-400">Camera unavailable</span>';
+        loading.innerHTML = '<span class="text-sm text-red-400 font-medium">Camera access denied</span>';
       });
 
     function tick() {
