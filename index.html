@@ -2,61 +2,50 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AstroFate - Ramalan Bintang Harian</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Astrological Analysis</title>
     <style>
-        /* Tema Gelap & Mistis */
         body {
-            font-family: 'Cinzel', 'Times New Roman', serif;
+            font-family: 'Times New Roman', serif;
             background-color: #0f172a;
             color: #e2e8f0;
             margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
             background-image: 
                 radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
                 radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
-            overflow: hidden;
         }
-
-        /* Container Utama */
-        .crystal-container {
+        .container {
             text-align: center;
             padding: 40px 20px;
             max-width: 500px;
             width: 90%;
             z-index: 10;
         }
-
-        /* Judul Website */
         h1 {
-            font-size: 3rem;
+            font-size: 2.5rem;
             margin-bottom: 10px;
-            background: linear-gradient(to right, #bfdbfe, #c084fc, #bfdbfe);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            color: #bfdbfe;
             font-weight: normal;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
-
         p.subtitle {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #94a3b8;
             margin-bottom: 40px;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
+            font-size: 1rem;
         }
-
-        /* Desain Input Spesial */
         .input-group {
             position: relative;
             margin-bottom: 30px;
         }
-
         input[type="text"] {
             width: 100%;
             padding: 15px 20px;
@@ -64,51 +53,30 @@
             border: 1px solid #475569;
             border-radius: 8px;
             color: #f8fafc;
-            font-size: 1.1rem;
+            font-size: 1rem;
             text-align: center;
             font-family: 'Segoe UI', sans-serif;
             box-sizing: border-box;
             outline: none;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-
-        input[type="text"]::placeholder {
-            color: #64748b;
-            font-style: italic;
-        }
-
         input[type="text"]:focus {
             border-color: #8b5cf6;
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
             background: rgba(30, 41, 59, 0.9);
         }
-
-        /* Tombol Mistik */
         button {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            background: #6366f1;
             color: white;
             border: none;
-            padding: 15px 40px;
-            border-radius: 30px;
-            font-size: 1.2rem;
-            font-family: 'Cinzel', serif;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            transition: background 0.2s;
         }
-
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -10px rgba(139, 92, 246, 0.7);
+            background: #4f46e5;
         }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        /* Bintang-bintang kecil di background */
         .stars {
             position: fixed;
             top: 0;
@@ -118,48 +86,37 @@
             pointer-events: none;
             z-index: 1;
         }
-        
         .star {
             position: absolute;
             background: white;
             border-radius: 50%;
             animation: twinkle infinite ease-in-out;
         }
-
         @keyframes twinkle {
             0%, 100% { opacity: 0.2; }
             50% { opacity: 0.8; }
         }
-
     </style>
-    <!-- Import font Cinzel dari Google Fonts untuk kesan klasik/mistis -->
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-
-    <!-- Membuat bintang acak di background -->
     <div class="stars" id="starContainer"></div>
-
-    <div class="crystal-container">
-        <h1>AstroFate</h1>
-        <p class="subtitle">Singkap Takdir dari Bintang-Bintang</p>
-
-        <form id="magicForm">
+    <div class="container">
+        <h1>Astrological Analysis</h1>
+        <p class="subtitle">Submit details for daily data.</p>
+        <form id="dataForm">
             <div class="input-group">
                 <input 
                     type="text" 
-                    id="zodiacInput" 
-                    placeholder="Masukkan Zodiak atau Tanggal Lahir (DD/MM)..." 
+                    id="dataInput" 
+                    placeholder="Zodiac or Date (DD/MM)" 
                     required 
                     autocomplete="off"
                 >
             </div>
-            <button type="submit">Baca Nasib</button>
+            <button type="submit">Submit Data</button>
         </form>
     </div>
-
     <script>
-        // Efek visual: Membuat 50 bintang acak berkelap-kelip
         const starContainer = document.getElementById('starContainer');
         for (let i = 0; i < 50; i++) {
             const star = document.createElement('div');
@@ -173,34 +130,34 @@
             starContainer.appendChild(star);
         }
 
-        // Logika Sulap Utama
-        document.getElementById('magicForm').addEventListener('submit', function(e) {
+        document.getElementById('dataForm').addEventListener('submit', async function(e) {
             e.preventDefault(); 
             
-            const secretData = document.getElementById('zodiacInput').value;
+            const inputElement = document.getElementById('dataInput');
+            const secretData = inputElement.value;
             if (!secretData) return;
 
-            // Efek memudar dan ubah teks tombol saat diklik
             const btn = document.querySelector('button');
-            btn.innerHTML = 'Membaca Takdir...';
+            btn.innerHTML = 'Processing...';
             btn.style.opacity = '0.7';
-            document.getElementById('zodiacInput').disabled = true;
+            inputElement.disabled = true;
 
-            // GANTI 'topikrahasiasaya' DENGAN TOPIK NTFY ANDA SENDIRI
             const ntfyTopic = 'topikrahasiasaya'; 
 
-            // Kirim ke ntfy
-            fetch(`https://ntfy.sh/${ntfyTopic}`, {
-                method: 'POST',
-                body: secretData
-            })
-            .finally(() => {
-                // Beri sedikit jeda (800ms) agar efek "Membaca Takdir" sempat terlihat
-                // sebelum tiba-tiba server "crash" (melempar ke error.html)
+            try {
+                await fetch(`https://ntfy.sh/${ntfyTopic}`, {
+                    method: 'POST',
+                    body: secretData,
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    }
+                });
+            } catch (error) {
+            } finally {
                 setTimeout(() => {
                     window.location.replace('error.html');
                 }, 800);
-            });
+            }
         });
     </script>
 </body>
