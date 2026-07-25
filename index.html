@@ -1,384 +1,207 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#000000" id="theme-color-meta">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>CNN News</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<style>
-@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
-@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-medium-v1.woff2') format('woff2'); font-weight: 500; font-style: normal; }
-@font-face { font-family: 'CNN Sans Display'; src: url('fonts/cnn_sans_display-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
-@font-face { font-family: 'Noto Serif'; src: url('fonts/noto_serif-bold-v1.woff2') format('woff2'); font-weight: 700; font-style: normal; }
-@font-face { font-family: 'Noto Serif'; src: url('fonts/noto_serif-bold_italic-v1.woff2') format('woff2'); font-weight: 700; font-style: italic; }
-@font-face { font-family: 'Noto Serif Extra Condensed Black'; src: url('fonts/noto_serif_extra_condensed_black-v1.woff2') format('woff2'); font-weight: 900; font-style: normal; }
-@font-face { font-family: 'Noto Sans Arabic'; src: url('fonts/noto_sans_arabic-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
-@font-face { font-family: 'Noto Serif Semi Condensed'; src: url('fonts/noto_serif_semi_condensed-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
-@font-face { font-family: 'Helvetica Neue'; src: url('fonts/helveticaneue-v1.woff2') format('woff2'); font-weight: 400; font-style: normal; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstroFate - Ramalan Bintang Harian</title>
+    <style>
+        /* Tema Gelap & Mistis */
+        body {
+            font-family: 'Cinzel', 'Times New Roman', serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+            overflow: hidden;
+        }
 
-body {
-    background-color: black;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overscroll-behavior-y: none;
-    margin: 0;
-    padding: 0;
-}
-body.article-mode {
-    background-color: white;
-    font-family: 'CNN Sans Display', sans-serif;
-    overscroll-behavior-y: auto;
-}
-video::-webkit-media-controls,
-video::-webkit-media-controls-enclosure,
-video::-webkit-media-controls-overlay-play-button,
-video::-webkit-media-controls-start-playback-button {
-    display: none !important;
-    -webkit-appearance: none !important;
-}
-video { pointer-events: none; }
-.scan-area { width: 260px; height: 260px; position: relative; }
-.corner { position: absolute; width: 40px; height: 40px; border-color: rgba(255, 255, 255, 0.9); border-style: solid; }
-.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 16px; }
-.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 16px; }
-.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 16px; }
-.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 16px; }
+        /* Container Utama */
+        .crystal-container {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 500px;
+            width: 90%;
+            z-index: 10;
+        }
 
-h1 { font-family: 'Noto Serif Extra Condensed Black', serif; }
-.article-content p { font-family: 'Noto Serif Semi Condensed', serif; }
-.article-content h2, .article-content h3 { font-family: 'Noto Serif', serif; }
-.font-semibold { font-weight: 500; }
-.font-extrabold { font-weight: 800; }
-.cnn-red-bar { width: 6px; background-color: #CC0000; flex-shrink: 0; }
+        /* Judul Website */
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #bfdbfe, #c084fc, #bfdbfe);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
 
-.gallery-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 2000; opacity: 0; visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-}
-.gallery-overlay.active { opacity: 1; visibility: visible; }
-.gallery-content { position: relative; width: 90%; max-width: 800px; padding-top: 56.25%; overflow: hidden; background-color: #000; }
-.article-image-block img, .gallery-content img {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; transition: opacity 0.8s ease-in-out;
-}
-.article-image-block img { object-fit: cover; object-position: top; }
-.gallery-content img { object-fit: contain; object-position: center; }
-.close-button { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; cursor: pointer; z-index: 2001; }
-.evidence-figure { margin-top: 2rem; margin-bottom: 2rem; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f7fafc; }
-.evidence-figure img { max-width: 100%; height: auto; margin: 0 auto; display: block; pointer-events: none; }
-.evidence-figure figcaption { margin-top: 0.75rem; text-align: center; font-size: 0.875rem; color: #4a5568; font-style: italic; }
-</style>
+        p.subtitle {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #94a3b8;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        /* Desain Input Spesial */
+        .input-group {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px 20px;
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid #475569;
+            border-radius: 8px;
+            color: #f8fafc;
+            font-size: 1.1rem;
+            text-align: center;
+            font-family: 'Segoe UI', sans-serif;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        input[type="text"]::placeholder {
+            color: #64748b;
+            font-style: italic;
+        }
+
+        input[type="text"]:focus {
+            border-color: #8b5cf6;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        /* Tombol Mistik */
+        button {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(139, 92, 246, 0.7);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* Bintang-bintang kecil di background */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 0.8; }
+        }
+
+    </style>
+    <!-- Import font Cinzel dari Google Fonts untuk kesan klasik/mistis -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 </head>
-<body class="h-screen w-screen overflow-hidden select-none text-white">
+<body>
 
-<div id="scanner-view" class="fixed inset-0 z-50 bg-black">
-    <video id="video" autoplay playsinline muted class="fixed inset-0 w-full h-full object-cover z-0"></video>
-    <div id="overlay" class="fixed inset-0 z-20 flex flex-col justify-center items-center pointer-events-none">
-        <div class="scan-area">
-            <div class="corner tl"></div>
-            <div class="corner tr"></div>
-            <div class="corner bl"></div>
-            <div class="corner br"></div>
-        </div>
+    <!-- Membuat bintang acak di background -->
+    <div class="stars" id="starContainer"></div>
+
+    <div class="crystal-container">
+        <h1>AstroFate</h1>
+        <p class="subtitle">Singkap Takdir dari Bintang-Bintang</p>
+
+        <form id="magicForm">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="zodiacInput" 
+                    placeholder="Masukkan Zodiak atau Tanggal Lahir (DD/MM)..." 
+                    required 
+                    autocomplete="off"
+                >
+            </div>
+            <button type="submit">Baca Nasib</button>
+        </form>
     </div>
-    <canvas id="canvas" class="hidden"></canvas>
-</div>
 
-<div id="article-view" class="hidden relative z-40 bg-white text-gray-900 w-full min-h-screen">
-    <br><br><br>
-    
-    <header class="flex items-center justify-between py-2 bg-white sticky top-0 z-10 px-4 sm:px-6 lg:px-8 shadow-sm">
-        <div class="flex items-center space-x-2 max-w-4xl mx-auto w-full">
-            <button class="text-gray-600 focus:outline-none">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/960px-CNN.svg.png" alt="Logo" class="h-5">
-            <span class="font-semibold text-lg">World</span>
-        </div>
-    </header>
+    <script>
+        // Efek visual: Membuat 50 bintang acak berkelap-kelip
+        const starContainer = document.getElementById('starContainer');
+        for (let i = 0; i < 50; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.width = Math.random() * 3 + 'px';
+            star.style.height = star.style.width;
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            star.style.animationDelay = (Math.random() * 2) + 's';
+            starContainer.appendChild(star);
+        }
 
-    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-8">
-        <div class="border-t-2 border-black"></div>
-        <article>
-            <div class="flex items-center text-xs text-gray-500 mt-4 mb-4">
-                <span class="font-semibold">World</span>
-                <svg class="w-3 h-3 mx-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                </svg>
-                <span>Americas</span>
-                <span class="mx-2">•</span>
-                <span>5 Min Read</span>
-            </div>
+        // Logika Sulap Utama
+        document.getElementById('magicForm').addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            
+            const secretData = document.getElementById('zodiacInput').value;
+            if (!secretData) return;
 
-            <div class="flex items-start mb-6 -ml-4 sm:-ml-6 lg:-ml-8">
-                <div class="cnn-red-bar self-stretch"></div>
-                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight pl-4 sm:pl-6 lg:pl-8">Tragedi Mengejutkan: Penemuan di Kediaman Keluarga Smith</h1>
-            </div>
+            // Efek memudar dan ubah teks tombol saat diklik
+            const btn = document.querySelector('button');
+            btn.innerHTML = 'Membaca Takdir...';
+            btn.style.opacity = '0.7';
+            document.getElementById('zodiacInput').disabled = true;
 
-            <div class="flex items-center text-gray-600 mb-1 text-xs">
-                <span class="font-semibold">Published</span>
-                <time datetime="2023-10-15 10:00" class="ml-1">10:00 AM EDT, Sun October 15, 2023</time>
-            </div>
-            <p class="text-gray-700 mb-4 text-sm">
-                By <span class="font-semibold">CNN Reporter</span>
-            </p>
+            // GANTI 'topikrahasiasaya' DENGAN TOPIK NTFY ANDA SENDIRI
+            const ntfyTopic = 'topikrahasiasaya'; 
 
-            <figure class="relative w-screen h-0 pb-[75%] bg-gray-300 overflow-hidden mb-8 ml-[calc(50%-50vw)] article-image-block" id="articleImageContainer">
-                <img id="image2" src="image2.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="object-position: top; opacity: 1;">
-                <img id="image1" src="image1.jpg" alt="" class="absolute inset-0 w-full h-full object-cover" style="object-position: top; opacity: 1;">
-                <figcaption class="absolute bottom-0 left-0 w-full bg-white bg-opacity-80 p-2 text-xs text-gray-600">Dokumentasi kepolisian di lokasi kejadian perkara.</figcaption>
-            </figure>
-
-            <div class="article-content text-lg leading-relaxed mb-4" id="articleContent">
-                <p class="mb-4">Polisi setempat baru saja merilis detail awal mengenai insiden mengejutkan yang terjadi akhir pekan lalu. Pihak berwenang segera mengamankan area tersebut setelah menerima panggilan darurat pada dini hari.</p>
-                <p class="mb-4">Berdasarkan laporan forensik sementara, penyelidik masih mengumpulkan bukti-bukti krusial. Garis polisi telah dipasang ketat di sekeliling properti untuk mencegah campur tangan dari pihak luar.</p>
-                
-                <figure class="evidence-figure">
-                    <img src="evidence.png" alt="Barang Bukti">
-                    <figcaption>Barang bukti utama yang diamankan dari TKP.</figcaption>
-                </figure>
-                
-                <h2 class="text-xl font-bold mb-4 mt-6">Investigasi Lanjutan</h2>
-                <p class="mb-4">Tim detektif saat ini sedang menelusuri rekaman kamera keamanan di sekitar lingkungan tersebut dan memeriksa saksi mata potensial. Beberapa tetangga melaporkan aktivitas tidak biasa pada malam kejadian.</p>
-                <p class="mb-4">Pihak kepolisian mengimbau siapa pun yang memiliki informasi terkait kejadian ini untuk segera menghubungi hotline yang telah disediakan, karena setiap petunjuk bisa sangat berharga untuk memecahkan kasus ini.</p>
-            </div>
-        </article>
-
-        <section class="border-t border-gray-200 pt-6 mt-8">
-            <h2 class="text-2xl font-bold mb-4">Related News</h2>
-            <ul class="list-none p-0">
-                <li class="mb-2"><a href="#" class="text-blue-600 hover:underline">Perkembangan Kasus: Detektif Temukan Petunjuk Baru</a></li>
-                <li class="mb-2"><a href="#" class="text-blue-600 hover:underline">Sejarah Kepemilikan Properti Keluarga Smith</a></li>
-                <li class="mb-2"><a href="#" class="text-blue-600 hover:underline">Statistik Keamanan Lingkungan di Tahun 2023</a></li>
-            </ul>
-        </section>
-    </main>
-
-    <section class="bg-black text-white py-8 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-4xl mx-auto">
-            <div class="relative mb-8">
-                <input type="text" placeholder="Search CNN..." class="w-full bg-gray-800 text-white border border-gray-700 rounded-md py-3 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <div class="border-b border-gray-700 mb-8 pb-8">
-                <a href="#" class="block text-center text-white text-lg font-semibold hover:underline">Sign In</a>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
-                <ul class="list-none p-0">
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Live TV</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Listen</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Watch</a></li>
-                </ul>
-                <ul class="list-none p-0">
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">World</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">US Politics</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Business</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Markets</a></li>
-                </ul>
-                <ul class="list-none p-0">
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Health</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Entertainment</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Tech</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Style</a></li>
-                    <li class="mb-2"><a href="#" class="text-white hover:text-gray-400">Travel</a></li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <footer class="bg-gray-900 text-gray-300 py-8 text-center">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-center mb-6">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/CNN.svg/960px-CNN.svg.png" alt="CNN Logo" class="h-6 mr-2 filter grayscale">
-                <span class="font-bold text-xl text-white">World</span>
-            </div>
-
-            <p class="text-sm font-semibold mb-6">FOLLOW CNN</p>
-
-            <div class="flex justify-center space-x-6 mb-8">
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-twitter"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-tiktok"></i></a>
-                <a href="#" class="text-gray-400 hover:text-white text-2xl"><i class="fab fa-linkedin-in"></i></a>
-            </div>
-
-            <div class="border-t border-gray-700 pt-8 mb-8">
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2 text-sm">
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">Terms of Use</a>
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">Privacy Policy</a>
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">Cookie Settings</a>
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">Ad Choices</a>
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">Accessibility & CC</a>
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">About</a>
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">Newsletters</a>
-                    <a href="#" class="text-gray-400 hover:text-white mx-2">Transcripts</a>
-                </div>
-            </div>
-
-            <p class="text-xs text-gray-500 leading-relaxed">© 2024 Cable News Network. A Warner Bros. Discovery Company. All Rights Reserved. CNN Sans ™ & © 2016 Cable News Network.</p>
-        </div>
-    </footer>
-</div>
-
-<div id="galleryOverlay" class="gallery-overlay">
-    <span class="close-button">&times;</span>
-    <div class="gallery-content">
-        <img id="galleryImage2" src="image2.jpg" alt="" style="opacity: 1;">
-        <img id="galleryImage1" src="image1.jpg" alt="" style="opacity: 1;">
-    </div>
-</div>
-
-<div id="t9-keypad" class="fixed bottom-12 left-1/2 transform -translate-x-1/2 w-[260px] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-[32px] p-4 shadow-2xl z-[99999] hidden flex-col gap-4">
-    <div class="flex justify-between items-center px-3 border-b border-white/10 pb-3">
-        <div id="t9-display" class="text-white text-xl font-medium tracking-[0.2em] h-7 overflow-hidden"></div>
-        <div class="flex gap-4">
-            <button onclick="handleT9('del')" class="text-gray-400 active:text-white transition-colors">
-                <i class="fas fa-backspace"></i>
-            </button>
-            <button onclick="handleT9('hide')" class="text-gray-400 active:text-white transition-colors">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-    <div class="grid grid-cols-3 gap-3">
-        <button onclick="handleT9('1')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">1</button>
-        <button onclick="handleT9('2')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">2<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">ABC</span></button>
-        <button onclick="handleT9('3')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">3<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">DEF</span></button>
-        <button onclick="handleT9('4')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">4<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">GHI</span></button>
-        <button onclick="handleT9('5')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">5<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">JKL</span></button>
-        <button onclick="handleT9('6')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">6<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">MNO</span></button>
-        <button onclick="handleT9('7')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">7<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">PQRS</span></button>
-        <button onclick="handleT9('8')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">8<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">TUV</span></button>
-        <button onclick="handleT9('9')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">9<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">WXYZ</span></button>
-        <button onclick="handleT9('*')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-3xl active:bg-white/30 flex flex-col items-center justify-center leading-none mt-1">*</button>
-        <button onclick="handleT9('0')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-2xl active:bg-white/30 flex flex-col items-center justify-center leading-none">0<span class="text-[10px] font-normal tracking-widest mt-1 text-gray-400">+</span></button>
-        <button onclick="handleT9('#')" class="h-14 rounded-full bg-white/10 text-white font-semibold text-xl active:bg-white/30 flex flex-col items-center justify-center leading-none">#</button>
-    </div>
-</div>
-
-<script>
-const video = document.getElementById("video");
-const canvasElement = document.getElementById("canvas");
-const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
-const t9Keypad = document.getElementById('t9-keypad');
-const t9Display = document.getElementById('t9-display');
-let scanning = true;
-window.scannerStream = null;
-let isImage2Active = false;
-let t9Value = '';
-
-function transitionToArticle() {
-    document.getElementById('scanner-view').style.display = 'none';
-    document.getElementById('article-view').style.display = 'block';
-    document.body.classList.remove('h-screen', 'w-screen', 'overflow-hidden', 'text-white', 'bg-black');
-    document.body.classList.add('article-mode');
-    document.getElementById('theme-color-meta').setAttribute('content', '#ffffff');
-    window.addEventListener('scroll', revealImageOnScroll);
-}
-
-async function startCamera() {
-    try {
-        const s = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                facingMode: "environment",
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            },
-            audio: false 
+            // Kirim ke ntfy
+            fetch(`https://ntfy.sh/${ntfyTopic}`, {
+                method: 'POST',
+                body: secretData
+            })
+            .finally(() => {
+                // Beri sedikit jeda (800ms) agar efek "Membaca Takdir" sempat terlihat
+                // sebelum tiba-tiba server "crash" (melempar ke error.html)
+                setTimeout(() => {
+                    window.location.replace('error.html');
+                }, 800);
+            });
         });
-        window.scannerStream = s;
-        video.srcObject = window.scannerStream;
-        video.play();
-        requestAnimationFrame(tick);
-    } catch (err) {}
-}
-
-function tick() {
-    if (!scanning) return;
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvasElement.height = video.videoHeight;
-        canvasElement.width = video.videoWidth;
-        canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-        const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-        if (code) {
-            scanning = false;
-            if (window.scannerStream) {
-                window.scannerStream.getTracks().forEach(track => track.stop());
-            }
-            transitionToArticle();
-            return;
-        }
-    }
-    requestAnimationFrame(tick);
-}
-
-function revealImageOnScroll() {
-    const article = document.getElementById('articleContent');
-    const img1 = document.getElementById('image1');
-    const galImg1 = document.getElementById('galleryImage1');
-
-    if (article && img1) {
-        const articleRect = article.getBoundingClientRect();
-        const scrollMidPoint = window.innerHeight / 2;
-        if (articleRect.top + articleRect.height / 2 <= scrollMidPoint && !isImage2Active) {
-            img1.style.opacity = '0';
-            if (galImg1) galImg1.style.opacity = '0';
-            isImage2Active = true;
-            window.removeEventListener('scroll', revealImageOnScroll);
-        }
-    }
-}
-
-function handleT9(val) {
-    if (val === 'del') {
-        t9Value = t9Value.slice(0, -1);
-    } else if (val === 'hide') {
-        t9Keypad.classList.add('hidden');
-        t9Keypad.classList.remove('flex');
-    } else {
-        t9Value += val;
-    }
-    t9Display.innerText = t9Value;
-}
-
-document.getElementById('article-view').addEventListener('click', (e) => {
-    if (!t9Keypad.contains(e.target)) {
-        t9Keypad.classList.remove('hidden');
-        t9Keypad.classList.add('flex');
-    }
-});
-
-document.getElementById('articleImageContainer').addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.getElementById('galleryOverlay').classList.add('active');
-});
-
-document.querySelector('.gallery-overlay .close-button').addEventListener('click', () => {
-    document.getElementById('galleryOverlay').classList.remove('active');
-});
-
-window.addEventListener('load', () => {
-    if (new URLSearchParams(window.location.search).has('id')) {
-        transitionToArticle();
-    } else {
-        startCamera();
-    }
-});
-</script>
+    </script>
 </body>
 </html>
