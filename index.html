@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencari Kata - indonesian-wordlist.lst</title>
+    
+    <!-- Menggunakan Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Inter dari Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        
+        /* Animasi loading sederhana */
+        .loader {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Kustomisasi scrollbar untuk hasil */
+        #results-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #results-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 4px;
+        }
+        #results-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        #results-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-book-open text-xl"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-800">Kamus / Pencari Kata</h1>
+            </div>
+            <div id="status-badge" class="hidden items-center space-x-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                <i class="fa-solid fa-check-circle"></i>
+                <span id="word-count-badge">Database Aktif</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 max-w-4xl mx-auto w-full">
+        
+        <div id="loading-screen" class="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-lg text-center flex flex-col items-center justify-center transition-all duration-300 min-h-[300px]">
+            <div id="spinner" class="loader mb-6 w-12 h-12 border-4 mx-auto"></div>
+            <h2 class="text-2xl font-bold mb-2 text-slate-800">Memuat Database...</h2>
+            <p id="loading-text" class="text-slate-500 mb-2">Mengambil data dari <code class="bg-slate-100 px-2 py-1 rounded text-blue-600">indonesian-wordlist.lst</code></p>
+            <div id="loading-error" class="hidden mt-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-200 text-sm text-left w-full"></div>
+        </div>
+
+        <div id="search-section" class="w-full hidden flex-col h-[calc(100vh-120px)] transition-all duration-300">
+            
+            <!-- Kontrol Pencarian -->
+            <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 mb-4 shrink-0">
+                <div class="relative mb-4">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-search text-slate-400"></i>
+                    </div>
+                    <input type="text" id="search-input" 
+                        class="block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-lg" 
+                        placeholder="Ketik kata yang ingin dicari..." autocomplete="off">
+                    <button id="clear-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 hidden">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+                
+                <!-- Filter Pencarian -->
+                <div class="flex flex-wrap gap-3 items-center text-sm">
+                    <span class="text-slate-500 font-medium mr-2">Metode:</span>
+                    
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="search-mode" value="contains" class="form-radio text-blue-600 h-4 w-4" checked>
+                        <span class="ml-2 text-slate-700">Mengandung</span>
+                    </label>
+                    
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="search-mode" value="exact" class="form-radio text-blue-600 h-4 w-4">
+                        <span class="ml-2 text-slate-700">Sama Persis</span>
+                    </label>
+
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="search-mode" value="startswith" class="form-radio text-blue-600 h-4 w-4">
+                        <span class="ml-2 text-slate-700">Awalan</span>
+                    </label>
+                    
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="radio" name="search-mode" value="endswith" class="form-radio text-blue-600 h-4 w-4">
+                        <span class="ml-2 text-slate-700">Akhiran</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Area Hasil -->
+            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm flex-grow flex flex-col overflow-hidden">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center shrink-0">
+                    <span id="results-count" class="text-sm font-medium text-slate-600">Hasil: 0 kata ditemukan</span>
+                    <span id="search-time" class="text-xs text-slate-400"></span>
+                </div>
+                
+                <div id="results-container" class="overflow-y-auto p-4 flex-grow bg-white">
+                    <div id="empty-state" class="h-full flex flex-col items-center justify-center text-slate-400">
+                        <i class="fa-solid fa-keyboard text-4xl mb-3 opacity-50"></i>
+                        <p>Mulai mengetik untuk mencari kata.</p>
+                    </div>
+                    <!-- Daftar List Kata (Generated by JS) -->
+                    <ul id="results-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 hidden">
+                        <!-- Item kata akan disisipkan di sini -->
+                    </ul>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <script>
+        // State aplikasi
+        let wordDatabase = []; // Menyimpan semua kata
+        let maxDisplayLimit = 500; // Mencegah browser freeze karena merender terlalu banyak DOM
+        
+        // Referensi Elemen DOM
+        const loadingScreen = document.getElementById('loading-screen');
+        const spinner = document.getElementById('spinner');
+        const loadingText = document.getElementById('loading-text');
+        const loadingError = document.getElementById('loading-error');
+        
+        const searchSection = document.getElementById('search-section');
+        const statusBadge = document.getElementById('status-badge');
+        const wordCountBadge = document.getElementById('word-count-badge');
+        
+        const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search');
+        const searchModeRadios = document.querySelectorAll('input[name="search-mode"]');
+        
+        const resultsCount = document.getElementById('results-count');
+        const searchTime = document.getElementById('search-time');
+        const resultsContainer = document.getElementById('results-container');
+        const emptyState = document.getElementById('empty-state');
+        const resultsList = document.getElementById('results-list');
+
+        // Fungsi untuk mengambil file database secara otomatis
+        async function fetchDatabase() {
+            try {
+                // Fetch file langsung dari folder yang sama (Relative Path)
+                const response = await fetch('./indonesian-wordlist.lst');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - File tidak ditemukan.`);
+                }
+                
+                loadingText.textContent = "Memproses kata-kata...";
+                const text = await response.text();
+                
+                // Memisahkan teks berdasarkan baris baru (mendukung format Unix \n dan Windows \r\n)
+                wordDatabase = text.split(/\r?\n/)
+                                   .map(word => word.trim())
+                                   .filter(word => word.length > 0); 
+                
+                if (wordDatabase.length > 0) {
+                    showSearchUI(wordDatabase.length);
+                } else {
+                    throw new Error("File berhasil dimuat, tetapi kosong atau tidak berisi teks yang valid.");
+                }
+                
+            } catch (error) {
+                console.error("Gagal memuat database:", error);
+                
+                // Tampilkan pesan error jika file gagal dimuat
+                spinner.classList.add('hidden');
+                loadingText.classList.add('hidden');
+                loadingError.classList.remove('hidden');
+                loadingError.innerHTML = `
+                    <div class="flex items-center space-x-2 mb-2">
+                        <i class="fa-solid fa-triangle-exclamation text-xl text-red-500"></i>
+                        <strong class="text-base">Gagal memuat database!</strong>
+                    </div>
+                    <p class="mb-2">Pastikan file <code>indonesian-wordlist.lst</code> berada di folder yang sama dengan file HTML ini pada repositori GitHub.</p>
+                    <p class="text-xs text-red-400 font-mono bg-red-100/50 p-2 rounded">Pesan error log: ${error.message}</p>
+                    <div class="mt-3 text-xs text-slate-600 bg-white/50 p-2 rounded">
+                        <i class="fa-solid fa-circle-info text-blue-500 mr-1"></i>
+                        <b>Catatan Developer:</b> Jika Anda menguji file HTML ini langsung di komputer secara lokal (alamat url berawalan <code>file:///</code>), browser mungkin memblokir proses memuat file (CORS Policy). Silakan unggah ke GitHub Pages atau gunakan ekstensi Live Server untuk mengujinya.
+                    </div>
+                `;
+            }
+        }
+
+        // Menampilkan antarmuka pencarian setelah file sukses diload
+        function showSearchUI(count) {
+            loadingScreen.classList.add('hidden');
+            searchSection.classList.remove('hidden');
+            searchSection.classList.add('flex');
+            
+            statusBadge.classList.remove('hidden');
+            statusBadge.classList.add('flex');
+            
+            // Format angka dengan pemisah ribuan
+            const formattedCount = new Intl.NumberFormat('id-ID').format(count);
+            wordCountBadge.textContent = `${formattedCount} Kata`;
+            
+            searchInput.focus();
+        }
+
+        // Mulai mengambil data secara otomatis saat halaman HTML selesai diuraikan
+        document.addEventListener('DOMContentLoaded', fetchDatabase);
+
+        // Fungsi utilitas untuk menunda eksekusi (Debounce) agar tidak lag saat mengetik
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Logika Utama Pencarian
+        function performSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            const mode = document.querySelector('input[name="search-mode"]:checked').value;
+            
+            // Handle input kosong
+            if (query.length === 0) {
+                clearSearchBtn.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                resultsList.classList.add('hidden');
+                resultsCount.textContent = `Hasil: 0 kata ditemukan`;
+                searchTime.textContent = '';
+                return;
+            }
+            
+            clearSearchBtn.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            resultsList.classList.remove('hidden');
+            
+            const startTime = performance.now();
+            let results = [];
+            
+            // Eksekusi filter sesuai mode pencarian
+            if (mode === 'exact') {
+                results = wordDatabase.filter(word => word.toLowerCase() === query);
+            } else if (mode === 'startswith') {
+                results = wordDatabase.filter(word => word.toLowerCase().startsWith(query));
+            } else if (mode === 'endswith') {
+                results = wordDatabase.filter(word => word.toLowerCase().endsWith(query));
+            } else { // default: contains
+                results = wordDatabase.filter(word => word.toLowerCase().includes(query));
+            }
+            
+            const endTime = performance.now();
+            const timeTaken = (endTime - startTime).toFixed(2);
+            
+            renderResults(results, timeTaken);
+        }
+
+        // Render Array kata ke HTML
+        function renderResults(results, timeTaken) {
+            const totalFound = results.length;
+            resultsList.innerHTML = ''; // Bersihkan hasil sebelumnya
+            
+            if (totalFound === 0) {
+                resultsCount.textContent = 'Tidak ada kata yang cocok.';
+                searchTime.textContent = `Waktu pencarian: ${timeTaken} ms`;
+                resultsList.classList.add('hidden');
+                
+                // Tampilkan pesan kosong modifikasi
+                emptyState.classList.remove('hidden');
+                emptyState.innerHTML = `
+                    <i class="fa-solid fa-ghost text-4xl mb-3 opacity-50 text-slate-400"></i>
+                    <p class="text-slate-500">Kata tidak ditemukan dalam database.</p>
+                `;
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            resultsList.classList.remove('hidden');
+            
+            // Batasi render dom agar browser tidak crash jika hasil sangat banyak (misal: "a")
+            const displayResults = results.slice(0, maxDisplayLimit);
+            let displayMessage = `Hasil: ${new Intl.NumberFormat('id-ID').format(totalFound)} kata ditemukan`;
+            
+            if (totalFound > maxDisplayLimit) {
+                displayMessage += ` (Menampilkan ${maxDisplayLimit} teratas)`;
+            }
+            
+            resultsCount.textContent = displayMessage;
+            searchTime.textContent = `${timeTaken} ms`;
+
+            // Gunakan DocumentFragment untuk optimasi manipulasi DOM
+            const fragment = document.createDocumentFragment();
+            
+            displayResults.forEach(word => {
+                const li = document.createElement('li');
+                li.className = 'bg-slate-50 hover:bg-blue-50 border border-slate-100 p-3 rounded-xl flex items-center justify-between group transition-colors';
+                
+                const span = document.createElement('span');
+                span.className = 'font-medium text-slate-700 break-all';
+                span.textContent = word;
+                
+                // Tombol copy (salin kata)
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 p-1';
+                copyBtn.title = "Salin kata";
+                copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                
+                copyBtn.onclick = () => {
+                    // Fallback copy ke clipboard untuk lingkungan iFrame / Web
+                    const textArea = document.createElement("textarea");
+                    textArea.value = word;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        copyBtn.innerHTML = '<i class="fa-solid fa-check text-green-500"></i>';
+                        setTimeout(() => {
+                            copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Gagal menyalin', err);
+                    }
+                    document.body.removeChild(textArea);
+                };
+
+                li.appendChild(span);
+                li.appendChild(copyBtn);
+                fragment.appendChild(li);
+            });
+            
+            resultsList.appendChild(fragment);
+            
+            // Auto scroll ke atas setelah pencarian baru
+            resultsContainer.scrollTop = 0;
+        }
+
+        // Event Listeners Pencarian
+        // Menggunakan debounce 200ms agar aplikasi terasa mulus saat mengetik cepat
+        searchInput.addEventListener('input', debounce(performSearch, 200));
+        
+        searchModeRadios.forEach(radio => {
+            radio.addEventListener('change', performSearch);
+        });
+        
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            performSearch();
+            searchInput.focus();
+        });
+
+    </script>
+</body>
+</html>
