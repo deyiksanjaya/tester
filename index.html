@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pencari Kata - indonesian-wordlist.lst</title>
+    <title>Mentalist Tool - Progressive Anagram</title>
     
     <!-- Menggunakan Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -57,10 +57,10 @@
     <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
         <div class="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
             <div class="flex items-center space-x-3">
-                <div class="bg-blue-600 text-white p-2 rounded-lg">
-                    <i class="fa-solid fa-book-open text-xl"></i>
+                <div class="bg-purple-600 text-white p-2 rounded-lg">
+                    <i class="fa-solid fa-hat-wizard text-xl"></i>
                 </div>
-                <h1 class="text-xl font-bold text-slate-800">Kamus / Pencari Kata</h1>
+                <h1 class="text-xl font-bold text-slate-800">Progressive Anagram</h1>
             </div>
             <div id="status-badge" class="hidden items-center space-x-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium border border-green-200">
                 <i class="fa-solid fa-check-circle"></i>
@@ -78,68 +78,72 @@
             <div id="loading-error" class="hidden mt-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-200 text-sm text-left w-full"></div>
         </div>
 
-        <div id="search-section" class="w-full hidden flex-col h-[calc(100vh-120px)] transition-all duration-300">
-            
-            <!-- Kontrol Pencarian -->
-            <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-200 mb-4 shrink-0">
-                <div class="relative mb-4">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fa-solid fa-search text-slate-400"></i>
-                    </div>
-                    <input type="text" id="search-input" 
-                        class="block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow text-lg" 
-                        placeholder="Ketik kata yang ingin dicari..." autocomplete="off">
-                    <button id="clear-search" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 hidden">
-                        <i class="fa-solid fa-xmark text-lg"></i>
-                    </button>
+        <!-- Setup Screen (Baru) -->
+        <div id="setup-section" class="w-full hidden flex-col transition-all duration-300 max-w-lg mx-auto">
+            <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 text-center">
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Persiapan</h2>
+                <p class="text-slate-500 mb-8">Tanyakan jumlah huruf untuk mempercepat eliminasi (Opsional)</p>
+                
+                <div class="mb-8">
+                    <label class="block text-sm font-semibold text-slate-700 mb-3">Jumlah Huruf (Panjang Kata)</label>
+                    <input type="number" id="setup-length" min="1" max="50"
+                        class="block w-full text-center px-4 py-4 border-2 border-slate-300 rounded-2xl bg-slate-50 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-4xl font-black transition-all" 
+                        placeholder="Abaikan jika ragu">
                 </div>
                 
-                <!-- Filter Pencarian -->
-                <div class="flex flex-wrap gap-3 items-center text-sm">
-                    <span class="text-slate-500 font-medium mr-2">Metode:</span>
-                    
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="radio" name="search-mode" value="contains" class="form-radio text-blue-600 h-4 w-4" checked>
-                        <span class="ml-2 text-slate-700">Mengandung</span>
-                    </label>
-                    
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="radio" name="search-mode" value="exact" class="form-radio text-blue-600 h-4 w-4">
-                        <span class="ml-2 text-slate-700">Sama Persis</span>
-                    </label>
-
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="radio" name="search-mode" value="startswith" class="form-radio text-blue-600 h-4 w-4">
-                        <span class="ml-2 text-slate-700">Awalan</span>
-                    </label>
-                    
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="radio" name="search-mode" value="endswith" class="form-radio text-blue-600 h-4 w-4">
-                        <span class="ml-2 text-slate-700">Akhiran</span>
-                    </label>
-                </div>
+                <button id="start-btn" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xl font-bold shadow-lg shadow-blue-600/30 transition-all transform hover:scale-[1.02] active:scale-95">
+                    Mulai Beraksi <i class="fa-solid fa-wand-magic-sparkles ml-2"></i>
+                </button>
             </div>
-
-            <!-- Area Hasil -->
-            <div class="bg-white border border-slate-200 rounded-2xl shadow-sm flex-grow flex flex-col overflow-hidden">
-                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center shrink-0">
-                    <span id="results-count" class="text-sm font-medium text-slate-600">Hasil: 0 kata ditemukan</span>
-                    <span id="search-time" class="text-xs text-slate-400"></span>
-                </div>
-                
-                <div id="results-container" class="overflow-y-auto p-4 flex-grow bg-white">
-                    <div id="empty-state" class="h-full flex flex-col items-center justify-center text-slate-400">
-                        <i class="fa-solid fa-keyboard text-4xl mb-3 opacity-50"></i>
-                        <p>Mulai mengetik untuk mencari kata.</p>
-                    </div>
-                    <!-- Daftar List Kata (Generated by JS) -->
-                    <ul id="results-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 hidden">
-                        <!-- Item kata akan disisipkan di sini -->
-                    </ul>
-                </div>
-            </div>
-            
         </div>
+
+        <!-- Game Screen (Pertanyaan) -->
+        <div id="game-section" class="w-full hidden flex-col transition-all duration-300 max-w-lg mx-auto">
+            <div class="flex justify-between items-center mb-4 px-2">
+                <button id="undo-btn" class="text-slate-500 hover:text-slate-700 font-medium px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-200 transition-colors disabled:opacity-50">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Undo
+                </button>
+                <div class="text-sm font-semibold text-slate-500 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200" title="Informasi rahasia untuk mentalist">
+                    Sisa: <span id="game-remaining-count" class="text-blue-600 font-bold">0</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 text-center mb-6">
+                <h3 class="text-lg font-medium text-slate-500 mb-2 uppercase tracking-widest">Tanyakan Huruf:</h3>
+                <div id="current-letter" class="text-[9rem] leading-none font-black text-slate-800 mb-2 drop-shadow-sm">?</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button id="btn-no" class="py-8 bg-red-100 hover:bg-red-200 text-red-700 rounded-3xl text-2xl font-black shadow-sm border-2 border-red-200 transition-all transform hover:scale-105 active:scale-95">
+                    <i class="fa-solid fa-xmark mb-2 block text-4xl"></i>
+                    TIDAK
+                </button>
+                <button id="btn-yes" class="py-8 bg-green-100 hover:bg-green-200 text-green-700 rounded-3xl text-2xl font-black shadow-sm border-2 border-green-200 transition-all transform hover:scale-105 active:scale-95">
+                    <i class="fa-solid fa-check mb-2 block text-4xl"></i>
+                    YA
+                </button>
+            </div>
+        </div>
+
+        <!-- Reveal Screen -->
+        <div id="reveal-section" class="w-full hidden flex-col transition-all duration-300 max-w-2xl mx-auto">
+            <div class="bg-white p-10 rounded-3xl shadow-2xl border-2 border-green-400 text-center relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 text-green-100 opacity-50">
+                    <i class="fa-solid fa-star text-[15rem]"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-500 mb-4 relative z-10 uppercase tracking-widest">Target Ditemukan</h3>
+                <div id="final-word" class="text-5xl md:text-7xl font-black text-slate-800 mb-8 uppercase tracking-widest break-all relative z-10">
+                    KATA
+                </div>
+                <div id="anagram-warning" class="hidden text-sm text-amber-600 bg-amber-50 p-4 rounded-xl mb-6 relative z-10 text-left border border-amber-200">
+                    <!-- Dinamis via JS -->
+                </div>
+                <button id="reset-btn" class="relative z-10 px-8 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-lg font-bold transition-colors border border-slate-300">
+                    Mulai Ulang Trik
+                </button>
+            </div>
+        </div>
+
     </main>
 
     <script>
@@ -153,19 +157,32 @@
         const loadingText = document.getElementById('loading-text');
         const loadingError = document.getElementById('loading-error');
         
-        const searchSection = document.getElementById('search-section');
         const statusBadge = document.getElementById('status-badge');
         const wordCountBadge = document.getElementById('word-count-badge');
         
-        const searchInput = document.getElementById('search-input');
-        const clearSearchBtn = document.getElementById('clear-search');
-        const searchModeRadios = document.querySelectorAll('input[name="search-mode"]');
+        // --- Referensi Elemen DOM Baru ---
+        const setupSection = document.getElementById('setup-section');
+        const gameSection = document.getElementById('game-section');
+        const revealSection = document.getElementById('reveal-section');
         
-        const resultsCount = document.getElementById('results-count');
-        const searchTime = document.getElementById('search-time');
-        const resultsContainer = document.getElementById('results-container');
-        const emptyState = document.getElementById('empty-state');
-        const resultsList = document.getElementById('results-list');
+        const setupLengthInput = document.getElementById('setup-length');
+        const startBtn = document.getElementById('start-btn');
+        
+        const undoBtn = document.getElementById('undo-btn');
+        const gameRemainingCount = document.getElementById('game-remaining-count');
+        const currentLetterDisplay = document.getElementById('current-letter');
+        const btnYes = document.getElementById('btn-yes');
+        const btnNo = document.getElementById('btn-no');
+        
+        const finalWordDisplay = document.getElementById('final-word');
+        const anagramWarning = document.getElementById('anagram-warning');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // --- State Permainan Mentalist ---
+        let possibleWords = [];
+        let askedLetters = {}; // Menyimpan riwayat huruf yg ditanya (contoh: { 'a': true, 'b': false })
+        let currentTargetLetter = '';
+        let historyStack = []; // Menyimpan state untuk fitur Undo
 
         // Fungsi untuk mengambil file database secara otomatis
         async function fetchDatabase() {
@@ -186,7 +203,7 @@
                                    .filter(word => word.length > 0); 
                 
                 if (wordDatabase.length > 0) {
-                    showSearchUI(wordDatabase.length);
+                    showSetupUI(wordDatabase.length);
                 } else {
                     throw new Error("File berhasil dimuat, tetapi kosong atau tidak berisi teks yang valid.");
                 }
@@ -213,169 +230,187 @@
             }
         }
 
-        // Menampilkan antarmuka pencarian setelah file sukses diload
-        function showSearchUI(count) {
+        // Menampilkan antarmuka Persiapan (Setup) setelah file sukses diload
+        function showSetupUI(count) {
             loadingScreen.classList.add('hidden');
-            searchSection.classList.remove('hidden');
-            searchSection.classList.add('flex');
+            setupSection.classList.remove('hidden');
+            setupSection.classList.add('flex');
             
             statusBadge.classList.remove('hidden');
             statusBadge.classList.add('flex');
             
-            // Format angka dengan pemisah ribuan
             const formattedCount = new Intl.NumberFormat('id-ID').format(count);
             wordCountBadge.textContent = `${formattedCount} Kata`;
             
-            searchInput.focus();
+            setupLengthInput.focus();
         }
 
-        // Mulai mengambil data secara otomatis saat halaman HTML selesai diuraikan
-        document.addEventListener('DOMContentLoaded', fetchDatabase);
-
-        // Fungsi utilitas untuk menunda eksekusi (Debounce) agar tidak lag saat mengetik
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Logika Utama Pencarian
-        function performSearch() {
-            const query = searchInput.value.toLowerCase().trim();
-            const mode = document.querySelector('input[name="search-mode"]:checked').value;
+        // --- Core Logic Permainan ---
+        
+        function startGame() {
+            const targetLength = parseInt(setupLengthInput.value);
             
-            // Handle input kosong
-            if (query.length === 0) {
-                clearSearchBtn.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                resultsList.classList.add('hidden');
-                resultsCount.textContent = `Hasil: 0 kata ditemukan`;
-                searchTime.textContent = '';
-                return;
+            // 1. Filter awal berdasarkan jumlah huruf (jika diisi)
+            if (!isNaN(targetLength) && targetLength > 0) {
+                possibleWords = wordDatabase.filter(w => w.length === targetLength);
+            } else {
+                possibleWords = [...wordDatabase];
             }
-            
-            clearSearchBtn.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-            resultsList.classList.remove('hidden');
-            
-            const startTime = performance.now();
-            let results = [];
-            
-            // Eksekusi filter sesuai mode pencarian
-            if (mode === 'exact') {
-                results = wordDatabase.filter(word => word.toLowerCase() === query);
-            } else if (mode === 'startswith') {
-                results = wordDatabase.filter(word => word.toLowerCase().startsWith(query));
-            } else if (mode === 'endswith') {
-                results = wordDatabase.filter(word => word.toLowerCase().endsWith(query));
-            } else { // default: contains
-                results = wordDatabase.filter(word => word.toLowerCase().includes(query));
-            }
-            
-            const endTime = performance.now();
-            const timeTaken = (endTime - startTime).toFixed(2);
-            
-            renderResults(results, timeTaken);
-        }
 
-        // Render Array kata ke HTML
-        function renderResults(results, timeTaken) {
-            const totalFound = results.length;
-            resultsList.innerHTML = ''; // Bersihkan hasil sebelumnya
-            
-            if (totalFound === 0) {
-                resultsCount.textContent = 'Tidak ada kata yang cocok.';
-                searchTime.textContent = `Waktu pencarian: ${timeTaken} ms`;
-                resultsList.classList.add('hidden');
-                
-                // Tampilkan pesan kosong modifikasi
-                emptyState.classList.remove('hidden');
-                emptyState.innerHTML = `
-                    <i class="fa-solid fa-ghost text-4xl mb-3 opacity-50 text-slate-400"></i>
-                    <p class="text-slate-500">Kata tidak ditemukan dalam database.</p>
-                `;
+            if (possibleWords.length === 0) {
+                alert("Tidak ada kata dengan panjang tersebut di database!");
                 return;
             }
 
-            emptyState.classList.add('hidden');
-            resultsList.classList.remove('hidden');
+            // Inisialisasi ulang
+            askedLetters = {};
+            historyStack = [];
             
-            // Batasi render dom agar browser tidak crash jika hasil sangat banyak (misal: "a")
-            const displayResults = results.slice(0, maxDisplayLimit);
-            let displayMessage = `Hasil: ${new Intl.NumberFormat('id-ID').format(totalFound)} kata ditemukan`;
+            // Pindah layar ke game
+            setupSection.classList.add('hidden');
+            setupSection.classList.remove('flex');
+            revealSection.classList.add('hidden');
+            revealSection.classList.remove('flex');
+            gameSection.classList.remove('hidden');
+            gameSection.classList.add('flex');
             
-            if (totalFound > maxDisplayLimit) {
-                displayMessage += ` (Menampilkan ${maxDisplayLimit} teratas)`;
-            }
-            
-            resultsCount.textContent = displayMessage;
-            searchTime.textContent = `${timeTaken} ms`;
+            updateGameState();
+        }
 
-            // Gunakan DocumentFragment untuk optimasi manipulasi DOM
-            const fragment = document.createDocumentFragment();
+        function calculateNextBestLetter() {
+            // ALGORITMA UTAMA: Mencari huruf pembagi terbaik (Binary Search optimal)
+            const letterCounts = {};
             
-            displayResults.forEach(word => {
-                const li = document.createElement('li');
-                li.className = 'bg-slate-50 hover:bg-blue-50 border border-slate-100 p-3 rounded-xl flex items-center justify-between group transition-colors';
-                
-                const span = document.createElement('span');
-                span.className = 'font-medium text-slate-700 break-all';
-                span.textContent = word;
-                
-                // Tombol copy (salin kata)
-                const copyBtn = document.createElement('button');
-                copyBtn.className = 'text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 p-1';
-                copyBtn.title = "Salin kata";
-                copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
-                
-                copyBtn.onclick = () => {
-                    // Fallback copy ke clipboard untuk lingkungan iFrame / Web
-                    const textArea = document.createElement("textarea");
-                    textArea.value = word;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        copyBtn.innerHTML = '<i class="fa-solid fa-check text-green-500"></i>';
-                        setTimeout(() => {
-                            copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
-                        }, 2000);
-                    } catch (err) {
-                        console.error('Gagal menyalin', err);
+            // Hitung frekuensi huruf pada kata-kata yang tersisa
+            for (let word of possibleWords) {
+                // Gunakan Set untuk menghindari hitung ganda jika ada huruf kembar dalam 1 kata (misal: S di MANGGIS)
+                const uniqueChars = new Set(word.toLowerCase()); 
+                for (let char of uniqueChars) {
+                    if (char >= 'a' && char <= 'z' && askedLetters[char] === undefined) {
+                        letterCounts[char] = (letterCounts[char] || 0) + 1;
                     }
-                    document.body.removeChild(textArea);
-                };
+                }
+            }
 
-                li.appendChild(span);
-                li.appendChild(copyBtn);
-                fragment.appendChild(li);
-            });
-            
-            resultsList.appendChild(fragment);
-            
-            // Auto scroll ke atas setelah pencarian baru
-            resultsContainer.scrollTop = 0;
+            let bestLetter = null;
+            let bestDiff = Infinity;
+            const target = possibleWords.length / 2; // Target 50% pembagian
+
+            // Cari huruf yang memotong sisa probabilitas sedekat mungkin ke 50:50
+            for (let char in letterCounts) {
+                const count = letterCounts[char];
+                // Jangan tanyakan huruf yang ada di 100% sisa kata, karena menjawab "Ya" tidak mengeleminasi apapun!
+                if (count > 0 && count < possibleWords.length) {
+                    const diff = Math.abs(count - target);
+                    if (diff < bestDiff) {
+                        bestDiff = diff;
+                        bestLetter = char;
+                    }
+                }
+            }
+
+            return bestLetter; // Mengembalikan Null jika semua sisa huruf identik (anagram)
         }
 
-        // Event Listeners Pencarian
-        // Menggunakan debounce 200ms agar aplikasi terasa mulus saat mengetik cepat
-        searchInput.addEventListener('input', debounce(performSearch, 200));
-        
-        searchModeRadios.forEach(radio => {
-            radio.addEventListener('change', performSearch);
+        function updateGameState() {
+            // Update indikator rahasia
+            gameRemainingCount.textContent = new Intl.NumberFormat('id-ID').format(possibleWords.length);
+            undoBtn.disabled = historyStack.length === 0;
+
+            if (possibleWords.length === 0) {
+                // Berarti penonton salah jawab atau kata tak ada di database
+                showReveal("TIDAK DITEMUKAN", false, true);
+                return;
+            }
+
+            currentTargetLetter = calculateNextBestLetter();
+
+            if (currentTargetLetter === null) {
+                // Tidak ada lagi huruf pembeda. (Sisa 1 kata, ATAU sisa beberapa kata yang merupakan Anagram / sama persis komposisi hurufnya)
+                const isAnagrams = possibleWords.length > 1;
+                showReveal(possibleWords.join(' / '), isAnagrams, false);
+            } else {
+                currentLetterDisplay.textContent = currentTargetLetter.toUpperCase();
+            }
+        }
+
+        function handleAnswer(isYes) {
+            // Simpan riwayat untuk fungsi UNDO
+            historyStack.push({
+                words: [...possibleWords],
+                asked: { ...askedLetters }
+            });
+
+            askedLetters[currentTargetLetter] = isYes;
+
+            // Proses Eliminasi
+            possibleWords = possibleWords.filter(word => {
+                const lowerWord = word.toLowerCase();
+                const hasLetter = lowerWord.includes(currentTargetLetter);
+                return isYes ? hasLetter : !hasLetter;
+            });
+
+            updateGameState();
+        }
+
+        function undo() {
+            if (historyStack.length > 0) {
+                const previousState = historyStack.pop();
+                possibleWords = previousState.words;
+                askedLetters = previousState.asked;
+                updateGameState();
+            }
+        }
+
+        function showReveal(wordText, isAnagrams, isError) {
+            gameSection.classList.add('hidden');
+            gameSection.classList.remove('flex');
+            revealSection.classList.remove('hidden');
+            revealSection.classList.add('flex');
+
+            finalWordDisplay.textContent = wordText;
+            
+            if (isError) {
+                finalWordDisplay.classList.add('text-red-500');
+                finalWordDisplay.classList.remove('text-slate-800');
+                anagramWarning.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1 text-red-500"></i> <b>Gagal!</b> Penonton berbohong, salah ingat huruf, atau kata tersebut memang tidak ada di database.';
+                anagramWarning.classList.remove('hidden', 'text-amber-700', 'bg-amber-50', 'border-amber-200');
+                anagramWarning.classList.add('text-red-700', 'bg-red-50', 'border-red-200');
+            } else {
+                finalWordDisplay.classList.remove('text-red-500');
+                finalWordDisplay.classList.add('text-slate-800');
+                
+                if (isAnagrams) {
+                    anagramWarning.innerHTML = '<i class="fa-solid fa-circle-info mr-1 text-amber-500"></i> <b>Catatan Anagram:</b> Terdapat beberapa kata tersisa dengan komposisi huruf yang sama persis (hanya beda urutan). Anda harus melakukan trik <i>fishing</i> (pancingan) mandiri untuk menentukan kata pastinya.';
+                    anagramWarning.classList.remove('hidden', 'text-red-700', 'bg-red-50', 'border-red-200');
+                    anagramWarning.classList.add('text-amber-700', 'bg-amber-50', 'border-amber-200');
+                } else {
+                    anagramWarning.classList.add('hidden');
+                }
+            }
+        }
+
+        // --- Hubungan Event Listeners ---
+        startBtn.addEventListener('click', startGame);
+        setupLengthInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') startGame();
         });
         
-        clearSearchBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            performSearch();
-            searchInput.focus();
+        btnYes.addEventListener('click', () => handleAnswer(true));
+        btnNo.addEventListener('click', () => handleAnswer(false));
+        undoBtn.addEventListener('click', undo);
+        
+        resetBtn.addEventListener('click', () => {
+            setupSection.classList.remove('hidden');
+            setupSection.classList.add('flex');
+            revealSection.classList.add('hidden');
+            revealSection.classList.remove('flex');
+            setupLengthInput.value = '';
+            setupLengthInput.focus();
         });
+
+        // Eksekusi otomatis pertama kali
+        document.addEventListener('DOMContentLoaded', fetchDatabase);
 
     </script>
 </body>
