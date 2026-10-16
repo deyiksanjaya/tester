@@ -102,8 +102,8 @@
                     uniqueSet.add(originalWord);
 
                     let mask = 0;
-                    for (let j = 0; j < cleanWord.length; j++) {
-                        const code = cleanWord.charCodeAt(j);
+                    for (let j = 0; j < justLetters.length; j++) {
+                        const code = justLetters.charCodeAt(j);
                         if (code >= 65 && code <= 90) mask |= (1 << (code - 65));
                     }
 
@@ -142,6 +142,37 @@
         function startGameFromInit() {
             currentState = GAME_STATE.PLAYING;
             filterPossibleWords();
+        }
+
+        function calculateNextBestLetterBit() {
+            if (possibleWords.length <= 1) return -1;
+            
+            let bestBit = -1;
+            let maxMatches = -1;
+
+            for (let bit = 0; bit < 26; bit++) {
+                const bitFlag = (1 << bit);
+                
+                // Lewati huruf yang sudah pernah ditanyakan
+                if ((askedMask & bitFlag) !== 0) continue;
+
+                let matches = 0;
+                for (let i = 0; i < possibleWords.length; i++) {
+                    if ((possibleWords[i].mask & bitFlag) !== 0) {
+                        matches++;
+                    }
+                }
+
+                // Abaikan huruf yang tidak ada sama sekali atau justru ada di SEMUA kata (tidak mengeliminasi apa-apa)
+                if (matches === 0 || matches === possibleWords.length) continue;
+
+                // Algoritma "Most Hits" (Pilih huruf dengan kemunculan terbanyak di daftar kata yang tersisa)
+                if (matches > maxMatches) {
+                    maxMatches = matches;
+                    bestBit = bit;
+                }
+            }
+            return bestBit;
         }
 
         function filterPossibleWords() {
