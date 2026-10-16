@@ -397,6 +397,18 @@
                 return;
             }
 
+            // Jawaban YA / TIDAK menggunakan Panah Bawah / Atas
+            if (currentState === GAME_STATE.PLAYING) {
+                if (e.key === 'ArrowDown') {
+                    processInput(true); // Bawah = YA
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    processInput(false); // Atas = TIDAK
+                    return;
+                }
+            }
+
             // Input Angka Panjang Kata menggunakan Keyboard (0-9)
             if (e.key >= '0' && e.key <= '9') {
                 if (currentState === GAME_STATE.INIT || currentState === GAME_STATE.GAMEOVER) {
