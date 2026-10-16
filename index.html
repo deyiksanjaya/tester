@@ -11,15 +11,16 @@
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent; 
             overscroll-behavior-y: none;
-            background-color: #000; /* Layar stealth hitam pekat */
+            touch-action: none; /* Mencegah pull-to-refresh & scroll */
+            background-color: #000; 
         }
     </style>
 </head>
-<body class="text-gray-300 h-screen w-screen overflow-hidden select-none touch-none" oncontextmenu="return false;">
+<body class="text-gray-300 h-screen w-screen overflow-hidden select-none" oncontextmenu="return false;">
 
-    <div class="h-full w-full flex flex-col items-center justify-between py-[12vh] px-4 relative">
+    <div class="h-full w-full flex flex-col items-center justify-between py-[10vh] px-4 relative">
         
-        <!-- Area Area Sentuh Tersembunyi untuk UNDO / RESET -->
+        <!-- Area Sentuh Tersembunyi untuk UNDO / RESET (Pojok Atas) -->
         <div id="btn-undo" class="absolute top-0 left-0 w-24 h-24 z-50"></div>
         <div id="btn-reset" class="absolute top-0 right-0 w-24 h-24 z-50"></div>
 
@@ -28,23 +29,32 @@
             <!-- Kosong di awal agar aman -->
         </div>
 
-        <!-- Informasi Rahasia di Bawah (Dibuat sangat redup/samar) -->
-        <div class="flex flex-col items-center gap-1 z-10 w-full mb-4">
-            <div id="debug-info" class="text-[9px] text-[#111] tracking-widest uppercase transition-opacity duration-200 select-none">
-                <!-- Status Sisa Kata -->
+        <!-- Panel Informasi & Navigasi Database di Bawah -->
+        <!-- Warna diubah ke #555 agar lebih mudah dibaca performer tapi tetap stealth -->
+        <div class="flex items-center justify-center gap-4 z-50 w-full mb-4 text-[#555] font-bold">
+            <!-- Tombol Kiri (Sebelumnya) -->
+            <div id="btn-prev" class="p-4 text-2xl cursor-pointer select-none">&lt;</div>
+            
+            <!-- Teks Informasi -->
+            <div class="flex flex-col items-center gap-1 min-w-[150px]">
+                <div id="debug-info" class="text-[10px] tracking-widest uppercase transition-opacity duration-200 select-none">
+                    <!-- Status Sisa Kata -->
+                </div>
+                <div id="db-name" class="text-[10px] tracking-[0.2em] uppercase transition-opacity duration-200 select-none">
+                    <!-- Nama Database -->
+                </div>
             </div>
-            <div id="db-name" class="text-[9px] text-[#111] tracking-[0.3em] uppercase transition-opacity duration-200 select-none">
-                <!-- Nama Database -->
-            </div>
+
+            <!-- Tombol Kanan (Selanjutnya) -->
+            <div id="btn-next" class="p-4 text-2xl cursor-pointer select-none">&gt;</div>
         </div>
     </div>
 
     <script>
-        // Sesuai dengan nama file di screenshot GitHub Anda
         const dbList = [
+            { name: "Provinsi Indonesia", file: "provinsi_indonesia.lst" },
             { name: "Kota Indonesia", file: "city_indonesia.lst" },
-            { name: "Negara", file: "nation_database.lst" },
-            { name: "Provinsi Indonesia", file: "provinsi_indonesia.lst" }
+            { name: "Negara", file: "nation_database.lst" }
         ];
 
         const VOWEL_MASK = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 14) | (1 << 20); // A, E, I, O, U
@@ -118,7 +128,7 @@
             currentState = GAME_STATE.INIT;
             
             displayEl.textContent = ""; 
-            debugEl.textContent = "";
+            debugEl.textContent = "READY";
             dbNameEl.textContent = dbList[currentDbIndex].name;
             
             displayEl.className = "text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto text-gray-300 break-words max-w-full leading-tight";
@@ -170,15 +180,14 @@
             let bestBit = -1;
             let bestScore = -1; 
 
-            // ALGORITMA "MOST HITS" (Sesuai Referensi G-SPAT / The Jerx)
-            // Mencari huruf yang paling banyak dimiliki oleh sisa kata
+            // ALGORITMA "MOST HITS" (Mencari X terbanyak di G-SPAT The Jerx)
             for (let i = 0; i < candidateBits.length; i++) {
                 const b = candidateBits[i].bit;
                 const yesCount = candidateBits[i].count;
                 
                 let score = yesCount; 
                 
-                // Bonus kecil untuk vokal jika jumlah hits-nya seimbang dengan konsonan
+                // Bonus sangat kecil untuk vokal agar jika seri, vokal diutamakan
                 if ((VOWEL_MASK & (1 << b)) !== 0) score += 0.1;
 
                 if (score > bestScore) {
@@ -208,7 +217,7 @@
                 const len = textToDisplay.length;
                 if (len <= 8) displayEl.classList.add('text-6xl', 'md:text-8xl', 'tracking-[0.1em]', 'leading-tight');
                 else if (len <= 15) displayEl.classList.add('text-4xl', 'md:text-6xl', 'tracking-normal', 'leading-snug');
-                else displayEl.classList.add('text-2xl', 'md:text-4xl', 'tracking-normal', 'leading-normal');
+                else displayEl.classList.add('text-3xl', 'md:text-5xl', 'tracking-normal', 'leading-snug');
 
                 displayEl.textContent = textToDisplay;
                 currentState = GAME_STATE.GAMEOVER;
@@ -252,7 +261,7 @@
             loadDatabase(currentDbIndex);
         }
 
-        // SISTEM INPUT JAM Sesuai Instruksi (2x Swipe)
+        // SISTEM INPUT JAM (2x Swipe)
         function resolveClockNumber(area, swipe2) {
             if (area === 'UP') {
                 if (swipe2 === 'LEFT') return 11;
@@ -274,10 +283,20 @@
             return -1; 
         }
 
-        let touchStartX = 0;
-        let touchStartY = 0;
-        const SWIPE_THRESHOLD = 35;
+        // Event Listener untuk Tombol Navigasi Database
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
 
+        function triggerPrev(e) { e.preventDefault(); e.stopPropagation(); handleDatabaseChange(-1); }
+        function triggerNext(e) { e.preventDefault(); e.stopPropagation(); handleDatabaseChange(1); }
+
+        btnPrev.addEventListener('touchstart', triggerPrev, {passive: false});
+        btnPrev.addEventListener('mousedown', triggerPrev);
+        
+        btnNext.addEventListener('touchstart', triggerNext, {passive: false});
+        btnNext.addEventListener('mousedown', triggerNext);
+
+        // Event Listener untuk Undo & Reset Area
         document.getElementById('btn-undo').addEventListener('touchstart', (e) => {
             e.preventDefault(); e.stopPropagation();
             if(currentState === GAME_STATE.PLAYING) undoLastAction();
@@ -288,14 +307,19 @@
             fullReset();
         }, {passive: false});
 
+        // Main Touch Logic
+        let touchStartX = 0;
+        let touchStartY = 0;
+        const SWIPE_THRESHOLD = 35;
+
         document.addEventListener('touchstart', (e) => {
-            if(e.target.id === 'btn-undo' || e.target.id === 'btn-reset') return;
+            if(['btn-undo', 'btn-reset', 'btn-prev', 'btn-next'].includes(e.target.id)) return;
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
         }, { passive: false });
 
         document.addEventListener('touchend', (e) => {
-            if(e.target.id === 'btn-undo' || e.target.id === 'btn-reset') return;
+            if(['btn-undo', 'btn-reset', 'btn-prev', 'btn-next'].includes(e.target.id)) return;
             
             const endX = e.changedTouches[0].screenX;
             const endY = e.changedTouches[0].screenY;
@@ -312,12 +336,9 @@
 
             if (currentState === GAME_STATE.INIT) {
                 if (isSwipe) {
-                    if (swipeDir === 'LEFT') handleDatabaseChange(-1);
-                    else if (swipeDir === 'RIGHT') handleDatabaseChange(1);
-                    else {
-                        clockFirstArea = swipeDir; 
-                        currentState = GAME_STATE.PENDING_CLOCK;
-                    }
+                    clockFirstArea = swipeDir; 
+                    currentState = GAME_STATE.PENDING_CLOCK;
+                    debugEl.textContent = `JAM: ${swipeDir}`; // Feedback visual kecil
                 } else {
                     selectedLength = 0; startGameFromInit(); 
                 }
@@ -339,8 +360,6 @@
                 if (isSwipe) {
                     if (swipeDir === 'DOWN') processInput(true); 
                     else if (swipeDir === 'UP') processInput(false); 
-                    else if (swipeDir === 'LEFT') handleDatabaseChange(-1);
-                    else if (swipeDir === 'RIGHT') handleDatabaseChange(1);
                 }
                 return;
             }
@@ -351,10 +370,12 @@
         }, { passive: false });
 
         document.addEventListener('mousedown', (e) => {
+            if(['btn-undo', 'btn-reset', 'btn-prev', 'btn-next'].includes(e.target.id)) return;
             if (e.button !== 0 && e.button !== 2) return; 
+            
             if (currentState === GAME_STATE.PLAYING) {
-                if (e.button === 0) processInput(true); 
-                else if (e.button === 2) processInput(false); 
+                if (e.button === 0) processInput(true); // Kiri = YES
+                else if (e.button === 2) processInput(false); // Kanan = NO
             } else if (currentState === GAME_STATE.GAMEOVER) {
                 fullReset();
             } else if (currentState === GAME_STATE.INIT) {
