@@ -9,33 +9,32 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            /* Mencegah highlight biru saat di-tap/klik di HP */
             -webkit-tap-highlight-color: transparent; 
-            /* Mencegah scroll dan pull-to-refresh */
             overscroll-behavior-y: none; 
         }
     </style>
 </head>
 <body class="bg-black text-gray-300 h-screen w-screen overflow-hidden select-none touch-none">
 
-    <!-- Teks akan diposisikan di tengah, agak ke atas (pt-[25vh]) -->
-    <div class="h-full w-full flex flex-col items-center pt-[25vh]">
-        <!-- Teks dibuat agak redup (gray-400) agar tidak mencolok (Stealth Mode) -->
-        <div id="display-text" class="text-6xl md:text-8xl font-light tracking-[0.2em] text-center px-4 uppercase transition-opacity duration-300">
+    <div class="h-full w-full flex flex-col items-center justify-between py-[15vh]">
+        <!-- Area Rahasia Atas: Stealth Tap untuk Filter Panjang Kata -->
+        <div id="top-stealth-zone" class="w-full h-[12vh] fixed top-0 left-0 z-50 cursor-pointer"></div>
+
+        <div id="display-text" class="text-6xl md:text-8xl font-light tracking-[0.2em] text-center px-4 uppercase transition-opacity duration-200 my-auto">
             <!-- Teks dimuat dinamis -->
         </div>
-        <div id="debug-info" class="text-xs text-gray-800 mt-4 opacity-50 uppercase tracking-widest hidden">
-            <!-- Disembunyikan, bisa diaktifkan jika butuh melihat sisa kata -->
-        </div>
-        <div id="db-name" class="text-[10px] text-gray-800 mt-12 tracking-[0.3em] uppercase transition-opacity duration-300">
-            <!-- Menampilkan nama DB aktif -->
+
+        <div class="flex flex-col items-center gap-1">
+            <div id="debug-info" class="text-xs text-gray-800 tracking-widest uppercase transition-opacity duration-200">
+                <!-- Status Sisa & Panjang Kata -->
+            </div>
+            <div id="db-name" class="text-[10px] text-gray-800 tracking-[0.3em] uppercase transition-opacity duration-200">
+                <!-- Nama DB -->
+            </div>
         </div>
     </div>
 
     <script>
-        // Konfigurasi File Database
-        // HARAP EDIT array dbList INI sesuai dengan nama file Anda di dalam folder "database"
-        // File harus berformat text biasa (.txt atau .lst), satu kata per baris.
         const dbList = [
             { name: "Kota Indonesia", file: "city_indonesia.lst" },
             { name: "Negara", file: "nation_database.lst" },
@@ -43,17 +42,23 @@
         ];
 
         let currentDbIndex = 0;
-        let wordDatabase = []; // Data sekarang akan diambil dari file
-
+        let rawWordDatabase = []; // { word: string, mask: number, length: number }
         let possibleWords = [];
-        let askedLetters = {};
-        let currentTargetLetter = '';
-        let historyStack = [];
+        
+        let yesMask = 0;
+        let noMask = 0;
+        let askedMask = 0;
+        let selectedLength = 0; // 0 = Semua Panjang Kata
+
+        let currentTargetBit = -1;
         let isGameOver = false;
 
         const displayEl = document.getElementById('display-text');
         const debugEl = document.getElementById('debug-info');
         const dbNameEl = document.getElementById('db-name');
+        const topStealthEl = document.getElementById('top-stealth-zone');
+
+        const VOWEL_MASK = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 14) | (1 << 20); // A, E, I, O, U
 
         async function loadDatabase(index) {
             const dbInfo = dbList[index];
@@ -61,15 +66,37 @@
             dbNameEl.textContent = `MEMUAT ${dbInfo.name}...`;
             
             try {
-                // Mengambil file dari folder "database" di direktori root github
                 const response = await fetch(`database/${dbInfo.file}`);
                 if (!response.ok) throw new Error("File tidak ditemukan");
                 
                 const text = await response.text();
-                // Parse text: pisahkan per baris, buang spasi, jadikan huruf besar, abaikan baris kosong
-                wordDatabase = text.split('\n')
-                                   .map(w => w.trim().toUpperCase())
-                                   .filter(w => w.length > 0);
+                const rawWords = text.split('\n');
+                const uniqueSet = new Set();
+                rawWordDatabase = [];
+
+                for (let i = 0; i < rawWords.length; i++) {
+                    const cleanWord = rawWords[i].trim().toUpperCase();
+                    if (!cleanWord || uniqueSet.has(cleanWord)) continue;
+                    uniqueSet.add(cleanWord);
+
+                    let mask = 0;
+                    let letterCount = 0;
+                    for (let j = 0; j < cleanWord.length; j++) {
+                        const code = cleanWord.charCodeAt(j);
+                        if (code >= 65 && code <= 90) { // A-Z
+                            mask |= (1 << (code - 65));
+                            letterCount++;
+                        }
+                    }
+
+                    if (mask > 0) {
+                        rawWordDatabase.push({ 
+                            word: cleanWord, 
+                            mask: mask,
+                            length: cleanWord.replace(/[^A-Z]/g, '').length 
+                        });
+                    }
+                }
                 
                 dbNameEl.textContent = `DB: ${dbInfo.name}`;
                 initGame();
@@ -78,99 +105,147 @@
                 displayEl.style.opacity = 1;
                 displayEl.classList.remove('text-gray-300', 'text-green-500');
                 displayEl.classList.add('text-red-900');
-                dbNameEl.textContent = `FILE TIDAK DITEMUKAN: database/${dbInfo.file}`;
-                console.error("Gagal memuat database:", error);
+                dbNameEl.textContent = `GAGAL: database/${dbInfo.file}`;
+                console.error("Error database:", error);
             }
         }
 
         function initGame() {
-            possibleWords = [...wordDatabase];
-            askedLetters = {};
-            historyStack = [];
+            yesMask = 0;
+            noMask = 0;
+            askedMask = 0;
             isGameOver = false;
+            filterPossibleWords();
+        }
+
+        function filterPossibleWords() {
+            possibleWords = rawWordDatabase.filter(item => {
+                // Filter berdasarkan jawaban YA
+                if ((item.mask & yesMask) !== yesMask) return false;
+                // Filter berdasarkan jawaban TIDAK
+                if ((item.mask & noMask) !== 0) return false;
+                // Filter berdasarkan Panjang Kata Rahasia
+                if (selectedLength > 0 && item.length !== selectedLength) return false;
+                return true;
+            });
+
             updateGameState();
         }
 
-        function calculateNextBestLetter() {
-            const letterCounts = {};
-            
-            for (let word of possibleWords) {
-                const uniqueChars = new Set(word.replace(/\s/g, '').toLowerCase()); 
-                for (let char of uniqueChars) {
-                    if (char >= 'a' && char <= 'z' && askedLetters[char] === undefined) {
-                        letterCounts[char] = (letterCounts[char] || 0) + 1;
+        function calculateNextBestLetterBit() {
+            const total = possibleWords.length;
+            if (total <= 1) return -1;
+
+            // Cek apakah semua sisa kata memiliki bitmask huruf yang IDENTIK
+            const firstMask = possibleWords[0].mask;
+            let allIdentical = true;
+            for (let i = 1; i < total; i++) {
+                if (possibleWords[i].mask !== firstMask) {
+                    allIdentical = false;
+                    break;
+                }
+            }
+            // Jika semua sisa kata hurufnya identik, tidak ada pertanyaan yang bisa memisahkan lagi!
+            if (allIdentical) return -1;
+
+            // Hitung kandidat huruf yang tersedia
+            const candidateBits = [];
+            for (let b = 0; b < 26; b++) {
+                if ((askedMask & (1 << b)) === 0) {
+                    let count = 0;
+                    for (let i = 0; i < total; i++) {
+                        if (possibleWords[i].mask & (1 << b)) count++;
+                    }
+                    if (count > 0 && count < total) {
+                        candidateBits.push({ bit: b, count: count });
                     }
                 }
             }
 
-            let bestLetter = null;
-            let bestDiff = Infinity;
-            const target = possibleWords.length / 2;
+            if (candidateBits.length === 0) return -1;
 
-            for (let char in letterCounts) {
-                const count = letterCounts[char];
-                if (count > 0 && count < possibleWords.length) {
-                    const diff = Math.abs(count - target);
-                    if (diff < bestDiff) {
-                        bestDiff = diff;
-                        bestLetter = char;
-                    }
+            // Lookahead 2-Langkah (Minimax): Cari huruf yang membuat cabang terburuk (worst-case branch) sekecil mungkin
+            let bestBit = -1;
+            let bestScore = Infinity;
+
+            for (let i = 0; i < candidateBits.length; i++) {
+                const b = candidateBits[i].bit;
+                const yesCount = candidateBits[i].count;
+                const noCount = total - yesCount;
+
+                // Evaluasi cabang terburuk (Max of Yes vs No branch size)
+                const worstBranchSize = Math.max(yesCount, noCount);
+                
+                // Bobot penyeimbang untuk memperhitungkan split ideal 50/50 & Vokal
+                let score = worstBranchSize;
+                
+                // Beri sedikit keunggulan psikologis pada vokal jika nilainya setara
+                if ((VOWEL_MASK & (1 << b)) !== 0) {
+                    score -= 0.1;
+                }
+
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestBit = b;
                 }
             }
-            return bestLetter; 
+
+            return bestBit; 
         }
 
         function updateGameState() {
             if (possibleWords.length === 0) {
                 displayEl.textContent = "ERR";
+                displayEl.classList.remove('text-green-500', 'font-bold');
+                displayEl.classList.add('text-red-900', 'font-light');
                 isGameOver = true;
                 return;
             }
 
-            currentTargetLetter = calculateNextBestLetter();
+            currentTargetBit = calculateNextBestLetterBit();
 
-            // Animasi transisi halus
             displayEl.style.opacity = 0;
             
             setTimeout(() => {
-                if (currentTargetLetter === null) {
-                    // Berhasil menemukan kata (atau sisa beberapa anagram)
-                    displayEl.textContent = possibleWords.join(' / ');
-                    displayEl.classList.add('text-green-500');
+                if (currentTargetBit === -1 || possibleWords.length === 1) {
+                    // Sisa kata ditemukan atau tidak ada pertanyaan membedakan lagi
+                    const results = possibleWords.map(w => w.word);
+                    displayEl.textContent = results.join(' / ');
+                    displayEl.classList.add('text-green-500', 'font-bold');
                     displayEl.classList.remove('text-gray-300', 'font-light');
-                    displayEl.classList.add('font-bold');
                     isGameOver = true;
                 } else {
-                    // Masih mencari, tampilkan huruf berikutnya
-                    displayEl.textContent = currentTargetLetter.toUpperCase();
+                    const letterStr = String.fromCharCode(65 + currentTargetBit);
+                    displayEl.textContent = letterStr;
                     displayEl.classList.remove('text-green-500', 'font-bold');
                     displayEl.classList.add('text-gray-300', 'font-light');
                 }
                 displayEl.style.opacity = 1;
-                debugEl.textContent = `SISA: ${possibleWords.length}`;
-            }, 150);
+
+                // Informasi Rahasia untuk Mentalis (Sisa Kata & Filter Panjang)
+                const lenText = selectedLength > 0 ? ` | P:${selectedLength}` : '';
+                debugEl.textContent = `SISA: ${possibleWords.length}${lenText}`;
+            }, 100);
         }
 
         function handleAnswer(isYes) {
-            historyStack.push({
-                words: [...possibleWords],
-                asked: { ...askedLetters }
-            });
+            if (currentTargetBit === -1) return;
 
-            askedLetters[currentTargetLetter] = isYes;
+            const bitFlag = (1 << currentTargetBit);
+            askedMask |= bitFlag;
 
-            possibleWords = possibleWords.filter(word => {
-                const lowerWord = word.toLowerCase();
-                const hasLetter = lowerWord.includes(currentTargetLetter);
-                return isYes ? hasLetter : !hasLetter;
-            });
+            if (isYes) {
+                yesMask |= bitFlag;
+            } else {
+                noMask |= bitFlag;
+            }
 
-            updateGameState();
+            filterPossibleWords();
         }
 
         function processInput(isYes) {
             if (isGameOver) {
-                initGame(); // Ketuk/Swipe apa saja jika game selesai akan me-reset dengan DB yang sama
+                initGame();
                 return;
             }
             handleAnswer(isYes);
@@ -178,34 +253,42 @@
 
         function handleDatabaseChange(direction) {
             currentDbIndex += direction;
-            // Jika melebihi batas, kembali ke awal (loop)
             if (currentDbIndex >= dbList.length) currentDbIndex = 0;
             if (currentDbIndex < 0) currentDbIndex = dbList.length - 1;
+            selectedLength = 0; // Reset filter panjang saat ganti DB
             loadDatabase(currentDbIndex);
         }
 
-        // --- MOUSE INPUT (Tetap: Klik Kiri = YA, Klik Kanan = TIDAK) ---
-        
+        // --- INPUT STEALTH REGION (TAP ATAS UNTUK FILTER PANJANG KATA) ---
+        topStealthEl.addEventListener('click', (e) => {
+            e.stopPropagation(); // Mencegah terdeteksi sebagai Klik Biasa
+            // Siklus panjang kata: ALL -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> ALL
+            if (selectedLength === 0) selectedLength = 3;
+            else if (selectedLength < 10) selectedLength++;
+            else selectedLength = 0;
+
+            filterPossibleWords();
+        });
+
+        // --- INPUT MOUSE ---
         document.addEventListener('click', (e) => {
-            if (e.button === 0) processInput(true); // Kiri = YA
+            if (e.target === topStealthEl) return;
+            if (e.button === 0) processInput(true); // Klik Kiri = YA
         });
 
         document.addEventListener('contextmenu', (e) => {
-            e.preventDefault(); // Blokir pop-up menu
-            processInput(false); // Kanan = TIDAK
+            e.preventDefault();
+            processInput(false); // Klik Kanan = TIDAK
         });
 
-        // --- TOUCH INPUT MOBILE (Swipe) ---
-        // Bawah = YA, Atas = TIDAK
-        // Kanan/Kiri = Ganti Database
-        
+        // --- INPUT TOUCH (SWIPE) ---
         let touchStartX = 0;
         let touchStartY = 0;
         let isProcessingTouch = false;
-        const SWIPE_THRESHOLD = 40; // Jarak minimum pixel untuk dihitung sebagai swipe
+        const SWIPE_THRESHOLD = 30;
 
         document.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Mencegah scrolling dan pull-to-refresh
+            e.preventDefault();
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
         }, { passive: false });
@@ -219,8 +302,16 @@
             let deltaX = touchEndX - touchStartX;
             let deltaY = touchEndY - touchStartY;
 
-            // Jika pergerakan sangat kecil (di bawah threshold), anggap ini ketukan biasa
-            // Berguna untuk mereset game saat sudah selesai menampilkan teks hijau.
+            // Jika tap biasa di area stealth atas
+            if (touchStartY < window.innerHeight * 0.12 && Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) {
+                if (selectedLength === 0) selectedLength = 3;
+                else if (selectedLength < 10) selectedLength++;
+                else selectedLength = 0;
+
+                filterPossibleWords();
+                return;
+            }
+
             if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) {
                 if (isGameOver) initGame();
                 return;
@@ -228,32 +319,26 @@
 
             isProcessingTouch = true;
 
-            // Cek apakah usapan lebih dominan secara Horizontal atau Vertikal
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // --- SWIPE HORIZONTAL ---
                 if (deltaX > 0) {
-                    handleDatabaseChange(1); // Swipe Kanan -> DB Berikutnya
+                    handleDatabaseChange(1);  // Swipe Kanan
                 } else {
-                    handleDatabaseChange(-1); // Swipe Kiri -> DB Sebelumnya
+                    handleDatabaseChange(-1); // Swipe Kiri
                 }
             } else {
-                // --- SWIPE VERTIKAL ---
                 if (deltaY > 0) {
-                    processInput(true); // Swipe Bawah -> YA
+                    processInput(true);  // Swipe Bawah = YA
                 } else {
-                    processInput(false); // Swipe Atas -> TIDAK
+                    processInput(false); // Swipe Atas = TIDAK
                 }
             }
 
-            // Proteksi dari input beruntun/ganda dalam waktu singkat (debounce)
-            setTimeout(() => { isProcessingTouch = false; }, 300);
+            setTimeout(() => { isProcessingTouch = false; }, 150);
         }, { passive: false });
 
-        // Eksekusi awal: Muat database pertama
         document.addEventListener('DOMContentLoaded', () => {
             loadDatabase(currentDbIndex);
         });
-
     </script>
 </body>
 </html>
