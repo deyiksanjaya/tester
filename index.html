@@ -10,64 +10,62 @@
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent; 
-            overscroll-behavior-y: none; 
+            overscroll-behavior-y: none;
+            background-color: #000;
         }
     </style>
 </head>
-<body class="bg-black text-gray-300 h-screen w-screen overflow-hidden select-none touch-none">
+<body class="text-gray-300 h-screen w-screen overflow-hidden select-none touch-none" oncontextmenu="return false;">
 
-    <!-- Area Utama Aplikasi Mentalis -->
     <div class="h-full w-full flex flex-col items-center justify-between py-[12vh] px-4">
-        <!-- Area Rahasia Atas: Stealth Tap untuk Filter Panjang Kata -->
-        <div id="top-stealth-zone" class="w-full h-[12vh] fixed top-0 left-0 z-50 cursor-pointer"></div>
-
-        <!-- Tampilan Teks Utama (Huruf Ditanya / Hasil Tebakan Akhir) -->
+        <!-- Area Teks Utama -->
         <div id="display-text" class="text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto break-words max-w-full leading-tight">
             <!-- Teks dimuat secara dinamis -->
         </div>
 
-        <!-- Informasi Rahasia Mentalis di Bagian Bawah -->
-        <div class="flex flex-col items-center gap-1 z-10">
-            <div id="debug-info" class="text-xs text-gray-800 tracking-widest uppercase transition-opacity duration-200">
-                <!-- Status Sisa Kata & Filter Panjang -->
+        <!-- Informasi Rahasia Bawah -->
+        <div class="flex flex-col items-center gap-1 z-10 w-full">
+            <div id="debug-info" class="text-[10px] text-gray-800 tracking-widest uppercase transition-opacity duration-200">
+                <!-- Status Sisa Kata -->
             </div>
             <div id="db-name" class="text-[10px] text-gray-800 tracking-[0.3em] uppercase transition-opacity duration-200">
-                <!-- Nama Database Terpasang -->
+                <!-- Nama Database -->
             </div>
         </div>
     </div>
 
     <script>
-        // Daftar Database yang Tersedia di Folder database/
         const dbList = [
             { name: "Kota Indonesia", file: "city_indonesia.lst" },
             { name: "Negara", file: "nation_database.lst" },
             { name: "Provinsi Indonesia", file: "provinsi_indonesia.lst" }
         ];
 
+        const VOWEL_MASK = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 14) | (1 << 20);
+        
         let currentDbIndex = 0;
-        let rawWordDatabase = []; // Array Penyimpanan Word Object: { word: string, mask: number, length: number }
+        let rawWordDatabase = []; 
         let possibleWords = [];
         
         let yesMask = 0;
         let noMask = 0;
         let askedMask = 0;
-        let selectedLength = 0; // 0 = Semua Panjang Kata
-
+        let selectedLength = 0;
         let currentTargetBit = -1;
-        let isGameOver = false;
+        let historyStack = [];
+
+        // State Machine untuk Sistem Input Rahasia
+        const GAME_STATE = { INIT: 0, PENDING_CLOCK: 1, PLAYING: 2, GAMEOVER: 3 };
+        let currentState = GAME_STATE.INIT;
+        let clockFirstArea = null;
 
         const displayEl = document.getElementById('display-text');
         const debugEl = document.getElementById('debug-info');
         const dbNameEl = document.getElementById('db-name');
-        const topStealthEl = document.getElementById('top-stealth-zone');
-
-        // Bitmask Vokal (A=bit 0, E=bit 4, I=bit 8, O=bit 14, U=bit 20)
-        const VOWEL_MASK = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 14) | (1 << 20);
 
         async function loadDatabase(index) {
             const dbInfo = dbList[index];
-            displayEl.style.opacity = '0';
+            displayEl.textContent = "";
             dbNameEl.textContent = `MEMUAT ${dbInfo.name}...`;
             
             try {
@@ -81,56 +79,61 @@
 
                 for (let i = 0; i < rawWords.length; i++) {
                     const cleanWord = rawWords[i].trim().toUpperCase();
-                    if (!cleanWord || uniqueSet.has(cleanWord)) continue;
+                    const justLetters = cleanWord.replace(/[^A-Z]/g, '');
+                    if (!justLetters || uniqueSet.has(cleanWord)) continue;
                     uniqueSet.add(cleanWord);
 
                     let mask = 0;
                     for (let j = 0; j < cleanWord.length; j++) {
                         const code = cleanWord.charCodeAt(j);
-                        if (code >= 65 && code <= 90) { // Hanya karakter A-Z
-                            mask |= (1 << (code - 65));
-                        }
+                        if (code >= 65 && code <= 90) mask |= (1 << (code - 65));
                     }
 
-                    if (mask > 0) {
-                        rawWordDatabase.push({ 
-                            word: cleanWord, 
-                            mask: mask,
-                            length: cleanWord.replace(/[^A-Z]/g, '').length 
-                        });
-                    }
+                    rawWordDatabase.push({ 
+                        word: cleanWord, 
+                        mask: mask,
+                        length: justLetters.length 
+                    });
                 }
                 
-                dbNameEl.textContent = `DB: ${dbInfo.name}`;
-                initGame();
+                fullReset(); // Siapkan ke mode awal (hitam pekat) tiap kali ganti DB
             } catch (error) {
                 displayEl.textContent = "ERR";
-                displayEl.style.opacity = '1';
-                displayEl.className = "text-5xl font-bold text-red-900 text-center";
                 dbNameEl.textContent = `GAGAL: database/${dbInfo.file}`;
-                console.error("Error database:", error);
             }
         }
 
-        function initGame() {
+        // --- SISTEM RESET DAN MULAI PERMAINAN ---
+        function fullReset() {
             yesMask = 0;
             noMask = 0;
             askedMask = 0;
-            isGameOver = false;
+            selectedLength = 0;
+            historyStack = [];
+            clockFirstArea = null;
+            currentState = GAME_STATE.INIT;
+            
+            displayEl.textContent = ""; // Layar dibiarkan hitam kosong di awal
+            debugEl.textContent = "";
+            dbNameEl.textContent = dbList[currentDbIndex].name;
+            
+            // Setel kelas font awal
+            displayEl.className = "text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto text-gray-300 break-words max-w-full leading-tight";
+        }
+
+        function startGameFromInit() {
+            currentState = GAME_STATE.PLAYING;
             filterPossibleWords();
         }
 
+        // --- LOGIKA PROGRESSIVE ANAGRAM ---
         function filterPossibleWords() {
             possibleWords = rawWordDatabase.filter(item => {
-                // Filter berdasarkan jawaban YA
                 if ((item.mask & yesMask) !== yesMask) return false;
-                // Filter berdasarkan jawaban TIDAK
                 if ((item.mask & noMask) !== 0) return false;
-                // Filter berdasarkan Panjang Kata Rahasia
                 if (selectedLength > 0 && item.length !== selectedLength) return false;
                 return true;
             });
-
             updateGameState();
         }
 
@@ -138,18 +141,15 @@
             const total = possibleWords.length;
             if (total <= 1) return -1;
 
-            // Cek apakah semua sisa kata memiliki mask huruf yang identik
             const firstMask = possibleWords[0].mask;
             let allIdentical = true;
             for (let i = 1; i < total; i++) {
                 if (possibleWords[i].mask !== firstMask) {
-                    allIdentical = false;
-                    break;
+                    allIdentical = false; break;
                 }
             }
             if (allIdentical) return -1;
 
-            // Cari kandidat bit huruf yang belum ditanyakan
             const candidateBits = [];
             for (let b = 0; b < 26; b++) {
                 if ((askedMask & (1 << b)) === 0) {
@@ -165,7 +165,6 @@
 
             if (candidateBits.length === 0) return -1;
 
-            // Lookahead Minimax untuk split terpopuler & prioritas vokal
             let bestBit = -1;
             let bestScore = Infinity;
 
@@ -173,183 +172,193 @@
                 const b = candidateBits[i].bit;
                 const yesCount = candidateBits[i].count;
                 const noCount = total - yesCount;
-
+                
                 const worstBranchSize = Math.max(yesCount, noCount);
                 let score = worstBranchSize;
                 
-                // Beri penyeimbang psikologis untuk vokal
-                if ((VOWEL_MASK & (1 << b)) !== 0) {
-                    score -= 0.1;
-                }
+                // Prioritas Vokal
+                if ((VOWEL_MASK & (1 << b)) !== 0) score -= 0.1;
 
                 if (score < bestScore) {
                     bestScore = score;
                     bestBit = b;
                 }
             }
-
             return bestBit; 
         }
 
         function updateGameState() {
             if (possibleWords.length === 0) {
                 displayEl.textContent = "ERR";
-                displayEl.className = "text-6xl font-bold text-red-900 text-center";
-                isGameOver = true;
+                displayEl.className = "text-6xl font-bold text-red-900 text-center uppercase my-auto";
+                currentState = GAME_STATE.GAMEOVER;
                 return;
             }
 
             currentTargetBit = calculateNextBestLetterBit();
-
-            displayEl.style.opacity = '0';
             
-            setTimeout(() => {
-                if (currentTargetBit === -1 || possibleWords.length === 1) {
-                    // Sisa kata ditemukan atau tidak ada pertanyaan membedakan lagi
-                    const results = possibleWords.map(w => w.word);
-                    const textToDisplay = results.join(' / ');
-                    
-                    // Reset kelas Tailwind dan terapkan skala font dinamis agar tidak meluap dari batas layar
-                    displayEl.className = "font-bold text-center uppercase transition-opacity duration-200 my-auto text-green-500 break-words max-w-full leading-tight";
-                    
-                    const len = textToDisplay.length;
-                    if (len <= 6) {
-                        displayEl.classList.add('text-6xl', 'md:text-8xl', 'tracking-[0.2em]');
-                    } else if (len <= 12) {
-                        displayEl.classList.add('text-4xl', 'md:text-6xl', 'tracking-[0.1em]');
-                    } else if (len <= 20) {
-                        displayEl.classList.add('text-2xl', 'md:text-4xl', 'tracking-normal');
-                    } else {
-                        displayEl.classList.add('text-xl', 'md:text-2xl', 'tracking-normal');
-                    }
+            if (currentTargetBit === -1 || possibleWords.length === 1) {
+                const results = possibleWords.map(w => w.word);
+                const textToDisplay = results.join(' / ');
+                
+                displayEl.className = "font-bold text-center uppercase transition-opacity duration-200 my-auto text-[#0f0] break-words max-w-full leading-tight px-2";
+                
+                const len = textToDisplay.length;
+                if (len <= 6) displayEl.classList.add('text-6xl', 'md:text-8xl', 'tracking-[0.1em]');
+                else if (len <= 12) displayEl.classList.add('text-4xl', 'md:text-6xl', 'tracking-normal');
+                else displayEl.classList.add('text-2xl', 'md:text-4xl', 'tracking-normal');
 
-                    displayEl.textContent = textToDisplay;
-                    isGameOver = true;
-                } else {
-                    const letterStr = String.fromCharCode(65 + currentTargetBit);
-                    displayEl.className = "text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto text-gray-300";
-                    displayEl.textContent = letterStr;
-                }
-                displayEl.style.opacity = '1';
+                displayEl.textContent = textToDisplay;
+                currentState = GAME_STATE.GAMEOVER;
+            } else {
+                const letterStr = String.fromCharCode(65 + currentTargetBit);
+                displayEl.className = "text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto text-gray-300";
+                displayEl.textContent = letterStr;
+            }
 
-                // Informasi Rahasia Mentalis (Sisa Kata & Filter Panjang)
-                const lenText = selectedLength > 0 ? ` | P:${selectedLength}` : '';
-                debugEl.textContent = `SISA: ${possibleWords.length}${lenText}`;
-            }, 100);
+            const lenText = selectedLength > 0 ? ` | P:${selectedLength}` : '';
+            debugEl.textContent = `SISA: ${possibleWords.length}${lenText}`;
         }
 
-        function handleAnswer(isYes) {
+        function processInput(isYes) {
             if (currentTargetBit === -1) return;
+            
+            // Simpan state sebelum diubah untuk fitur UNDO
+            historyStack.push({ yesMask, noMask, askedMask });
 
             const bitFlag = (1 << currentTargetBit);
             askedMask |= bitFlag;
-
-            if (isYes) {
-                yesMask |= bitFlag;
-            } else {
-                noMask |= bitFlag;
-            }
+            if (isYes) yesMask |= bitFlag;
+            else noMask |= bitFlag;
 
             filterPossibleWords();
         }
 
-        function processInput(isYes) {
-            if (isGameOver) {
-                initGame();
-                return;
-            }
-            handleAnswer(isYes);
+        function undoLastAction() {
+            if (historyStack.length === 0) return;
+            const last = historyStack.pop();
+            yesMask = last.yesMask;
+            noMask = last.noMask;
+            askedMask = last.askedMask;
+            currentState = GAME_STATE.PLAYING;
+            filterPossibleWords();
         }
 
         function handleDatabaseChange(direction) {
             currentDbIndex += direction;
             if (currentDbIndex >= dbList.length) currentDbIndex = 0;
             if (currentDbIndex < 0) currentDbIndex = dbList.length - 1;
-            selectedLength = 0; // Reset filter panjang kata saat ganti DB
             loadDatabase(currentDbIndex);
         }
 
-        // --- INPUT STEALTH REGION (TAP ATAS UNTUK FILTER PANJANG KATA) ---
-        topStealthEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Siklus filter panjang kata: ALL -> 3 -> 4 -> ... -> 10 -> ALL
-            if (selectedLength === 0) selectedLength = 3;
-            else if (selectedLength < 10) selectedLength++;
-            else selectedLength = 0;
+        // --- SISTEM CLOCK SWIPE (ANGKA) ---
+        function resolveClockNumber(area, swipe2) {
+            if (area === 'UP') {
+                if (swipe2 === 'LEFT') return 11;
+                if (swipe2 === 'UP') return 12;
+                if (swipe2 === 'RIGHT') return 1;
+            } else if (area === 'RIGHT') {
+                if (swipe2 === 'UP') return 2;
+                if (swipe2 === 'RIGHT') return 3;
+                if (swipe2 === 'DOWN') return 4;
+            } else if (area === 'DOWN') {
+                if (swipe2 === 'RIGHT') return 5;
+                if (swipe2 === 'DOWN') return 6;
+                if (swipe2 === 'LEFT') return 7;
+            } else if (area === 'LEFT') {
+                if (swipe2 === 'DOWN') return 8;
+                if (swipe2 === 'LEFT') return 9;
+                if (swipe2 === 'UP') return 10;
+            }
+            return -1; // Invalid
+        }
 
-            filterPossibleWords();
-        });
-
-        // --- INPUT MOUSE (PC/LAPTOP) ---
-        document.addEventListener('click', (e) => {
-            if (e.target === topStealthEl) return;
-            if (e.button === 0) processInput(true); // Klik Kiri = YA
-        });
-
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            processInput(false); // Klik Kanan = TIDAK
-        });
-
-        // --- INPUT TOUCH GESTURE (SWIPE MOBILE) ---
+        // --- MANAJEMEN INPUT (TOUCH & MOUSE) ---
         let touchStartX = 0;
         let touchStartY = 0;
-        let isProcessingTouch = false;
-        const SWIPE_THRESHOLD = 30;
+        const SWIPE_THRESHOLD = 40;
 
+        function handleGestures(startX, startY, endX, endY, isMouseClick = false, mouseBtn = 0) {
+            const deltaX = endX - startX;
+            const deltaY = endY - startY;
+            const isSwipe = !isMouseClick && Math.max(Math.abs(deltaX), Math.abs(deltaY)) > SWIPE_THRESHOLD;
+            
+            let swipeDir = null;
+            if (isSwipe) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) swipeDir = deltaX > 0 ? 'RIGHT' : 'LEFT';
+                else swipeDir = deltaY > 0 ? 'DOWN' : 'UP';
+            }
+
+            // Fitur Rahasia Mentalist (Pojok Atas)
+            if (!isSwipe && startY < 100) {
+                if (startX < 100) { undoLastAction(); return; } // Kiri Atas = Undo
+                if (startX > window.innerWidth - 100) { fullReset(); return; } // Kanan Atas = Reset
+            }
+
+            // STATE 0: Mode Awal (Layar Gelap)
+            if (currentState === GAME_STATE.INIT) {
+                if (isSwipe) {
+                    clockFirstArea = swipeDir; // Simpan Swipe 1
+                    currentState = GAME_STATE.PENDING_CLOCK;
+                } else {
+                    // Tap di mode awal:
+                    // Tap di kiri/kanan = Ganti DB diam-diam. Tap di tengah = Main tanpa filter panjang
+                    if (endX < window.innerWidth * 0.3) handleDatabaseChange(-1);
+                    else if (endX > window.innerWidth * 0.7) handleDatabaseChange(1);
+                    else { selectedLength = 0; startGameFromInit(); }
+                }
+                return;
+            }
+
+            // STATE 1: Menunggu Swipe ke-2 untuk Angka
+            if (currentState === GAME_STATE.PENDING_CLOCK) {
+                if (isSwipe) {
+                    const num = resolveClockNumber(clockFirstArea, swipeDir);
+                    selectedLength = num > 0 ? num : 0;
+                } else {
+                    selectedLength = 0; // Jika diketuk malah di-cancel/dilewati
+                }
+                startGameFromInit();
+                return;
+            }
+
+            // STATE 2: Permainan Berlangsung
+            if (currentState === GAME_STATE.PLAYING) {
+                if (isMouseClick) {
+                    if (mouseBtn === 0) processInput(true); // Kiri Ya
+                    else if (mouseBtn === 2) processInput(false); // Kanan Tidak
+                } else if (isSwipe) {
+                    if (swipeDir === 'DOWN') processInput(true); // Swipe Bawah = Ya
+                    else if (swipeDir === 'UP') processInput(false); // Swipe Atas = Tidak
+                    else if (swipeDir === 'LEFT') handleDatabaseChange(-1);
+                    else if (swipeDir === 'RIGHT') handleDatabaseChange(1);
+                }
+                return;
+            }
+
+            // STATE 3: Permainan Selesai (Reveal)
+            if (currentState === GAME_STATE.GAMEOVER) {
+                fullReset();
+            }
+        }
+
+        // Event Listener Layar Sentuh
         document.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
         }, { passive: false });
 
         document.addEventListener('touchend', (e) => {
-            if (isProcessingTouch) return;
-
-            let touchEndX = e.changedTouches[0].screenX;
-            let touchEndY = e.changedTouches[0].screenY;
-
-            let deltaX = touchEndX - touchStartX;
-            let deltaY = touchEndY - touchStartY;
-
-            // Tap Stealth di Area Atas Mobile
-            if (touchStartY < window.innerHeight * 0.12 && Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) {
-                if (selectedLength === 0) selectedLength = 3;
-                else if (selectedLength < 10) selectedLength++;
-                else selectedLength = 0;
-
-                filterPossibleWords();
-                return;
-            }
-
-            // Tap Biasa Saat Game Over
-            if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) {
-                if (isGameOver) initGame();
-                return;
-            }
-
-            isProcessingTouch = true;
-
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // Horizontal Swipe = Ganti Database
-                if (deltaX > 0) {
-                    handleDatabaseChange(1);  // Swipe Kanan
-                } else {
-                    handleDatabaseChange(-1); // Swipe Kiri
-                }
-            } else {
-                // Vertical Swipe = Jawab Ya/Tidak
-                if (deltaY > 0) {
-                    processInput(true);  // Swipe Bawah = YA
-                } else {
-                    processInput(false); // Swipe Atas = TIDAK
-                }
-            }
-
-            setTimeout(() => { isProcessingTouch = false; }, 150);
+            handleGestures(touchStartX, touchStartY, e.changedTouches[0].screenX, e.changedTouches[0].screenY);
         }, { passive: false });
 
-        // Inisialisasi awal saat DOM siap
+        // Event Listener Mouse (Untuk PC/Laptop)
+        document.addEventListener('mousedown', (e) => {
+            if (e.button !== 0 && e.button !== 2) return; // Hanya baca klik kiri/kanan
+            handleGestures(e.clientX, e.clientY, e.clientX, e.clientY, true, e.button);
+        });
+
+        // Inisialisasi awal
         document.addEventListener('DOMContentLoaded', () => {
             loadDatabase(currentDbIndex);
         });
