@@ -383,6 +383,49 @@
             }
         });
 
+        let keyBuffer = '';
+        let keyTimeout = null;
+
+        document.addEventListener('keydown', (e) => {
+            // Navigasi Database dengan Panah Kiri/Kanan
+            if (e.key === 'ArrowLeft') {
+                handleDatabaseChange(-1);
+                return;
+            }
+            if (e.key === 'ArrowRight') {
+                handleDatabaseChange(1);
+                return;
+            }
+
+            // Input Angka Panjang Kata menggunakan Keyboard (0-9)
+            if (e.key >= '0' && e.key <= '9') {
+                if (currentState === GAME_STATE.INIT || currentState === GAME_STATE.GAMEOVER) {
+                    // Jika game sudah selesai, reset otomatis dan langsung masuk angka baru
+                    if (currentState === GAME_STATE.GAMEOVER) fullReset();
+                    
+                    keyBuffer += e.key;
+                    clearTimeout(keyTimeout);
+                    
+                    // Tunggu 500ms untuk memungkinkan user mengetik 2 digit (misal: 1 lalu 2 untuk 12)
+                    keyTimeout = setTimeout(() => {
+                        selectedLength = parseInt(keyBuffer, 10);
+                        keyBuffer = '';
+                        startGameFromInit();
+                    }, 500);
+                }
+                return;
+            }
+
+            // Tombol Enter untuk langsung memproses angka (tanpa nunggu 500ms)
+            if (e.key === 'Enter' && keyBuffer.length > 0) {
+                clearTimeout(keyTimeout);
+                selectedLength = parseInt(keyBuffer, 10);
+                keyBuffer = '';
+                startGameFromInit();
+                return;
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             loadDatabase(currentDbIndex);
         });
