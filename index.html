@@ -20,16 +20,15 @@
             margin: 0;
             padding: 0;
             width: 100%;
+            height: 100%;
             height: 100dvh;
             background-color: #000;
             overflow: hidden;
-            /* Font mirip San Francisco iOS */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
             touch-action: none;
             -webkit-touch-callout: none;
         }
 
-        /* Container utama untuk views */
         .view {
             position: absolute;
             top: 0;
@@ -37,15 +36,18 @@
             width: 100%;
             height: 100%;
             display: none;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
         .view.active {
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
         #view-lockscreen {
-            /* Meniru warna kecoklatan dari referensi lockscreen */
-            background: linear-gradient(180deg, #A29B93 0%, #877E75 50%, #685E55 100%);
+            background-color: #877E75;
         }
 
         #view-recorder {
@@ -53,24 +55,20 @@
             color: #000;
         }
 
-        /* Menyembunyikan scrollbar di List Rekaman */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Area bawah dan atas untuk Notch / Home Indicator iOS */
         .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 30px); }
-        .pt-safe { padding-top: max(env(safe-area-inset-top), 55px); }
+        .pt-safe { padding-top: max(env(safe-area-inset-top), 45px); }
 
-        /* Efek Active pada tombol T9 Lockscreen */
         .t9-btn:active { background-color: rgba(255, 255, 255, 0.4); }
 
-        /* Secret Settings Button di pojok kanan atas */
         #secret-settings-trigger {
             position: absolute;
-            top: env(safe-area-inset-top, 20px);
+            top: 0;
             right: 0;
-            width: 80px;
-            height: 80px;
+            width: 90px;
+            height: 90px;
             z-index: 999;
         }
 
@@ -105,9 +103,9 @@
     <!-- Area Pemicu Setting Rahasia -->
     <div id="secret-settings-trigger"></div>
 
-    <div id="view-lockscreen" class="view active flex flex-col justify-between items-center pb-12 pt-safe">
+    <div id="view-lockscreen" class="view active justify-between items-center pb-12 pt-safe">
         
-        <div class="text-center mt-12 w-full">
+        <div class="text-center mt-10 w-full">
             <h2 class="text-white text-[22px] leading-tight font-medium mb-6 drop-shadow-sm">Swipe up for Face ID or<br>Enter Passcode</h2>
             
             <!-- Passcode Dots -->
@@ -169,7 +167,7 @@
         </div>
     </div>
 
-    <div id="view-recorder" class="view flex flex-col">
+    <div id="view-recorder" class="view flex-col">
         <!-- Header Voice Memos -->
         <div class="pt-safe px-5 border-b border-gray-200 pb-2 z-10 bg-white">
             <div class="flex justify-between items-center mb-3 text-[#007AFF]">
@@ -183,13 +181,12 @@
                     </button>
                 </div>
             </div>
-            <!-- INI ADALAH SECRET TRIGGER UNTUK MAGICIAN -->
+            <!-- Area Secret Trigger untuk Magician -->
             <h1 id="area-trigger" class="text-[32px] font-bold tracking-tight active:opacity-70 transition-opacity select-none pb-1">All Recordings</h1>
         </div>
 
         <!-- List Recordings (Scrollable) -->
         <div class="flex-1 overflow-y-auto px-5 pb-40 no-scrollbar bg-white" id="recordings-list">
-            <!-- Data Dummy agar terlihat asli -->
             <div class="border-b border-gray-200 py-3">
                 <div class="flex justify-between items-start mb-0.5">
                     <h3 class="font-semibold text-[17px]">New Recording 3</h3>
@@ -231,7 +228,6 @@
         <div class="absolute bottom-0 w-full bg-white/90 backdrop-blur-xl border-t border-gray-200 pb-safe pt-3 flex flex-col items-center z-20">
             <div id="recording-timer" class="text-[#8E8E93] text-sm font-medium mb-3 opacity-0 transition-opacity">00:00.00</div>
             
-            <!-- Tombol REC -->
             <button id="btn-rec-toggle" class="w-[64px] h-[64px] rounded-full border-[3px] border-[#E5E5EA] p-1 flex items-center justify-center transition-all duration-300 mb-2 bg-white">
                 <div id="rec-inner-shape" class="w-full h-full bg-[#FF3B30] rounded-full transition-all duration-300"></div>
             </button>
@@ -248,6 +244,18 @@
             <div class="grid grid-cols-2 gap-2 mb-6">
                 <button id="btn-req-mic" class="bg-green-600 py-3 rounded font-bold shadow-lg">Izinkan Mic</button>
                 <button id="btn-fullscreen" class="bg-purple-600 py-3 rounded font-bold shadow-lg">Layar Penuh</button>
+            </div>
+
+            <div class="bg-slate-800 p-4 rounded-xl mb-6">
+                <h3 class="font-bold text-blue-400 mb-2">Background Screenshots</h3>
+                <div class="input-group">
+                    <label>Upload Screenshot Lockscreen</label>
+                    <input type="file" id="bg-lock-input" accept="image/*">
+                </div>
+                <div class="input-group">
+                    <label>Upload Screenshot Recorder</label>
+                    <input type="file" id="bg-rec-input" accept="image/*">
+                </div>
             </div>
 
             <div class="bg-slate-800 p-4 rounded-xl mb-6">
@@ -272,9 +280,7 @@
 
             <div class="bg-slate-800 p-4 rounded-xl mb-6">
                 <h3 class="font-bold text-blue-400 mb-2">Kamus T9 (0-9)</h3>
-                <div class="grid grid-cols-2 gap-2" id="t9-dict-inputs">
-                    <!-- Digenerate via JS -->
-                </div>
+                <div class="grid grid-cols-2 gap-2" id="t9-dict-inputs"></div>
             </div>
 
             <div class="mt-4 pb-10">
@@ -289,11 +295,13 @@
             template: "Saya [D1], mati karena [D2], tolong saya [D3]",
             apiKey: "",
             voiceId: "21m00Tcm4TlvDq8ikWAM",
-            delay: 1.5
+            delay: 1.5,
+            bgLock: "",
+            bgRec: ""
         };
 
         let state = {
-            config: JSON.parse(localStorage.getItem('evp_config_v2')) || defaultConfig,
+            config: JSON.parse(localStorage.getItem('evp_config_v3')) || defaultConfig,
             currentView: 'lockscreen',
             enteredDigits: [],
             evpAudioBuffer: null,
@@ -315,6 +323,15 @@
             `;
         }
 
+        function applyBackgrounds() {
+            if (state.config.bgLock) {
+                document.getElementById('view-lockscreen').style.backgroundImage = `url(${state.config.bgLock})`;
+            }
+            if (state.config.bgRec) {
+                document.getElementById('view-recorder').style.backgroundImage = `url(${state.config.bgRec})`;
+            }
+        }
+
         function populateSettings() {
             document.getElementById('el-api-key').value = state.config.apiKey;
             document.getElementById('el-voice-id').value = state.config.voiceId;
@@ -329,9 +346,35 @@
             state.config.delay = parseFloat(document.getElementById('evp-delay').value);
             state.config.template = document.getElementById('evp-template').value;
             for (let i = 0; i <= 9; i++) state.config.t9[i] = document.getElementById(`cfg-t9-${i}`).value;
-            localStorage.setItem('evp_config_v2', JSON.stringify(state.config));
-            alert("Pengaturan Disimpan!");
+            localStorage.setItem('evp_config_v3', JSON.stringify(state.config));
+            applyBackgrounds();
+            alert("Pengaturan Berhasil Disimpan!");
         }
+
+        // Handle Image Uploads
+        document.getElementById('bg-lock-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    state.config.bgLock = evt.target.result;
+                    applyBackgrounds();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('bg-rec-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    state.config.bgRec = evt.target.result;
+                    applyBackgrounds();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
         let tapCount = 0;
         let tapTimer;
@@ -366,13 +409,11 @@
                 const val = btn.dataset.val;
                 
                 if (state.enteredDigits.length < 6) {
-                    // Fill the dot
                     dots[state.enteredDigits.length].classList.replace('bg-transparent', 'bg-white');
                     state.enteredDigits.push(val);
                     
                     if(navigator.vibrate) navigator.vibrate(50);
 
-                    // Pemicu terjadi pada digit ke-3
                     if (state.enteredDigits.length === 3) {
                         const d1 = state.enteredDigits[0];
                         const d2 = state.enteredDigits[1];
@@ -383,16 +424,12 @@
                             .replace('[D2]', state.config.t9[d2])
                             .replace('[D3]', state.config.t9[d3]);
                         
-                        console.log("Kalimat EVP:", prompt);
-                        
-                        // Switch UI dengan sedikit jeda agar natural
                         setTimeout(() => {
                             switchView('recorder');
                             state.enteredDigits = [];
                             dots.forEach(d => d.classList.replace('bg-white', 'bg-transparent'));
                         }, 250); 
 
-                        // Fetch Background
                         await fetchElevenLabs(prompt);
                     }
                 }
@@ -401,7 +438,6 @@
 
         async function fetchElevenLabs(text) {
             if(!state.config.apiKey) {
-                console.warn("ElevenLabs API Key kosong. Mode Beep Simulasi.");
                 createDummyAudio(); return;
             }
             try {
@@ -413,9 +449,7 @@
                 if(!response.ok) throw new Error("Gagal fetch ElevenLabs");
                 const arrayBuffer = await response.arrayBuffer();
                 state.evpAudioBuffer = await state.audioCtx.decodeAudioData(arrayBuffer);
-                console.log("EVP Audio Siap di memori.");
             } catch (e) {
-                console.error("Error ElevenLabs:", e);
                 createDummyAudio();
             }
         }
@@ -444,22 +478,18 @@
         const recList = document.getElementById('recordings-list');
         const areaTrigger = document.getElementById('area-trigger');
 
-        // Secret Trigger via Title Tap
         areaTrigger.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if(!state.recorder || state.recorder.state !== 'recording') return;
-            if(navigator.vibrate) navigator.vibrate([20, 50, 20]); // Feedback rahasia
+            if(navigator.vibrate) navigator.vibrate([20, 50, 20]);
             state.triggerTime = (Date.now() - state.startTime) / 1000;
-            console.log("Secret Trigger hit at:", state.triggerTime);
         });
 
-        // Record Button Logic
         btnRecToggle.addEventListener('touchstart', async (e) => {
             e.preventDefault();
             if(navigator.vibrate) navigator.vibrate(50);
             
             if (!state.recorder || state.recorder.state === 'inactive') {
-                // START REC
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     state.recorder = new MediaRecorder(stream);
@@ -473,12 +503,10 @@
                         await processAudioMix(blob);
                         stream.getTracks().forEach(track => track.stop());
                         
-                        // Buat Item List Baru di Paling Atas
                         const dateNow = new Date();
                         const timeStr = dateNow.getHours().toString().padStart(2, '0') + ':' + dateNow.getMinutes().toString().padStart(2, '0');
                         
                         const newEl = document.createElement('div');
-                        // Styling baris baru (Sedikit abu-abu sebagai visual click indicator)
                         newEl.className = "border-b border-gray-200 py-3 active:bg-gray-100 transition-colors";
                         newEl.innerHTML = `
                             <div class="flex justify-between items-start mb-0.5">
@@ -488,7 +516,6 @@
                             <p class="text-[#8E8E93] text-[14px]">${timeStr}</p>
                         `;
                         
-                        // Klik item untuk Play hasil EVP
                         newEl.addEventListener('touchstart', () => {
                             if(!state.finalMixedAudioBuffer) return;
                             if(navigator.vibrate) navigator.vibrate(50);
@@ -496,7 +523,6 @@
                             source.buffer = state.finalMixedAudioBuffer;
                             source.connect(state.audioCtx.destination);
                             source.start();
-                            console.log("Playing Mixed Audio!");
                         });
 
                         recList.prepend(newEl);
@@ -505,7 +531,6 @@
                     state.startTime = Date.now();
                     state.recorder.start();
                     
-                    // UI Animation to Square
                     recInnerShape.classList.remove('rounded-full', 'w-full', 'h-full');
                     recInnerShape.classList.add('rounded-sm', 'w-7', 'h-7');
                     timerDisplay.classList.remove('opacity-0');
@@ -519,11 +544,9 @@
                     
                 } catch (err) { alert("Error mic: Izinkan mic di settings."); }
             } else if (state.recorder.state === 'recording') {
-                // STOP REC
                 state.recorder.stop();
                 clearInterval(recTimerInterval);
                 
-                // UI Animation back to Circle
                 recInnerShape.classList.add('rounded-full', 'w-full', 'h-full');
                 recInnerShape.classList.remove('rounded-sm', 'w-7', 'h-7');
                 timerDisplay.classList.add('opacity-0');
@@ -557,8 +580,7 @@
                 sourceEvp.start(injectionTime);
 
                 state.finalMixedAudioBuffer = await offlineCtx.startRendering();
-                console.log("Audio Mix Berhasil! Durasi:", state.finalMixedAudioBuffer.duration);
-            } catch (err) { console.error("Error mixing audio:", err); }
+            } catch (err) { console.error(err); }
         }
 
         document.getElementById('btn-req-mic').addEventListener('click', async () => {
@@ -566,7 +588,7 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 stream.getTracks().forEach(track => track.stop());
                 alert("Izin Mikrofon Berhasil!");
-            } catch (err) { alert("Gagal mendapat izin Mic: " + err.message); }
+            } catch (err) { alert("Gagal mendapat izin Mic."); }
         });
 
         document.getElementById('btn-fullscreen').addEventListener('click', () => {
@@ -579,19 +601,13 @@
 
         window.onload = () => {
             populateSettings();
+            applyBackgrounds();
             window.alert = function(msg) {
                 const alertBox = document.createElement('div');
                 alertBox.innerHTML = `<div style="position:fixed;top:40px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:white;padding:15px;border-radius:10px;z-index:9999;text-align:center;width:90%;">${msg}</div>`;
                 document.body.appendChild(alertBox);
                 setTimeout(() => alertBox.remove(), 4000);
             };
-
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            if (isIOS && !window.navigator.standalone) {
-                setTimeout(() => {
-                    alert("⚠️ <strong>Trik Sulap iOS:</strong><br><br>Tap tombol <strong>Share</strong> di bawah layar, lalu pilih <strong>'Add to Home Screen'</strong>. Buka aplikasi dari layar utama Anda untuk efek fullscreen sempurna.");
-                }, 1000);
-            }
         };
     </script>
 </body>
