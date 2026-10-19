@@ -2,510 +2,733 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mentalist Tool - Most Hits Anagram</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>EVP Ghost Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent; 
-            overscroll-behavior-y: none;
-            touch-action: none; /* Mencegah pull-to-refresh & scroll */
-            background-color: #000; 
+        body, html {
+            background-color: #000;
+            color: #fff;
+            height: 100%;
+            height: 100dvh;
+            margin: 0;
+            overflow: hidden;
+            font-family: sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; /* Cegah pull-to-refresh & zoom */
+            -webkit-tap-highlight-color: transparent;
         }
+
+        /* Layer Background yang bisa disesuaikan */
+        .bg-layer {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+        }
+
+        /* View Container */
+        .view-container {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            display: none;
+            flex-direction: column;
+        }
+        .view-container.active {
+            display: flex;
+        }
+
+        /* Tombol Transparan / Ghost */
+        .ghost-btn {
+            background-color: transparent; 
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            color: transparent;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .ghost-btn:active {
+            background-color: transparent;
+        }
+
+        /* T9 Keypad Styling (Absolute & Membulat) */
+        .t9-btn {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: transparent;
+            transform: translate(-50%, -50%); /* Agar centering sesuai titik X/Y */
+            z-index: 20;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Mode Edit Layout */
+        .edit-mode .t9-btn,
+        .edit-mode .rec-draggable {
+            background-color: rgba(0, 255, 0, 0.3) !important;
+            border: 2px dashed #0f0 !important;
+            color: #0f0 !important;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        /* Custom Modal Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
     </style>
 </head>
-<body class="text-gray-300 h-screen w-screen overflow-hidden select-none" oncontextmenu="return false;">
+<body>
 
-    <div class="h-full w-full flex flex-col items-center justify-between py-[10vh] px-4 relative">
+    <!-- Tombol Settings Global (Pojok Kanan Atas - Invisible) -->
+    <div id="btnGlobalSettings" class="absolute top-0 right-0 w-20 h-20 z-50 ghost-btn border-none" style="background: transparent;"></div>
+    
+    <!-- Status Toast (Custom Alert) -->
+    <div id="statusToast" class="fixed top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-full text-xs opacity-0 transition-opacity duration-300 z-50 pointer-events-none shadow-lg border border-gray-600">
+        STATUS READY
+    </div>
+
+    <!-- ==================== VIEW 1: LOCKSCREEN ==================== -->
+    <div id="viewLockscreen" class="view-container active">
+        <!-- Background Lockscreen -->
+        <div id="bgLockscreen" class="bg-layer" style="background-image: url('https://placehold.co/1080x1920/111/444?text=Lockscreen+Screenshot+Here');"></div>
         
-        <!-- Area Sentuh Tersembunyi untuk UNDO / RESET (Pojok Atas) -->
-        <div id="btn-undo" class="absolute top-0 left-0 w-24 h-24 z-50"></div>
-        <div id="btn-reset" class="absolute top-0 right-0 w-24 h-24 z-50"></div>
-
-        <!-- Teks Utama -->
-        <div id="display-text" class="text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto break-words max-w-full leading-tight select-none">
-            <!-- Kosong di awal agar aman -->
+        <!-- Banner Mode Edit Lockscreen -->
+        <div id="editModeBannerLock" class="absolute top-0 left-0 right-0 bg-green-600 text-white text-center py-2 text-xs font-bold z-40 hidden flex justify-between px-4 items-center">
+            <span>DRAG KEYPAD UNTUK MENGATUR POSISI</span>
+            <button id="btnSaveLayoutLock" class="bg-black/50 px-3 py-1 rounded">SIMPAN</button>
         </div>
 
-        <!-- Panel Informasi & Navigasi Database di Bawah -->
-        <div class="flex items-center justify-center gap-4 z-50 w-full mb-4 text-[#555] font-bold">
-            <!-- Tombol Kiri (Sebelumnya) -->
-            <div id="btn-prev" class="p-4 text-2xl cursor-pointer select-none">&lt;</div>
-            
-            <!-- Teks Informasi -->
-            <div class="flex flex-col items-center gap-1 min-w-[150px]">
-                <div id="debug-info" class="text-[10px] tracking-widest uppercase transition-opacity duration-200 select-none">
-                    <!-- Status Sisa Kata -->
-                </div>
-                <div id="db-name" class="text-[10px] tracking-[0.2em] uppercase transition-opacity duration-200 select-none">
-                    <!-- Nama Database -->
-                </div>
-            </div>
+        <!-- Wadah Keypad (Tombol-tombol akan di-generate via JS) -->
+        <div id="keypadContainer" class="absolute inset-0 z-30"></div>
+    </div>
 
-            <!-- Tombol Kanan (Selanjutnya) -->
-            <div id="btn-next" class="p-4 text-2xl cursor-pointer select-none">&gt;</div>
+    <!-- ==================== VIEW 2: RECORDER ==================== -->
+    <div id="viewRecorder" class="view-container">
+        <!-- Background Recorder -->
+        <div id="bgRecorder" class="bg-layer" style="background-image: url('https://placehold.co/1080x1920/222/666?text=Recorder+Screenshot+Here');"></div>
+
+        <!-- Banner Mode Edit Recorder -->
+        <div id="editModeBannerRec" class="absolute top-0 left-0 right-0 bg-green-600 text-white text-center py-2 text-xs font-bold z-40 hidden flex justify-between px-4 items-center">
+            <span>DRAG TOMBOL REC UNTUK MENGATUR POSISI</span>
+            <button id="btnSaveLayoutRec" class="bg-black/50 px-3 py-1 rounded">SIMPAN</button>
+        </div>
+
+        <!-- Secret Trigger Area (Tengah - Besar & Transparan Total) -->
+        <div id="btnSecretTrigger" class="absolute top-1/4 bottom-1/3 left-4 right-4 ghost-btn flex items-start p-4 z-20">
+            <div id="markerLog" class="text-[10px] text-transparent font-mono text-left w-full pointer-events-none"></div>
+        </div>
+
+        <!-- Control Area (Bawah - Posisi Absolute & Draggable di Edit Mode) -->
+        <div id="recorderControls" class="absolute w-20 h-20 rounded-full z-30 rec-draggable flex items-center justify-center translate-x-[-50%] translate-y-[-50%]">
+            <div id="btnRecord" class="w-full h-full rounded-full ghost-btn font-bold text-sm">REC</div>
+            <div id="btnStop" class="w-full h-full rounded-full ghost-btn font-bold text-sm hidden">STOP</div>
+            <div id="btnPlay" class="w-full h-full rounded-full ghost-btn font-bold text-sm hidden">PLAY</div>
         </div>
     </div>
 
+    <!-- ==================== MODAL LOCKSCREEN SETTINGS ==================== -->
+    <div id="modalLockscreen" class="fixed inset-0 bg-black/95 z-50 flex flex-col p-6 hidden overflow-y-auto">
+        <h2 class="text-white text-lg font-bold mb-4 border-b border-gray-700 pb-2">Lockscreen Settings</h2>
+        
+        <label class="text-xs text-gray-400 mb-1">Background Image (Galeri HP)</label>
+        <div class="flex gap-2 mb-4">
+            <input type="file" id="fileBgLockscreen" accept="image/*" class="hidden">
+            <button type="button" id="btnSelectBgLock" class="bg-gray-900 border border-gray-700 text-white p-2.5 rounded text-xs w-full text-left flex justify-between items-center">
+                <span id="lblBgLock" class="truncate text-gray-300">Pilih screenshot lockscreen...</span>
+                <span class="bg-blue-600 text-white px-3 py-1 rounded text-[10px] font-bold">GALERI</span>
+            </button>
+        </div>
+
+        <button id="btnEnterEditModeLock" class="bg-blue-900/50 text-blue-300 border border-blue-700 font-bold p-3 rounded mb-6 text-sm">
+            Edit Posisi Keypad T9 (Drag & Drop)
+        </button>
+
+        <h3 class="text-gray-300 text-sm font-bold mb-2">Kamus T9 (0-9)</h3>
+        <div class="grid grid-cols-2 gap-2 mb-6" id="dictContainer">
+            <!-- Di-generate via JS -->
+        </div>
+
+        <button class="btnCloseModal bg-white text-black font-bold p-3 rounded mt-auto">Tutup & Simpan</button>
+    </div>
+
+    <!-- ==================== MODAL RECORDER SETTINGS ==================== -->
+    <div id="modalRecorder" class="fixed inset-0 bg-black/95 z-50 flex flex-col p-6 hidden overflow-y-auto">
+        <h2 class="text-white text-lg font-bold mb-4 border-b border-gray-700 pb-2">Recorder / EVP Settings</h2>
+        
+        <label class="text-xs text-gray-400 mb-1">Background Image (Galeri HP)</label>
+        <div class="flex gap-2 mb-4">
+            <input type="file" id="fileBgRecorder" accept="image/*" class="hidden">
+            <button type="button" id="btnSelectBgRec" class="bg-gray-900 border border-gray-700 text-white p-2.5 rounded text-xs w-full text-left flex justify-between items-center">
+                <span id="lblBgRec" class="truncate text-gray-300">Pilih screenshot recorder...</span>
+                <span class="bg-blue-600 text-white px-3 py-1 rounded text-[10px] font-bold">GALERI</span>
+            </button>
+        </div>
+
+        <button id="btnEnterEditModeRec" class="bg-blue-900/50 text-blue-300 border border-blue-700 font-bold p-3 rounded mb-6 text-sm">
+            Edit Posisi Tombol REC (Drag & Drop)
+        </button>
+
+        <label class="text-xs text-gray-400 mb-1">ElevenLabs API Key</label>
+        <input type="password" id="cfgApiKey" class="bg-gray-900 border border-gray-700 text-white p-2 rounded mb-4 text-xs w-full" placeholder="sk_...">
+
+        <label class="text-xs text-gray-400 mb-1">Voice ID</label>
+        <input type="text" id="cfgVoiceId" value="21m00Tcm4TlvDq8ikWAM" class="bg-gray-900 border border-gray-700 text-white p-2 rounded mb-4 text-xs w-full">
+
+        <label class="text-xs text-gray-400 mb-1">Delay Tumpukan Audio (Detik)</label>
+        <input type="number" id="cfgDelay" value="1.5" step="0.5" class="bg-gray-900 border border-gray-700 text-white p-2 rounded mb-4 text-xs w-full">
+
+        <label class="text-xs text-gray-400 mb-1">Template Kalimat ([D1], [D2], [D3])</label>
+        <textarea id="cfgTemplate" rows="3" class="bg-gray-900 border border-gray-700 text-white p-2 rounded mb-4 text-xs w-full">Saya [D1], mati karena [D2], tolong saya [D3]</textarea>
+
+        <button class="btnCloseModal bg-white text-black font-bold p-3 rounded mt-auto">Tutup & Simpan</button>
+    </div>
+
+    <!-- Audio Player Hidden -->
+    <audio id="resultPlayer" class="hidden"></audio>
+
     <script>
-        const dbList = [
-            { name: "Provinsi Indonesia", file: "provinsi_indonesia.lst" },
-            { name: "Kota Indonesia", file: "city_indonesia.lst" },
-            { name: "Negara", file: "nation_database.lst" }
-        ];
-
-        const VOWEL_MASK = (1 << 0) | (1 << 4) | (1 << 8) | (1 << 14) | (1 << 20); // A, E, I, O, U
-        
-        let currentDbIndex = 0;
-        let rawWordDatabase = []; 
-        let possibleWords = [];
-        
-        let yesMask = 0;
-        let noMask = 0;
-        let askedMask = 0;
-        let selectedLength = 0;
-        let selectedWordCount = 0;
-        let currentTargetBit = -1;
-        let historyStack = [];
-
-        const GAME_STATE = { INIT_WORD: 0, INIT_LENGTH: 1, PENDING_CLOCK: 2, PLAYING: 3, GAMEOVER: 4 };
-        let currentState = GAME_STATE.INIT_WORD;
-        let clockFirstArea = null;
-
-        const displayEl = document.getElementById('display-text');
-        const debugEl = document.getElementById('debug-info');
-        const dbNameEl = document.getElementById('db-name');
-
-        async function loadDatabase(index) {
-            const dbInfo = dbList[index];
-            displayEl.textContent = "";
-            dbNameEl.textContent = dbInfo.name;
+        // -- STATE MANAGEMENT --
+        const state = {
+            currentView: 'lockscreen', // 'lockscreen' atau 'recorder'
+            isEditModeLock: false,
+            isEditModeRec: false,
+            t9Inputs: [],
+            triggerMarkers: [],
             
-            try {
-                const response = await fetch(`database/${dbInfo.file}`);
-                if (!response.ok) throw new Error("File tidak ditemukan");
-                
-                const text = await response.text();
-                const rawWords = text.split('\n');
-                const uniqueSet = new Set();
-                rawWordDatabase = [];
+            // Audio Recording State
+            isRecording: false,
+            mediaRecorder: null,
+            recordedChunks: [],
+            recordingStartTime: 0,
+            
+            // EVP State
+            elevenLabsBuffer: null,
+            finalMixUrl: null
+        };
 
-                for (let i = 0; i < rawWords.length; i++) {
-                    const originalWord = rawWords[i].trim().toUpperCase();
-                    if (!originalWord) continue;
+        let audioCtx;
 
-                    const wordsArray = originalWord.split(/\s+/);
-                    const wCount = wordsArray.length;
-                    
-                    // Untuk MASK (scan SEMUA huruf dalam seluruh kata)
-                    const justLetters = originalWord.replace(/[^A-Z]/g, '');
-                    
-                    // Untuk PANJANG KATA (hanya hitung huruf KATA PERTAMA saja)
-                    const firstWordLetters = wordsArray[0].replace(/[^A-Z]/g, '');
-                    
-                    if (!justLetters || uniqueSet.has(originalWord)) continue;
-                    uniqueSet.add(originalWord);
+        // -- DEFAULT POSITIONS (Keypad T9 & Recorder Controls) --
+        let keypadPositions = JSON.parse(localStorage.getItem('evp_keypad_pos')) || {
+            1: {x: 20, y: 40}, 2: {x: 50, y: 40}, 3: {x: 80, y: 40},
+            4: {x: 20, y: 55}, 5: {x: 50, y: 55}, 6: {x: 80, y: 55},
+            7: {x: 20, y: 70}, 8: {x: 50, y: 70}, 9: {x: 80, y: 70},
+            0: {x: 50, y: 85}
+        };
 
-                    let mask = 0;
-                    for (let j = 0; j < justLetters.length; j++) {
-                        const code = justLetters.charCodeAt(j);
-                        if (code >= 65 && code <= 90) mask |= (1 << (code - 65));
+        let recorderPosition = JSON.parse(localStorage.getItem('evp_rec_pos')) || { x: 50, y: 85 };
+
+        // -- DOM ELEMENTS --
+        const DOM = {
+            viewLockscreen: document.getElementById('viewLockscreen'),
+            viewRecorder: document.getElementById('viewRecorder'),
+            bgLockscreen: document.getElementById('bgLockscreen'),
+            bgRecorder: document.getElementById('bgRecorder'),
+            btnGlobalSettings: document.getElementById('btnGlobalSettings'),
+            modalLockscreen: document.getElementById('modalLockscreen'),
+            modalRecorder: document.getElementById('modalRecorder'),
+            fileBgLockscreen: document.getElementById('fileBgLockscreen'),
+            btnSelectBgLock: document.getElementById('btnSelectBgLock'),
+            lblBgLock: document.getElementById('lblBgLock'),
+            fileBgRecorder: document.getElementById('fileBgRecorder'),
+            btnSelectBgRec: document.getElementById('btnSelectBgRec'),
+            lblBgRec: document.getElementById('lblBgRec'),
+            keypadContainer: document.getElementById('keypadContainer'),
+            recorderControls: document.getElementById('recorderControls'),
+            editModeBannerLock: document.getElementById('editModeBannerLock'),
+            editModeBannerRec: document.getElementById('editModeBannerRec'),
+            btnSaveLayoutLock: document.getElementById('btnSaveLayoutLock'),
+            btnSaveLayoutRec: document.getElementById('btnSaveLayoutRec'),
+            dictContainer: document.getElementById('dictContainer'),
+            statusToast: document.getElementById('statusToast'),
+            btnRecord: document.getElementById('btnRecord'),
+            btnStop: document.getElementById('btnStop'),
+            btnPlay: document.getElementById('btnPlay'),
+            btnSecretTrigger: document.getElementById('btnSecretTrigger'),
+            markerLog: document.getElementById('markerLog'),
+            resultPlayer: document.getElementById('resultPlayer')
+        };
+
+        const dbName = 'EVP_App_DB';
+        const storeName = 'bg_images';
+
+        function openImageDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(storeName)) {
+                        db.createObjectStore(storeName);
                     }
-
-                    rawWordDatabase.push({ 
-                        word: originalWord, 
-                        mask: mask,
-                        length: firstWordLetters.length, // Ubah ke length kata pertama
-                        wCount: wCount
-                    });
-                }
-                
-                fullReset(); 
-            } catch (error) {
-                displayEl.textContent = "ERR";
-                dbNameEl.textContent = `GAGAL: database/${dbInfo.file}`;
-            }
-        }
-
-        function fullReset() {
-            yesMask = 0;
-            noMask = 0;
-            askedMask = 0;
-            selectedLength = 0;
-            selectedWordCount = 0;
-            historyStack = [];
-            clockFirstArea = null;
-            currentState = GAME_STATE.INIT_WORD;
-            
-            // Visual Panduan Tipe Kata
-            displayEl.className = "text-3xl md:text-5xl font-light tracking-widest text-center uppercase transition-opacity duration-200 my-auto text-[#555] select-none";
-            displayEl.innerHTML = "TIPE KATA?<br><span class='text-sm md:text-lg mt-4 block text-[#444]'>(&uarr;: 1 Kata | &darr;: Multi | Click: Bebas)</span>";
-            
-            debugEl.textContent = "READY";
-            dbNameEl.textContent = dbList[currentDbIndex].name;
-        }
-
-        function promptLength() {
-            currentState = GAME_STATE.INIT_LENGTH;
-            displayEl.className = "text-3xl md:text-5xl font-light tracking-widest text-center uppercase transition-opacity duration-200 my-auto text-[#555] select-none";
-            
-            if (selectedWordCount === 2) {
-                // Notifikasi visual spesifik untuk multi kata agar input kata pertama
-                displayEl.innerHTML = "PANJANG KATA<br><span class='text-white font-bold tracking-widest'>PERTAMA?</span><br><span class='text-sm md:text-lg mt-4 block text-[#444]'>(Ketik Angka / Swipe Jam)</span>";
-            } else {
-                displayEl.innerHTML = "PANJANG KATA?<br><span class='text-sm md:text-lg mt-4 block text-[#444]'>(Ketik Angka / Swipe Jam)</span>";
-            }
-        }
-
-        function startGameFromInit() {
-            currentState = GAME_STATE.PLAYING;
-            filterPossibleWords();
-        }
-
-        function calculateNextBestLetterBit() {
-            if (possibleWords.length <= 1) return -1;
-            
-            let bestBit = -1;
-            let maxMatches = -1;
-
-            for (let bit = 0; bit < 26; bit++) {
-                const bitFlag = (1 << bit);
-                
-                if ((askedMask & bitFlag) !== 0) continue;
-
-                let matches = 0;
-                for (let i = 0; i < possibleWords.length; i++) {
-                    if ((possibleWords[i].mask & bitFlag) !== 0) {
-                        matches++;
-                    }
-                }
-
-                if (matches === 0 || matches === possibleWords.length) continue;
-
-                if (matches > maxMatches) {
-                    maxMatches = matches;
-                    bestBit = bit;
-                }
-            }
-            return bestBit;
-        }
-
-        function filterPossibleWords() {
-            possibleWords = rawWordDatabase.filter(item => {
-                if ((item.mask & yesMask) !== yesMask) return false;
-                if ((item.mask & noMask) !== 0) return false;
-                if (selectedLength > 0 && item.length !== selectedLength) return false;
-                if (selectedWordCount === 1 && item.wCount > 1) return false;
-                if (selectedWordCount === 2 && item.wCount === 1) return false;
-                return true;
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e);
             });
-            updateGameState();
         }
 
-        function updateGameState() {
-            if (possibleWords.length === 0) {
-                displayEl.innerHTML = "ERR";
-                displayEl.className = "text-6xl font-bold text-red-900 text-center uppercase my-auto";
-                currentState = GAME_STATE.GAMEOVER;
-                return;
+        async function saveImageToDB(key, dataUrl) {
+            try {
+                const db = await openImageDB();
+                const tx = db.transaction(storeName, 'readwrite');
+                tx.objectStore(storeName).put(dataUrl, key);
+            } catch (err) {
+                console.error("Gagal menyimpan gambar ke IndexedDB:", err);
+            }
+        }
+
+        async function loadImageFromDB(key) {
+            try {
+                const db = await openImageDB();
+                return new Promise((resolve) => {
+                    const tx = db.transaction(storeName, 'readonly');
+                    const req = tx.objectStore(storeName).get(key);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => resolve(null);
+                });
+            } catch (err) {
+                console.error("Gagal membaca gambar dari IndexedDB:", err);
+                return null;
+            }
+        }
+
+        async function loadSavedBackgrounds() {
+            const lockImg = await loadImageFromDB('bg_lockscreen');
+            if (lockImg) {
+                DOM.bgLockscreen.style.backgroundImage = `url('${lockImg}')`;
+                DOM.lblBgLock.textContent = "Gambar Galeri Digunakan";
             }
 
-            currentTargetBit = calculateNextBestLetterBit();
-            
-            if (currentTargetBit === -1 || possibleWords.length === 1) {
-                currentState = GAME_STATE.GAMEOVER;
-                displayEl.innerHTML = ""; 
-                displayEl.className = "flex flex-col items-center justify-center w-full my-auto select-none";
+            const recImg = await loadImageFromDB('bg_recorder');
+            if (recImg) {
+                DOM.bgRecorder.style.backgroundImage = `url('${recImg}')`;
+                DOM.lblBgRec.textContent = "Gambar Galeri Digunakan";
+            }
+        }
 
-                const mainWord = possibleWords[0].word;
-                const mainDiv = document.createElement('div');
-                mainDiv.className = "font-bold text-center uppercase text-[#0f0] break-words max-w-full px-2";
+        DOM.btnSelectBgLock.addEventListener('click', () => DOM.fileBgLockscreen.click());
+        DOM.fileBgLockscreen.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                const dataUrl = evt.target.result;
+                DOM.bgLockscreen.style.backgroundImage = `url('${dataUrl}')`;
+                DOM.lblBgLock.textContent = file.name;
+                await saveImageToDB('bg_lockscreen', dataUrl);
+                showToast("Background Lockscreen Disimpan!");
+            };
+            reader.readAsDataURL(file);
+        });
+
+        DOM.btnSelectBgRec.addEventListener('click', () => DOM.fileBgRecorder.click());
+        DOM.fileBgRecorder.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                const dataUrl = evt.target.result;
+                DOM.bgRecorder.style.backgroundImage = `url('${dataUrl}')`;
+                DOM.lblBgRec.textContent = file.name;
+                await saveImageToDB('bg_recorder', dataUrl);
+                showToast("Background Recorder Disimpan!");
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function updateRecorderControlsPosition() {
+            DOM.recorderControls.style.left = `${recorderPosition.x}%`;
+            DOM.recorderControls.style.top = `${recorderPosition.y}%`;
+        }
+
+        // Utility: Show Toast
+        function showToast(msg) {
+            DOM.statusToast.textContent = msg;
+            DOM.statusToast.style.opacity = '1';
+            setTimeout(() => DOM.statusToast.style.opacity = '0', 2000);
+        }
+
+        // -- INIT KEYPAD & DICTIONARY --
+        function initKeypad() {
+            DOM.keypadContainer.innerHTML = '';
+            DOM.dictContainer.innerHTML = '';
+
+            for (let i = 0; i <= 9; i++) {
+                // Buat Tombol T9
+                const btn = document.createElement('div');
+                btn.className = 't9-btn';
+                btn.textContent = i;
+                btn.dataset.val = i;
                 
-                const len = mainWord.length;
-                if (len <= 8) mainDiv.classList.add('text-6xl', 'md:text-8xl', 'tracking-[0.1em]', 'leading-tight');
-                else if (len <= 15) mainDiv.classList.add('text-4xl', 'md:text-6xl', 'tracking-normal', 'leading-snug');
-                else mainDiv.classList.add('text-3xl', 'md:text-5xl', 'tracking-normal', 'leading-snug');
+                // Set posisi dari memory/localStorage
+                btn.style.left = `${keypadPositions[i].x}%`;
+                btn.style.top = `${keypadPositions[i].y}%`;
                 
-                mainDiv.textContent = mainWord;
-                displayEl.appendChild(mainDiv);
+                // Event Listener (Klik biasa vs Drag)
+                btn.addEventListener('touchstart', handleKeypadTouch, {passive: false});
+                btn.addEventListener('mousedown', handleKeypadMouse);
+                
+                DOM.keypadContainer.appendChild(btn);
 
-                if (possibleWords.length > 1) {
-                    const altDiv = document.createElement('div');
-                    altDiv.className = "mt-6 md:mt-8 flex flex-col items-center gap-2 text-[#555] font-bold text-2xl md:text-4xl uppercase tracking-widest text-center";
-                    
-                    const maxAlts = Math.min(possibleWords.length, 5);
-                    for (let i = 1; i < maxAlts; i++) {
-                        const p = document.createElement('div');
-                        p.textContent = possibleWords[i].word;
-                        altDiv.appendChild(p);
-                    }
-                    
-                    if (possibleWords.length > 5) {
-                        const pMore = document.createElement('div');
-                        pMore.className = "text-lg text-[#333] mt-2 tracking-normal";
-                        pMore.textContent = `+${possibleWords.length - 5} lainnya...`;
-                        altDiv.appendChild(pMore);
-                    }
-
-                    displayEl.appendChild(altDiv);
-                }
-            } else {
-                const letterStr = String.fromCharCode(65 + currentTargetBit);
-                displayEl.innerHTML = "";
-                displayEl.className = "text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto text-gray-300";
-                displayEl.textContent = letterStr;
+                // Buat Input Kamus di Setting
+                const dictWrapper = document.createElement('div');
+                dictWrapper.innerHTML = `
+                    <label class="text-[10px] text-gray-500 block">Digit ${i}</label>
+                    <input type="text" id="dict_${i}" value="Kata ${i}" class="w-full bg-gray-900 border border-gray-700 text-white p-1 rounded text-xs">
+                `;
+                DOM.dictContainer.appendChild(dictWrapper);
             }
 
-            let lenText = '';
-            if (selectedWordCount === 1) lenText += ' | 1K';
-            if (selectedWordCount === 2) lenText += ' | MK';
-            if (selectedLength > 0) lenText += ` | P1:${selectedLength}`;
+            updateRecorderControlsPosition();
             
-            debugEl.textContent = `SISA: ${possibleWords.length}${lenText}`;
+            // Event listener drag untuk Recorder Controls (REC)
+            DOM.recorderControls.addEventListener('touchstart', handleRecTouch, {passive: false});
+            DOM.recorderControls.addEventListener('mousedown', handleRecMouse);
         }
 
-        function processInput(isYes) {
-            if (currentTargetBit === -1) return;
-            historyStack.push({ yesMask, noMask, askedMask });
-            const bitFlag = (1 << currentTargetBit);
-            askedMask |= bitFlag;
-            if (isYes) yesMask |= bitFlag;
-            else noMask |= bitFlag;
-            filterPossibleWords();
+        // -- DRAG & DROP LOGIC (TOUCH & MOUSE) --
+        let draggedEl = null;
+
+        function startDrag(e, el) {
+            if (!state.isEditModeLock && !state.isEditModeRec) return;
+            draggedEl = el;
         }
 
-        function undoLastAction() {
-            if (historyStack.length === 0) return;
-            const last = historyStack.pop();
-            yesMask = last.yesMask;
-            noMask = last.noMask;
-            askedMask = last.askedMask;
-            currentState = GAME_STATE.PLAYING;
-            filterPossibleWords();
-        }
+        function moveDrag(clientX, clientY) {
+            if (!draggedEl) return;
 
-        function handleDatabaseChange(direction) {
-            currentDbIndex += direction;
-            if (currentDbIndex >= dbList.length) currentDbIndex = 0;
-            if (currentDbIndex < 0) currentDbIndex = dbList.length - 1;
-            loadDatabase(currentDbIndex);
-        }
+            const activeView = state.isEditModeLock ? DOM.viewLockscreen : DOM.viewRecorder;
+            const rect = activeView.getBoundingClientRect();
+            let percX = (clientX / rect.width) * 100;
+            let percY = (clientY / rect.height) * 100;
+            
+            percX = Math.max(0, Math.min(100, percX));
+            percY = Math.max(0, Math.min(100, percY));
 
-        function resolveClockNumber(area, swipe2) {
-            if (area === 'UP') {
-                if (swipe2 === 'LEFT') return 11;
-                if (swipe2 === 'UP') return 12;
-                if (swipe2 === 'RIGHT') return 1;
-            } else if (area === 'RIGHT') {
-                if (swipe2 === 'UP') return 2;
-                if (swipe2 === 'RIGHT') return 3;
-                if (swipe2 === 'DOWN') return 4;
-            } else if (area === 'DOWN') {
-                if (swipe2 === 'RIGHT') return 5;
-                if (swipe2 === 'DOWN') return 6;
-                if (swipe2 === 'LEFT') return 7;
-            } else if (area === 'LEFT') {
-                if (swipe2 === 'DOWN') return 8;
-                if (swipe2 === 'LEFT') return 9;
-                if (swipe2 === 'UP') return 10;
+            draggedEl.style.left = `${percX}%`;
+            draggedEl.style.top = `${percY}%`;
+            
+            if (state.isEditModeLock && draggedEl.dataset.val !== undefined) {
+                const val = draggedEl.dataset.val;
+                keypadPositions[val] = { x: percX, y: percY };
+            } else if (state.isEditModeRec && draggedEl.id === 'recorderControls') {
+                recorderPosition = { x: percX, y: percY };
             }
-            return -1; 
         }
 
-        const btnPrev = document.getElementById('btn-prev');
-        const btnNext = document.getElementById('btn-next');
-        function triggerPrev(e) { e.preventDefault(); e.stopPropagation(); handleDatabaseChange(-1); }
-        function triggerNext(e) { e.preventDefault(); e.stopPropagation(); handleDatabaseChange(1); }
-        btnPrev.addEventListener('touchstart', triggerPrev, {passive: false});
-        btnPrev.addEventListener('mousedown', triggerPrev);
-        btnNext.addEventListener('touchstart', triggerNext, {passive: false});
-        btnNext.addEventListener('mousedown', triggerNext);
+        function endDrag() { draggedEl = null; }
 
-        document.getElementById('btn-undo').addEventListener('touchstart', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            if(currentState === GAME_STATE.PLAYING) undoLastAction();
-        }, {passive: false});
+        // Touch Events Keypad
+        function handleKeypadTouch(e) {
+            if (state.isEditModeLock) { e.preventDefault(); startDrag(e, this); }
+            else { handleKeypadPress(this.dataset.val); }
+        }
 
-        document.getElementById('btn-reset').addEventListener('touchstart', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            fullReset();
-        }, {passive: false});
+        // Touch Events REC Control
+        function handleRecTouch(e) {
+            if (state.isEditModeRec) { e.preventDefault(); startDrag(e, this); }
+        }
 
-        let touchStartX = 0;
-        let touchStartY = 0;
-        const SWIPE_THRESHOLD = 35;
+        document.addEventListener('touchmove', e => { if (draggedEl) { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); } }, {passive: false});
+        document.addEventListener('touchend', endDrag);
 
-        document.addEventListener('touchstart', (e) => {
-            if(['btn-undo', 'btn-reset', 'btn-prev', 'btn-next'].includes(e.target.id)) return;
-            touchStartX = e.changedTouches[0].screenX;
-            touchStartY = e.changedTouches[0].screenY;
-        }, { passive: false });
+        // Mouse Events
+        function handleKeypadMouse(e) {
+            if (state.isEditModeLock) { startDrag(e, this); }
+            else { handleKeypadPress(this.dataset.val); }
+        }
 
-        document.addEventListener('touchend', (e) => {
-            if(['btn-undo', 'btn-reset', 'btn-prev', 'btn-next'].includes(e.target.id)) return;
+        function handleRecMouse(e) {
+            if (state.isEditModeRec) { startDrag(e, this); }
+        }
+
+        document.addEventListener('mousemove', e => { if (draggedEl) moveDrag(e.clientX, e.clientY); });
+        document.addEventListener('mouseup', endDrag);
+
+        // -- SETTINGS NAVIGATION --
+        DOM.btnGlobalSettings.addEventListener('click', () => {
+            if (state.isEditModeLock || state.isEditModeRec) return;
+            if (state.currentView === 'lockscreen') DOM.modalLockscreen.classList.remove('hidden');
+            else DOM.modalRecorder.classList.remove('hidden');
+        });
+
+        document.querySelectorAll('.btnCloseModal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                DOM.modalLockscreen.classList.add('hidden');
+                DOM.modalRecorder.classList.add('hidden');
+            });
+        });
+
+        // -- EDIT MODE TOGGLES --
+        document.getElementById('btnEnterEditModeLock').addEventListener('click', () => {
+            DOM.modalLockscreen.classList.add('hidden');
+            state.isEditModeLock = true;
+            DOM.keypadContainer.classList.add('edit-mode');
+            DOM.editModeBannerLock.classList.remove('hidden');
+        });
+
+        DOM.btnSaveLayoutLock.addEventListener('click', () => {
+            state.isEditModeLock = false;
+            DOM.keypadContainer.classList.remove('edit-mode');
+            DOM.editModeBannerLock.classList.add('hidden');
+            localStorage.setItem('evp_keypad_pos', JSON.stringify(keypadPositions));
+            showToast("Layout Keypad Disimpan");
+        });
+
+        document.getElementById('btnEnterEditModeRec').addEventListener('click', () => {
+            DOM.modalRecorder.classList.add('hidden');
+            state.isEditModeRec = true;
+            DOM.viewRecorder.classList.add('edit-mode');
+            DOM.editModeBannerRec.classList.remove('hidden');
+        });
+
+        DOM.btnSaveLayoutRec.addEventListener('click', () => {
+            state.isEditModeRec = false;
+            DOM.viewRecorder.classList.remove('edit-mode');
+            DOM.editModeBannerRec.classList.add('hidden');
+            localStorage.setItem('evp_rec_pos', JSON.stringify(recorderPosition));
+            showToast("Layout REC Disimpan");
+        });
+
+        // -- APP FLOW: LOCKSCREEN -> RECORDER --
+        function handleKeypadPress(val) {
+            if(state.t9Inputs.length >= 3) return;
             
-            const endX = e.changedTouches[0].screenX;
-            const endY = e.changedTouches[0].screenY;
-            const deltaX = endX - touchStartX;
-            const deltaY = endY - touchStartY;
-            
-            const isSwipe = Math.max(Math.abs(deltaX), Math.abs(deltaY)) > SWIPE_THRESHOLD;
-            
-            let swipeDir = null;
-            if (isSwipe) {
-                if (Math.abs(deltaX) > Math.abs(deltaY)) swipeDir = deltaX > 0 ? 'RIGHT' : 'LEFT';
-                else swipeDir = deltaY > 0 ? 'DOWN' : 'UP';
+            state.t9Inputs.push(val);
+
+            if (state.t9Inputs.length === 3) {
+                state.currentView = 'recorder';
+                DOM.viewLockscreen.classList.remove('active');
+                DOM.viewRecorder.classList.add('active');
+                
+                fetchElevenLabsAudio();
             }
+        }
 
-            if (currentState === GAME_STATE.INIT_WORD) {
-                if (isSwipe) {
-                    if (swipeDir === 'UP') {
-                        selectedWordCount = 1;
-                        debugEl.textContent = "1 KATA";
-                        promptLength();
-                    } else if (swipeDir === 'DOWN') {
-                        selectedWordCount = 2;
-                        debugEl.textContent = "MULTI KATA";
-                        promptLength();
-                    }
-                } else {
-                    selectedWordCount = 0;
-                    debugEl.textContent = "KATA BEBAS";
-                    promptLength();
-                }
+        async function fetchElevenLabsAudio() {
+            const apiKey = document.getElementById('cfgApiKey').value.trim();
+            if (!apiKey) {
+                showToast("API Key Kosong!");
                 return;
             }
 
-            if (currentState === GAME_STATE.INIT_LENGTH) {
-                if (isSwipe) {
-                    clockFirstArea = swipeDir; 
-                    currentState = GAME_STATE.PENDING_CLOCK;
-                    debugEl.textContent = `JAM: ${swipeDir}`; 
-                    
-                    // Indikator visual swipe jam ke-1
-                    displayEl.innerHTML = `<span class='text-[#555]'>JAM:<br></span><span class='text-white'>${swipeDir}</span><br><span class='text-sm md:text-lg mt-4 block text-[#444]'>(Tunggu Swipe ke-2)</span>`;
-                } else {
-                    selectedLength = 0; 
-                    startGameFromInit(); 
-                }
-                return;
-            }
+            let template = document.getElementById('cfgTemplate').value;
+            const dict = {
+                1: document.getElementById(`dict_${state.t9Inputs[0]}`).value,
+                2: document.getElementById(`dict_${state.t9Inputs[1]}`).value,
+                3: document.getElementById(`dict_${state.t9Inputs[2]}`).value
+            };
 
-            if (currentState === GAME_STATE.PENDING_CLOCK) {
-                if (isSwipe) {
-                    const num = resolveClockNumber(clockFirstArea, swipeDir);
-                    selectedLength = num > 0 ? num : 0;
-                } else {
-                    selectedLength = 0; 
-                }
-                startGameFromInit();
-                return;
-            }
+            // Interpolasi
+            template = template.replace('[D1]', dict[1]).replace('[D2]', dict[2]).replace('[D3]', dict[3]);
+            const voiceId = document.getElementById('cfgVoiceId').value.trim() || '21m00Tcm4TlvDq8ikWAM';
 
-            if (currentState === GAME_STATE.PLAYING) {
-                if (isSwipe) {
-                    if (swipeDir === 'DOWN') processInput(true); 
-                    else if (swipeDir === 'UP') processInput(false); 
-                }
-                return;
-            }
+            try {
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                showToast("FETCHING EVP...");
+                const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'audio/mpeg',
+                        'xi-api-key': apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: template,
+                        model_id: 'eleven_multilingual_v2',
+                        voice_settings: { stability: 0.4, similarity_boost: 0.7 }
+                    })
+                });
 
-            if (currentState === GAME_STATE.GAMEOVER) {
-                fullReset();
-            }
-        }, { passive: false });
+                if (!response.ok) throw new Error("API Error");
 
-        document.addEventListener('mousedown', (e) => {
-            if(['btn-undo', 'btn-reset', 'btn-prev', 'btn-next'].includes(e.target.id)) return;
-            if (e.button !== 0 && e.button !== 2) return; 
-            
-            if (currentState === GAME_STATE.PLAYING) {
-                if (e.button === 0) processInput(true); 
-                else if (e.button === 2) processInput(false); 
-            } else if (currentState === GAME_STATE.GAMEOVER) {
-                fullReset();
-            } else if (currentState === GAME_STATE.INIT_WORD) {
-                selectedWordCount = 0;
-                debugEl.textContent = "KATA BEBAS";
-                promptLength();
-            } else if (currentState === GAME_STATE.INIT_LENGTH) {
-                selectedLength = 0; 
-                startGameFromInit();
+                const arrayBuffer = await response.arrayBuffer();
+                state.elevenLabsBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                showToast("EVP READY");
+            } catch (err) {
+                console.error(err);
+                showToast("EVP GAGAL");
+            }
+        }
+
+        // -- RECORDING LOGIC --
+        DOM.btnRecord.addEventListener('click', async () => {
+            try {
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') await audioCtx.resume();
+
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+                state.mediaRecorder = new MediaRecorder(stream);
+                state.recordedChunks = [];
+                state.triggerMarkers = [];
+                DOM.markerLog.innerHTML = '';
+
+                state.mediaRecorder.ondataavailable = e => state.recordedChunks.push(e.data);
+                state.mediaRecorder.onstop = processLayering;
+
+                state.mediaRecorder.start();
+                state.isRecording = true;
+                state.recordingStartTime = audioCtx.currentTime;
+
+                DOM.btnRecord.classList.add('hidden');
+                DOM.btnStop.classList.remove('hidden');
+                DOM.btnPlay.classList.add('hidden');
+            } catch (err) {
+                showToast("Mic Ditolak!");
             }
         });
 
-        let keyBuffer = '';
-        let keyTimeout = null;
+        // -- SECRET TRIGGER LOGIC --
+        DOM.btnSecretTrigger.addEventListener('click', () => {
+            if (!state.isRecording) return;
+            // Catat waktu relatif dari saat tombol record ditekan
+            const timestamp = audioCtx.currentTime - state.recordingStartTime;
+            state.triggerMarkers.push(timestamp);
+            
+            // Log visual (hapus/sembunyikan di prod)
+            DOM.markerLog.innerHTML += `> Mk: ${timestamp.toFixed(1)}s<br>`;
+        });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') { handleDatabaseChange(-1); return; }
-            if (e.key === 'ArrowRight') { handleDatabaseChange(1); return; }
-
-            if (currentState === GAME_STATE.PLAYING) {
-                if (e.key === 'ArrowDown') { processInput(true); return; }
-                if (e.key === 'ArrowUp') { processInput(false); return; }
-            }
-
-            if (currentState === GAME_STATE.INIT_WORD) {
-                if (e.key === 'ArrowUp') { 
-                    selectedWordCount = 1; 
-                    debugEl.textContent = "1 KATA"; 
-                    promptLength();
-                    return; 
-                }
-                if (e.key === 'ArrowDown') { 
-                    selectedWordCount = 2; 
-                    debugEl.textContent = "MULTI KATA"; 
-                    promptLength();
-                    return; 
-                }
-                if (e.key === 'Enter' || e.key === ' ') {
-                    selectedWordCount = 0;
-                    debugEl.textContent = "KATA BEBAS";
-                    promptLength();
-                    return;
-                }
-            }
-
-            if (e.key >= '0' && e.key <= '9') {
-                if (currentState === GAME_STATE.INIT_WORD || currentState === GAME_STATE.INIT_LENGTH || currentState === GAME_STATE.GAMEOVER) {
-                    if (currentState === GAME_STATE.GAMEOVER) fullReset();
-                    
-                    if (currentState === GAME_STATE.INIT_WORD) {
-                        selectedWordCount = 0;
-                        currentState = GAME_STATE.INIT_LENGTH;
-                    }
-                    
-                    keyBuffer += e.key;
-                    clearTimeout(keyTimeout);
-                    
-                    // Tampilkan angka yang sedang diketik di layar dengan jelas
-                    displayEl.className = "text-6xl md:text-8xl font-light tracking-[0.2em] text-center uppercase transition-opacity duration-200 my-auto text-white";
-                    displayEl.textContent = keyBuffer;
-                    
-                    keyTimeout = setTimeout(() => {
-                        selectedLength = parseInt(keyBuffer, 10);
-                        keyBuffer = '';
-                        startGameFromInit();
-                    }, 500);
-                }
-                return;
-            }
-
-            if (e.key === 'Enter' && keyBuffer.length > 0) {
-                clearTimeout(keyTimeout);
-                selectedLength = parseInt(keyBuffer, 10);
-                keyBuffer = '';
-                startGameFromInit();
-                return;
+        DOM.btnStop.addEventListener('click', () => {
+            if (state.mediaRecorder && state.isRecording) {
+                state.mediaRecorder.stop();
+                state.mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                state.isRecording = false;
+                DOM.btnStop.classList.add('hidden');
+                showToast("PROCESSING...");
             }
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadDatabase(currentDbIndex);
+        // -- AUDIO LAYERING / MIXING LOGIC --
+        async function processLayering() {
+            const blob = new Blob(state.recordedChunks, { type: 'audio/webm;codecs=opus' });
+            const arrayBuffer = await blob.arrayBuffer();
+            const recordedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+
+            // Fallback jika API gagal / tidak ada marker
+            if (!state.elevenLabsBuffer || state.triggerMarkers.length === 0) {
+                finalizeAudio(blob);
+                return;
+            }
+
+            const delay = parseFloat(document.getElementById('cfgDelay').value) || 0;
+            
+            // Kalkulasi durasi final container
+            let maxDuration = recordedBuffer.duration;
+            state.triggerMarkers.forEach(ts => {
+                const evpEnd = ts + delay + state.elevenLabsBuffer.duration;
+                if (evpEnd > maxDuration) maxDuration = evpEnd;
+            });
+
+            const offlineCtx = new OfflineAudioContext(
+                recordedBuffer.numberOfChannels,
+                Math.ceil(maxDuration * recordedBuffer.sampleRate),
+                recordedBuffer.sampleRate
+            );
+
+            // Layer 1: Mic Environment (Utuh)
+            const bgSource = offlineCtx.createBufferSource();
+            bgSource.buffer = recordedBuffer;
+            bgSource.connect(offlineCtx.destination);
+            bgSource.start(0);
+
+            // Layer 2: EVP Voices
+            state.triggerMarkers.forEach(ts => {
+                const evpSource = offlineCtx.createBufferSource();
+                evpSource.buffer = state.elevenLabsBuffer;
+
+                // Filter EVP (Buat sedikit muffed agar blend dengan noise)
+                const lowpass = offlineCtx.createBiquadFilter();
+                lowpass.type = 'lowpass';
+                lowpass.frequency.value = 4000;
+                
+                // Gain (Volume EVP sedikit di atas noise)
+                const gain = offlineCtx.createGain();
+                gain.gain.value = 1.2;
+
+                evpSource.connect(lowpass);
+                lowpass.connect(gain);
+                gain.connect(offlineCtx.destination);
+
+                evpSource.start(ts + delay);
+            });
+
+            const mixedBuffer = await offlineCtx.startRendering();
+            const wavBlob = audioBufferToWavBlob(mixedBuffer);
+            finalizeAudio(wavBlob);
+        }
+
+        function finalizeAudio(blob) {
+            if (state.finalMixUrl) URL.revokeObjectURL(state.finalMixUrl);
+            state.finalMixUrl = URL.createObjectURL(blob);
+            DOM.resultPlayer.src = state.finalMixUrl;
+            
+            DOM.btnRecord.classList.remove('hidden');
+            DOM.btnPlay.classList.remove('hidden');
+            showToast("READY!");
+            
+            // Reset input untuk next perform
+            state.t9Inputs = [];
+        }
+
+        DOM.btnPlay.addEventListener('click', () => {
+            DOM.resultPlayer.play();
+            showToast("PLAYING");
         });
+
+        // Utility: Export ke WAV agar compatible lintas browser
+        function audioBufferToWavBlob(abuffer) {
+            let numOfChan = abuffer.numberOfChannels,
+                length = abuffer.length * numOfChan * 2 + 44,
+                buffer = new ArrayBuffer(length),
+                view = new DataView(buffer),
+                channels = [], i, sample, offset = 0, pos = 0;
+
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+            setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+            setUint32(abuffer.sampleRate); setUint32(abuffer.sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
+
+            for(i = 0; i < abuffer.numberOfChannels; i++) channels.push(abuffer.getChannelData(i));
+
+            while(pos < length) {
+                for(i = 0; i < numOfChan; i++) {
+                    sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (0.5 + sample < 0 ? sample * 32768 : sample * 32767)|0;
+                    view.setInt16(pos, sample, true); pos += 2;
+                }
+                offset++;
+            }
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+            return new Blob([buffer], {type: "audio/wav"});
+        }
+
+        // Init App
+        initKeypad();
+        loadSavedBackgrounds();
     </script>
 </body>
 </html>
