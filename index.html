@@ -35,6 +35,7 @@
             left: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh;
             display: none;
             background-size: cover;
             background-position: center;
@@ -48,11 +49,14 @@
 
         #view-lockscreen {
             background-color: #877E75;
+            justify-content: flex-end; /* Geser elemen ke bawah seperti versi awal */
+            padding-bottom: 50px;
         }
 
         #view-recorder {
             background-color: #ffffff;
             color: #000;
+            justify-content: flex-end;
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -103,13 +107,13 @@
     <!-- Area Pemicu Setting Rahasia -->
     <div id="secret-settings-trigger"></div>
 
-    <div id="view-lockscreen" class="view active justify-between items-center pb-12 pt-safe">
+    <div id="view-lockscreen" class="view active items-center">
         
-        <div class="text-center mt-10 w-full">
+        <div class="text-center mb-8 w-full">
             <h2 class="text-white text-[22px] leading-tight font-medium mb-6 drop-shadow-sm">Swipe up for Face ID or<br>Enter Passcode</h2>
             
             <!-- Passcode Dots -->
-            <div class="flex justify-center gap-5 mb-10" id="passcode-dots">
+            <div class="flex justify-center gap-5 mb-8" id="passcode-dots">
                 <div class="w-3.5 h-3.5 rounded-full border border-white bg-transparent transition-colors duration-150"></div>
                 <div class="w-3.5 h-3.5 rounded-full border border-white bg-transparent transition-colors duration-150"></div>
                 <div class="w-3.5 h-3.5 rounded-full border border-white bg-transparent transition-colors duration-150"></div>
@@ -120,7 +124,7 @@
         </div>
 
         <!-- T9 Keypad -->
-        <div class="grid grid-cols-3 gap-x-7 gap-y-4 mb-8">
+        <div class="grid grid-cols-3 gap-x-7 gap-y-4 mb-10">
             <button class="t9-btn w-[75px] h-[75px] rounded-full bg-white/20 backdrop-blur-md text-white flex flex-col items-center justify-center transition-colors" data-val="1">
                 <span class="text-[34px] font-light mt-1">1</span>
             </button>
@@ -351,7 +355,6 @@
             alert("Pengaturan Berhasil Disimpan!");
         }
 
-        // Handle Image Uploads
         document.getElementById('bg-lock-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(file) {
