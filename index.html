@@ -57,9 +57,9 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Area bawah untuk Home Indicator iOS */
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 30px); }
-        .pt-safe { padding-top: env(safe-area-inset-top, 40px); }
+        /* Area bawah dan atas untuk Notch / Home Indicator iOS */
+        .pb-safe { padding-bottom: max(env(safe-area-inset-bottom), 30px); }
+        .pt-safe { padding-top: max(env(safe-area-inset-top), 55px); }
 
         /* Efek Active pada tombol T9 Lockscreen */
         .t9-btn:active { background-color: rgba(255, 255, 255, 0.4); }
